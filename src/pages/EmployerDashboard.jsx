@@ -7,7 +7,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useToast } from "@/components/ui/use-toast";
+import { toast } from "sonner";
 import {
   Briefcase, Users, Plus, Eye, Brain, Clock,
   CheckCircle2, BarChart3, Layers, Send
@@ -18,7 +18,6 @@ import ExploreSeekersPanel from "@/components/employer/ExploreSeekersPanel";
 
 export default function EmployerDashboard() {
   const queryClient = useQueryClient();
-  const { toast } = useToast();
   const [selectedJob, setSelectedJob] = useState(null);
   const [invitingSeekerId, setInvitingSeekerId] = useState(null);
 
@@ -78,11 +77,11 @@ export default function EmployerDashboard() {
     mutationFn: ({ seeker_profile_id, job_id }) =>
       base44.functions.invoke("inviteSeekerToJob", { seeker_profile_id, job_id }),
     onSuccess: () => {
-      toast({ title: "Invitation sent successfully!" });
+      toast.success("Invitation sent successfully!");
       setInvitingSeekerId(null);
     },
     onError: () => {
-      toast({ title: "Failed to send invitation", variant: "destructive" });
+      toast.error("Failed to send invitation");
     },
   });
 
