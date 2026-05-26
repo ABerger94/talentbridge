@@ -13,9 +13,9 @@ import SeekerDashboard from './pages/SeekerDashboard';
 import EmployerDashboard from './pages/EmployerDashboard';
 import AppLayout from './components/layout/AppLayout';
 
-// Wraps protected routes — redirects to login if not authenticated
-const ProtectedRoute = ({ children }) => {
-  const { isLoadingAuth, isAuthenticated, authError, navigateToLogin } = useAuth();
+// Wraps protected routes — redirects to login if not authenticated, optionally checks role
+const ProtectedRoute = ({ children, allowedRoles }) => {
+  const { isLoadingAuth, isAuthenticated, authError, navigateToLogin, user } = useAuth();
 
   if (isLoadingAuth) {
     return (
@@ -34,6 +34,13 @@ const ProtectedRoute = ({ children }) => {
     return null;
   }
 
+  if (allowedRoles && !allowedRoles.includes(user?.role)) {
+    // Redirect to their appropriate dashboard
+    const redirectTo = user?.role === 'employer' ? '/employer' : '/dashboard';
+    window.location.replace(redirectTo);
+    return null;
+  }
+
   return children;
 };
 
@@ -46,10 +53,10 @@ const AuthenticatedApp = () => {
         <Route path="/jobs" element={<JobBoard />} />
         <Route path="/jobs/:id" element={<JobDetail />} />
 
-        {/* Protected routes — login required */}
-        <Route path="/post-job" element={<ProtectedRoute><PostJob /></ProtectedRoute>} />
-        <Route path="/dashboard" element={<ProtectedRoute><SeekerDashboard /></ProtectedRoute>} />
-        <Route path="/employer" element={<ProtectedRoute><EmployerDashboard /></ProtectedRoute>} />
+        {/* Protected routes — login + role required */}
+        <Route path="/post-job" element={<ProtectedRoute allowedRoles={['employer', 'admin']}><PostJob /></ProtectedRoute>} />
+        <Route path="/dashboard" element={<ProtectedRoute allowedRoles={['job_seeker', 'admin']}><SeekerDashboard /></ProtectedRoute>} />
+        <Route path="/employer" element={<ProtectedRoute allowedRoles={['employer', 'admin']}><EmployerDashboard /></ProtectedRoute>} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>

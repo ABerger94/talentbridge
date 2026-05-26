@@ -2,17 +2,26 @@ import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Menu, Briefcase, User, Building2, Search, Layers } from "lucide-react";
-
-const navLinks = [
-  { path: "/jobs", label: "Explore Roles", icon: Search },
-  { path: "/dashboard", label: "My Profile", icon: User },
-  { path: "/employer", label: "For Employers", icon: Building2 },
-];
+import { Menu, Briefcase, User, Building2, Search, Layers, LogIn, LogOut } from "lucide-react";
+import { useAuth } from "@/lib/AuthContext";
+import { base44 } from "@/api/base44Client";
 
 export default function Navbar() {
   const location = useLocation();
   const [open, setOpen] = useState(false);
+  const { isAuthenticated, user } = useAuth();
+
+  const role = user?.role;
+
+  // Build nav links based on role
+  const navLinks = [
+    { path: "/jobs", label: "Explore Roles", icon: Search, show: true },
+    { path: "/dashboard", label: "My Profile", icon: User, show: !isAuthenticated || role === 'job_seeker' || role === 'admin' },
+    { path: "/employer", label: "Employer Dashboard", icon: Building2, show: role === 'employer' || role === 'admin' },
+  ].filter(l => l.show);
+
+  const handleLogin = () => base44.auth.redirectToLogin(window.location.href);
+  const handleLogout = () => base44.auth.logout('/');
 
   return (
     <nav className="sticky top-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border/50">
@@ -41,12 +50,26 @@ export default function Navbar() {
           </div>
 
           <div className="hidden md:flex items-center gap-3">
-            <Link to="/post-job">
-              <Button className="gap-2 bg-primary hover:bg-primary/90 shadow-md shadow-primary/25">
-                <Briefcase className="w-4 h-4" />
-                Post a Role
+            {!isAuthenticated ? (
+              <Button variant="ghost" className="gap-2" onClick={handleLogin}>
+                <LogIn className="w-4 h-4" />
+                Sign In
               </Button>
-            </Link>
+            ) : null}
+            {(!isAuthenticated || role === 'employer' || role === 'admin') && (
+              <Link to="/post-job">
+                <Button className="gap-2 bg-primary hover:bg-primary/90 shadow-md shadow-primary/25">
+                  <Briefcase className="w-4 h-4" />
+                  Post a Role
+                </Button>
+              </Link>
+            )}
+            {isAuthenticated && (
+              <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground" onClick={handleLogout}>
+                <LogOut className="w-4 h-4" />
+                Sign Out
+              </Button>
+            )}
           </div>
 
           <Sheet open={open} onOpenChange={setOpen}>
@@ -75,12 +98,25 @@ export default function Navbar() {
                   </Link>
                 ))}
                 <div className="border-t my-4" />
-                <Link to="/post-job" onClick={() => setOpen(false)}>
-                  <Button className="w-full gap-2">
-                    <Briefcase className="w-4 h-4" />
-                    Post a Role
+                {(!isAuthenticated || role === 'employer' || role === 'admin') && (
+                  <Link to="/post-job" onClick={() => setOpen(false)}>
+                    <Button className="w-full gap-2">
+                      <Briefcase className="w-4 h-4" />
+                      Post a Role
+                    </Button>
+                  </Link>
+                )}
+                {!isAuthenticated ? (
+                  <Button variant="outline" className="w-full gap-2" onClick={handleLogin}>
+                    <LogIn className="w-4 h-4" />
+                    Sign In
                   </Button>
-                </Link>
+                ) : (
+                  <Button variant="ghost" className="w-full gap-2 text-muted-foreground" onClick={handleLogout}>
+                    <LogOut className="w-4 h-4" />
+                    Sign Out
+                  </Button>
+                )}
               </div>
             </SheetContent>
           </Sheet>
