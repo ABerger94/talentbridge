@@ -7,9 +7,10 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useToast } from "@/components/ui/use-toast";
 import {
   Briefcase, Users, Plus, Eye, Brain, Clock,
-  CheckCircle2, BarChart3, Layers
+  CheckCircle2, BarChart3, Layers, Send
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import CandidateCapabilityCard from "@/components/employer/CandidateCapabilityCard";
@@ -17,7 +18,9 @@ import ExploreSeekersPanel from "@/components/employer/ExploreSeekersPanel";
 
 export default function EmployerDashboard() {
   const queryClient = useQueryClient();
+  const { toast } = useToast();
   const [selectedJob, setSelectedJob] = useState(null);
+  const [invitingSeekerId, setInvitingSeekerId] = useState(null);
 
   const { data: myJobs = [], isLoading: jobsLoading } = useQuery({
     queryKey: ["myJobs"],
@@ -69,6 +72,18 @@ export default function EmployerDashboard() {
   const updateAppMutation = useMutation({
     mutationFn: ({ id, status }) => base44.entities.JobApplication.update(id, { status }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["jobApplications"] }),
+  });
+
+  const inviteMutation = useMutation({
+    mutationFn: ({ seeker_profile_id, job_id }) =>
+      base44.functions.invoke("inviteSeekerToJob", { seeker_profile_id, job_id }),
+    onSuccess: () => {
+      toast({ title: "Invitation sent successfully!" });
+      setInvitingSeekerId(null);
+    },
+    onError: () => {
+      toast({ title: "Failed to send invitation", variant: "destructive" });
+    },
   });
 
   const selectedJobData = myJobs.find(j => j.id === selectedJob);
@@ -234,40 +249,51 @@ export default function EmployerDashboard() {
             ) : (
               allSeekers.map(seeker => (
                 <Card key={seeker.id} className="p-5 space-y-3">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-sm">{seeker.headline}</h3>
-                      {seeker.bio && <p className="text-xs text-muted-foreground mt-1">{seeker.bio.substring(0, 100)}</p>}
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <p className="text-xs text-muted-foreground font-medium">Matches with:</p>
-                    <div className="flex flex-wrap gap-2">
-                      {seeker.matched_jobs.map(job => (
-                        <Badge key={job.id} className="text-xs">
-                          {job.title}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                  {seeker.skills && seeker.skills.length > 0 && (
-                    <div className="space-y-2">
-                      <p className="text-xs text-muted-foreground font-medium">Skills:</p>
-                      <div className="flex flex-wrap gap-1">
-                        {seeker.skills.slice(0, 5).map((skill, idx) => (
-                          <Badge key={idx} variant="secondary" className="text-xs">
-                            {skill}
-                          </Badge>
-                        ))}
-                        {seeker.skills.length > 5 && (
-                          <Badge variant="secondary" className="text-xs">
-                            +{seeker.skills.length - 5}
-                          </Badge>
-                        )}
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-sm">{seeker.headline}</h3>
+                        {seeker.bio && <p className="text-xs text-muted-foreground mt-1">{seeker.bio.substring(0, 100)}</p>}
                       </div>
                     </div>
-                  )}
-                </Card>
+                    <div className="space-y-2">
+                      <p className="text-xs text-muted-foreground font-medium">Matches with:</p>
+                      <div className="flex flex-wrap gap-2">
+                        {seeker.matched_jobs.map(job => (
+                          <div key={job.id} className="flex items-center gap-2">
+                            <Badge className="text-xs">
+                              {job.title}
+                            </Badge>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-6 w-6 p-0"
+                              onClick={() => inviteMutation.mutate({ seeker_profile_id: seeker.id, job_id: job.id })}
+                              disabled={invitingSeekerId === seeker.id || inviteMutation.isPending}
+                            >
+                              <Send className="w-3.5 h-3.5" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    {seeker.skills && seeker.skills.length > 0 && (
+                      <div className="space-y-2">
+                        <p className="text-xs text-muted-foreground font-medium">Skills:</p>
+                        <div className="flex flex-wrap gap-1">
+                          {seeker.skills.slice(0, 5).map((skill, idx) => (
+                            <Badge key={idx} variant="secondary" className="text-xs">
+                              {skill}
+                            </Badge>
+                          ))}
+                          {seeker.skills.length > 5 && (
+                            <Badge variant="secondary" className="text-xs">
+                              +{seeker.skills.length - 5}
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </Card>
               ))
             )}
           </TabsContent>
