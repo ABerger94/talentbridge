@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Menu, Briefcase, User, Building2, Search, LogIn, LogOut } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
-import { base44 } from "@/api/base44Client";
+import { redirectToLogin, redirectToLogout } from "@/lib/auth-redirect";
 import TalentBridgeLogo from "@/components/TalentBridgeLogo";
 
 export default function Navbar() {
@@ -21,8 +21,8 @@ export default function Navbar() {
     { path: "/employer", label: "Employer Dashboard", icon: Building2, show: role === 'employer' || role === 'admin' },
   ].filter(l => l.show);
 
-  const handleLogin = () => base44.auth.redirectToLogin(window.location.href);
-  const handleLogout = () => base44.auth.logout('/');
+  const handleLogin = () => redirectToLogin(window.location.href);
+  const handleLogout = () => redirectToLogout('/');
 
   return (
     <nav className="sticky top-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border/50">

@@ -28,6 +28,18 @@ VITE_BASE44_APP_BASE_URL=https://my-to-do-list-81bfaad7.base44.app
 
 Run the app: `npm run dev`
 
+**Deploying to Vercel**
+
+- Build command: `npm run vercel-build`
+- Install command: `npm ci`
+- Output directory: `dist`
+- Set these environment variables in Vercel Project Settings:
+  - `VITE_BASE44_APP_ID`
+  - `VITE_BASE44_APP_BASE_URL` — use the Base44 app domain, for example `https://your-app.base44.app`, not `https://api.base44.com`
+  - `VITE_BASE44_FUNCTIONS_VERSION` if your Base44 deployment requires a specific functions version
+
+The repo includes Vercel SPA rewrites and static route fallbacks for direct links like `/jobs`, `/post-job`, `/dashboard`, `/employer`, and `/onboarding`.
+
 **Publish your changes**
 
 Open [Base44.com](http://Base44.com) and click on Publish.
