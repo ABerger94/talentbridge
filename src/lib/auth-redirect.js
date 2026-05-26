@@ -19,9 +19,8 @@ export const redirectToLogin = (targetUrl = window.location.href) => {
   window.location.href = `${base44AppUrl}/login?from_url=${encodeURIComponent(callbackUrl.toString())}`;
 };
 
-export const redirectToLogout = (targetPath = '/') => {
-  const base44AppUrl = getBase44AppUrl();
-  const callbackUrl = new URL(targetPath, base44AppUrl);
-
-  window.location.href = `${base44AppUrl}/api/apps/auth/logout?from_url=${encodeURIComponent(callbackUrl.toString())}`;
+export const logoutLocally = (targetPath = '/') => {
+  window.localStorage.removeItem('base44_access_token');
+  window.localStorage.removeItem('token');
+  window.location.href = new URL(targetPath, window.location.origin).toString();
 };

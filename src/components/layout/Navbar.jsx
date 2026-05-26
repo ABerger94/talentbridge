@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Menu, Briefcase, User, Building2, Search, LogIn, LogOut } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
-import { redirectToLogin, redirectToLogout } from "@/lib/auth-redirect";
+import { redirectToLogin, logoutLocally } from "@/lib/auth-redirect";
 import TalentBridgeLogo from "@/components/TalentBridgeLogo";
 
 export default function Navbar() {
@@ -22,7 +22,7 @@ export default function Navbar() {
   ].filter(l => l.show);
 
   const handleLogin = () => redirectToLogin(window.location.href);
-  const handleLogout = () => redirectToLogout('/');
+  const handleLogout = () => logoutLocally('/');
 
   return (
     <nav className="sticky top-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border/50">
