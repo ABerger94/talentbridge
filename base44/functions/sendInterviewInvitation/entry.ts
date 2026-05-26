@@ -5,8 +5,8 @@ Deno.serve(async (req) => {
     const base44 = createClientFromRequest(req);
     const { application_id, job_id, proposed_time } = await req.json();
 
-    const application = await base44.asServiceRole.entities.JobApplication.read(application_id);
-    const job = await base44.asServiceRole.entities.Job.read(job_id);
+    const application = await base44.asServiceRole.entities.JobApplication.get(application_id);
+    const job = await base44.asServiceRole.entities.Job.get(job_id);
 
     const formattedTime = new Date(proposed_time).toLocaleString('en-US', {
       weekday: 'long',
