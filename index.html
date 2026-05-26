@@ -6,6 +6,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="manifest" href="/manifest.json" />
     <title>TalentBridge — AI-Powered Capability Matching</title>
+    <script>
+      (function () {
+        var url = new URL(window.location.href);
+        if (!url.searchParams.has("analytics-enable")) {
+          url.searchParams.set("analytics-enable", "false");
+          window.history.replaceState({}, document.title, url.toString());
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
