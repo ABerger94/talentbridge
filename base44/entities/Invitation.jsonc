@@ -45,6 +45,9 @@
           "created_by_id": "{{user.id}}"
         },
         {
+          "data.seeker_profile_id": "{{user.data.seeker_profile_id}}"
+        },
+        {
           "user_condition": {
             "role": "admin"
           }
@@ -55,6 +58,9 @@
       "$or": [
         {
           "created_by_id": "{{user.id}}"
+        },
+        {
+          "data.seeker_profile_id": "{{user.data.seeker_profile_id}}"
         },
         {
           "user_condition": {
