@@ -107,14 +107,13 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Old Way vs Symbiot */}
+      {/* Old Way vs TalentBridge */}
       <section className="py-24 bg-secondary/40">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-14">
             <h2 className="text-3xl sm:text-4xl font-bold">The hiring system is broken. We rebuilt it.</h2>
-            <p className="mt-4 text-lg text-muted-foreground max-w-xl mx-auto">Current ATS platforms use AI as a rejection machine. TalentBridge uses AI as an advocate for candidates.
-
-            </p>
+            <p className="mt-4 text-lg text-muted-foreground max-w-xl mx-auto">Current ATS platforms use AI as a rejection machine.</p>
+            <p className="mt-2 text-lg text-muted-foreground max-w-xl mx-auto">TalentBridge uses AI as an advocate for candidates.</p>
           </div>
           <div className="rounded-2xl overflow-hidden border border-border/60 shadow-xl">
             <div className="grid grid-cols-2 text-sm">
