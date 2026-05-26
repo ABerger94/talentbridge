@@ -34,7 +34,6 @@ Deno.serve(async (req) => {
       culture_values: ["Innovation", "Collaboration", "People-First", "Transparency", "Growth Mindset"],
       growth_opportunities: "Lead design for new product initiatives. Mentor junior designers. Influence product strategy. Grow into senior design roles or design leadership.",
       status: "active",
-      created_by_id: userId,
       application_count: 0
     });
     
