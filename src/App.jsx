@@ -5,7 +5,13 @@ import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
-// Add page imports here
+import Landing from './pages/Landing';
+import JobBoard from './pages/JobBoard';
+import JobDetail from './pages/JobDetail';
+import PostJob from './pages/PostJob';
+import SeekerDashboard from './pages/SeekerDashboard';
+import EmployerDashboard from './pages/EmployerDashboard';
+import AppLayout from './components/layout/AppLayout';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -33,7 +39,14 @@ const AuthenticatedApp = () => {
   // Render the main app
   return (
     <Routes>
-      {/* Add your page Route elements here */}
+      <Route element={<AppLayout />}>
+        <Route path="/" element={<Landing />} />
+        <Route path="/jobs" element={<JobBoard />} />
+        <Route path="/jobs/:id" element={<JobDetail />} />
+        <Route path="/post-job" element={<PostJob />} />
+        <Route path="/dashboard" element={<SeekerDashboard />} />
+        <Route path="/employer" element={<EmployerDashboard />} />
+      </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );

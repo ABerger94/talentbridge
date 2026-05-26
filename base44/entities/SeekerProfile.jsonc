@@ -1,0 +1,92 @@
+{
+  "name": "SeekerProfile",
+  "type": "object",
+  "properties": {
+    "headline": {
+      "type": "string",
+      "description": "Professional headline"
+    },
+    "bio": {
+      "type": "string",
+      "description": "About me / professional summary"
+    },
+    "skills": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Skills and competencies"
+    },
+    "experience_years": {
+      "type": "number",
+      "description": "Years of experience"
+    },
+    "experience_level": {
+      "type": "string",
+      "enum": [
+        "entry",
+        "mid",
+        "senior",
+        "lead",
+        "executive"
+      ]
+    },
+    "preferred_work_type": {
+      "type": "string",
+      "enum": [
+        "remote",
+        "hybrid",
+        "onsite",
+        "any"
+      ]
+    },
+    "preferred_location": {
+      "type": "string"
+    },
+    "salary_expectation_min": {
+      "type": "number"
+    },
+    "salary_expectation_max": {
+      "type": "number"
+    },
+    "industries_of_interest": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "values": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "What matters to the candidate in a workplace"
+    },
+    "career_goals": {
+      "type": "string",
+      "description": "Where they want to grow"
+    },
+    "work_history": {
+      "type": "string",
+      "description": "Past work experience summary"
+    },
+    "education": {
+      "type": "string",
+      "description": "Education background"
+    },
+    "resume_url": {
+      "type": "string",
+      "description": "Uploaded resume file URL"
+    },
+    "avatar_url": {
+      "type": "string"
+    },
+    "open_to_opportunities": {
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "required": [
+    "headline"
+  ]
+}

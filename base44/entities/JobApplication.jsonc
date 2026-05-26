@@ -1,0 +1,52 @@
+{
+  "name": "JobApplication",
+  "type": "object",
+  "properties": {
+    "job_id": {
+      "type": "string",
+      "description": "Reference to the Job"
+    },
+    "seeker_profile_id": {
+      "type": "string",
+      "description": "Reference to SeekerProfile"
+    },
+    "cover_letter": {
+      "type": "string",
+      "description": "Cover letter or message"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "applied",
+        "reviewed",
+        "shortlisted",
+        "interview",
+        "offered",
+        "rejected",
+        "withdrawn"
+      ],
+      "default": "applied"
+    },
+    "ai_match_score": {
+      "type": "number",
+      "description": "AI-generated match score 0-100"
+    },
+    "ai_match_summary": {
+      "type": "string",
+      "description": "AI explanation of why this is a good match"
+    },
+    "ai_growth_potential": {
+      "type": "string",
+      "description": "AI assessment of growth potential"
+    },
+    "applicant_name": {
+      "type": "string"
+    },
+    "applicant_email": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "job_id"
+  ]
+}
