@@ -7,10 +7,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Progress } from "@/components/ui/progress";
 import {
   Brain, Loader2, ChevronDown, ChevronUp, CheckCircle2,
-  TrendingUp, Zap, Star, ShieldCheck, User, FileText
+  TrendingUp, Zap, Star, ShieldCheck, User, FileText, X
 } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+import InterviewScheduler from "./InterviewScheduler";
+import OfferDialog from "./OfferDialog";
 
 export default function CandidateCapabilityCard({ application, job, onStatusChange }) {
+  const queryClient = useQueryClient();
   const [assessment, setAssessment] = useState(
     application.ai_match_score
       ? {
@@ -23,6 +28,31 @@ export default function CandidateCapabilityCard({ application, job, onStatusChan
   const [loading, setLoading] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [fullAssessment, setFullAssessment] = useState(null);
+
+  const handleStatusChange = async (newStatus) => {
+    if (newStatus === "shortlisted") {
+      try {
+        await base44.functions.invoke("sendShortlistNotification", {
+          application_id: application.id,
+          job_id: job.id,
+        });
+        toast.success("Shortlist notification sent!");
+      } catch (error) {
+        toast.error("Failed to send notification");
+      }
+    } else if (newStatus === "rejected") {
+      try {
+        await base44.functions.invoke("sendRejectionEmail", {
+          application_id: application.id,
+          job_id: job.id,
+        });
+        toast.success("Rejection email sent!");
+      } catch (error) {
+        toast.error("Failed to send rejection email");
+      }
+    }
+    onStatusChange(application.id, newStatus);
+  };
 
   const runCapabilityAssessment = async () => {
     setLoading(true);
@@ -120,7 +150,7 @@ Generate a rich, evidence-based capability profile. Be specific and concrete.`,
         </div>
         <div className="flex items-center gap-2">
           <Badge variant="outline" className={`text-xs ${cfg.color}`}>{cfg.label}</Badge>
-          <Select value={application.status} onValueChange={(v) => onStatusChange(application.id, v)}>
+          <Select value={application.status} onValueChange={handleStatusChange}>
             <SelectTrigger className="w-8 h-8 p-0 border-0 bg-transparent hover:bg-secondary">
               <ChevronDown className="w-4 h-4 text-muted-foreground" />
             </SelectTrigger>
@@ -234,7 +264,66 @@ Generate a rich, evidence-based capability profile. Be specific and concrete.`,
         </div>
       )}
 
-      {/* Actions */}
+      {/* Status-specific Actions */}
+      {application.status === "interview" && (
+        <div className="rounded-lg bg-purple-50 border border-purple-200 p-3 space-y-2">
+          {application.interview_proposed_time ? (
+            <div>
+              <p className="text-xs font-semibold text-purple-700 mb-1">Interview Scheduled</p>
+              <p className="text-xs text-purple-600">
+                {new Date(application.interview_proposed_time).toLocaleString()}
+              </p>
+              {application.interview_response && (
+                <p className="text-xs text-purple-600 mt-1">
+                  Candidate Response: <span className="font-semibold capitalize">{application.interview_response}</span>
+                </p>
+              )}
+              {application.interview_counter_time && (
+                <p className="text-xs text-purple-600">
+                  Counter Proposal: {new Date(application.interview_counter_time).toLocaleString()}
+                </p>
+              )}
+            </div>
+          ) : (
+            <InterviewScheduler
+              application={application}
+              job={job}
+              onScheduled={() => queryClient.invalidateQueries({ queryKey: ["jobApplications"] })}
+            />
+          )}
+        </div>
+      )}
+
+      {application.status === "offered" && (
+        <div className="rounded-lg bg-emerald-50 border border-emerald-200 p-3 space-y-2">
+          {application.offer_details ? (
+            <div>
+              <p className="text-xs font-semibold text-emerald-700 mb-1">Offer Details</p>
+              <p className="text-xs text-emerald-600">
+                {application.offer_details.salary_currency} {application.offer_details.salary}
+              </p>
+              {application.offer_response && (
+                <p className="text-xs text-emerald-600 mt-1">
+                  Candidate Response: <span className="font-semibold capitalize">{application.offer_response}</span>
+                </p>
+              )}
+              {application.offer_negotiation_notes && (
+                <p className="text-xs text-emerald-600 italic mt-1">
+                  "{application.offer_negotiation_notes}"
+                </p>
+              )}
+            </div>
+          ) : (
+            <OfferDialog
+              application={application}
+              job={job}
+              onOfferSent={() => queryClient.invalidateQueries({ queryKey: ["jobApplications"] })}
+            />
+          )}
+        </div>
+      )}
+
+      {/* Assessment Actions */}
       <div className="flex items-center gap-2 pt-1">
         {!assessment ? (
           <Button size="sm" className="gap-1.5 text-xs" onClick={runCapabilityAssessment} disabled={loading}>

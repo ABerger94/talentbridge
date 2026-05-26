@@ -19,6 +19,7 @@ import { Link } from "react-router-dom";
 import JobCard from "@/components/jobs/JobCard";
 import ResumeUploader from "@/components/resume/ResumeUploader";
 import ResumeCritique from "@/components/resume/ResumeCritique";
+import ApplicationCard from "@/components/seeker/ApplicationCard";
 
 export default function SeekerDashboard() {
   const queryClient = useQueryClient();
@@ -243,9 +244,6 @@ Return the top matches with specific reasoning.`,
     );
   }
 
-  const statusLabel = { applied: "Applied", reviewed: "Under Review", shortlisted: "Shortlisted", interview: "Interview", offered: "Offer Received!", rejected: "Passed", withdrawn: "Withdrawn" };
-  const statusColor = { applied: "bg-blue-100 text-blue-700", reviewed: "bg-yellow-100 text-yellow-700", shortlisted: "bg-green-100 text-green-700", interview: "bg-purple-100 text-purple-700", offered: "bg-emerald-100 text-emerald-700", rejected: "bg-gray-100 text-gray-500", withdrawn: "bg-gray-100 text-gray-400" };
-  
   const invitationStatusLabel = { pending: "Pending", accepted: "Accepted", declined: "Declined" };
   const invitationStatusColor = { pending: "bg-amber-100 text-amber-700", accepted: "bg-green-100 text-green-700", declined: "bg-red-100 text-red-700" };
 
@@ -587,29 +585,16 @@ Return the top matches with specific reasoning.`,
             applications.map(app => {
               const job = jobs.find(j => j.id === app.job_id);
               return (
-                <Card key={app.id} className="p-5">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="font-semibold text-sm">{job?.title || "Unknown Role"}</h3>
-                      <p className="text-xs text-muted-foreground mt-0.5">{job?.company || ""}</p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {app.ai_match_score && (
-                        <span className="text-xs text-muted-foreground">{app.ai_match_score}% match</span>
-                      )}
-                      <Badge className={`text-xs ${statusColor[app.status] || "bg-gray-100 text-gray-700"}`}>
-                        {statusLabel[app.status] || app.status}
-                      </Badge>
-                    </div>
-                  </div>
-                  {app.ai_match_summary && (
-                    <p className="text-xs text-muted-foreground mt-2 line-clamp-2">{app.ai_match_summary}</p>
-                  )}
-                </Card>
+                <ApplicationCard
+                  key={app.id}
+                  application={app}
+                  job={job}
+                  onUpdate={() => queryClient.invalidateQueries({ queryKey: ["myApplications"] })}
+                />
               );
             })
           )}
-          </TabsContent>
+        </TabsContent>
 
           {/* Invitations Tab */}
           <TabsContent value="invitations" className="space-y-3">

@@ -48,6 +48,65 @@
     "resume_url": {
       "type": "string",
       "description": "URL to the applicant's uploaded resume file"
+    },
+    "interview_proposed_time": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Employer proposed interview time"
+    },
+    "interview_response": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "accepted",
+        "declined",
+        "counter_proposed"
+      ],
+      "description": "Seeker's response to interview invitation"
+    },
+    "interview_counter_time": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Seeker's proposed alternative interview time"
+    },
+    "offer_details": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string"
+        },
+        "salary": {
+          "type": "number"
+        },
+        "salary_currency": {
+          "type": "string"
+        },
+        "start_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "benefits": {
+          "type": "string"
+        },
+        "notes": {
+          "type": "string"
+        }
+      },
+      "description": "Offer details sent to seeker"
+    },
+    "offer_response": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "accepted",
+        "declined",
+        "negotiating"
+      ],
+      "description": "Seeker's response to offer"
+    },
+    "offer_negotiation_notes": {
+      "type": "string",
+      "description": "Seeker's negotiation feedback"
     }
   },
   "required": [
