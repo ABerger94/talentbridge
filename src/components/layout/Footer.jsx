@@ -1,6 +1,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { Layers, Heart } from "lucide-react";
+import { Heart } from "lucide-react";
+import TalentBridgeLogo from "@/components/TalentBridgeLogo";
 
 export default function Footer() {
   return (
@@ -10,7 +11,7 @@ export default function Footer() {
           <div className="md:col-span-1">
             <div className="flex items-center gap-2.5 mb-4">
               <div className="w-9 h-9 bg-primary rounded-xl flex items-center justify-center">
-                <Layers className="w-5 h-5 text-primary-foreground" />
+                <TalentBridgeLogo size={20} />
               </div>
               <span className="text-xl font-bold">TalentBridge</span>
             </div>
