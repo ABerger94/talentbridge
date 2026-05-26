@@ -1,6 +1,17 @@
 import { createClient } from '@base44/sdk';
 import { appParams } from '@/lib/app-params';
 
+const disableSdkAnalytics = () => {
+  if (typeof window === 'undefined') return;
+  const url = new URL(window.location.href);
+  if (url.searchParams.has('analytics-enable')) return;
+
+  url.searchParams.set('analytics-enable', 'false');
+  window.history.replaceState({}, document.title, url.toString());
+};
+
+disableSdkAnalytics();
+
 const { appId, token, functionsVersion, appBaseUrl } = appParams;
 export const base44ServerUrl = appBaseUrl || 'https://base44.app';
 
