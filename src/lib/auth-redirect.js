@@ -1,4 +1,4 @@
-import { appParams } from '@/lib/app-params';
+import { appParams, DEFAULT_BASE44_APP_BASE_URL } from '@/lib/app-params';
 
 const getBase44AppUrl = () => {
   if (appParams.appBaseUrl && !appParams.appBaseUrl.includes('api.base44.com')) {
@@ -9,9 +9,7 @@ const getBase44AppUrl = () => {
     return window.location.origin;
   }
 
-  if (!appParams.appBaseUrl || appParams.appBaseUrl.includes('api.base44.com')) {
-    throw new Error('VITE_BASE44_APP_BASE_URL must be set to the Base44 app domain, not the API domain.');
-  }
+  return DEFAULT_BASE44_APP_BASE_URL;
 };
 
 const clearStoredAuth = () => {
@@ -20,8 +18,6 @@ const clearStoredAuth = () => {
     'token',
     'access_token',
     'base44_token',
-    'base44_app_id',
-    'base44_app_base_url',
   ];
 
   tokenKeys.forEach((key) => {
