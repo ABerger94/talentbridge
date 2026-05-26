@@ -23,7 +23,7 @@ export default function Onboarding() {
   const handleContinue = async () => {
     if (!selected) return;
     setLoading(true);
-    await base44.auth.updateMe({ role: selected });
+    await base44.functions.invoke('setUserRole', { role: selected });
     await checkUserAuth(); // refresh user in context
     navigate(selected === "employer" ? "/employer" : "/dashboard", { replace: true });
   };
