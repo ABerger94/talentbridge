@@ -4,10 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import {
-  Layers, ArrowRight, Network, GitBranch, ShieldCheck, Cpu,
+  ArrowRight, Network, GitBranch, ShieldCheck, Cpu,
   BarChart3, Zap, Search, Building2, CheckCircle2, XCircle
 } from "lucide-react";
 import { motion } from "framer-motion";
+import TalentBridgeLogo from "@/components/TalentBridgeLogo";
 
 const fadeUp = (delay = 0) => ({
   initial: { opacity: 0, y: 30 },
@@ -69,7 +70,7 @@ export default function Landing() {
           <div className="max-w-4xl mx-auto text-center">
             <motion.div {...fadeUp(0)}>
               <Badge className="mb-6 bg-primary/10 text-primary border-primary/20 px-4 py-1.5 text-sm gap-2">
-                <Layers className="w-3.5 h-3.5" />
+                <TalentBridgeLogo size={14} />
                 The People-First Platform
               </Badge>
             </motion.div>
