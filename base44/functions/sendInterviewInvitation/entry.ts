@@ -3,10 +3,21 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
+    const user = await base44.auth.me();
+
+    if (!user) {
+      return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { application_id, job_id, proposed_time } = await req.json();
 
     const application = await base44.asServiceRole.entities.JobApplication.get(application_id);
     const job = await base44.asServiceRole.entities.Job.get(job_id);
+
+    // Verify user owns this job or is admin
+    if (job.created_by_id !== user.id && user.role !== 'admin') {
+      return Response.json({ error: 'Forbidden: You can only send invitations for your own jobs' }, { status: 403 });
+    }
     
     // Get seeker's email from the User entity (created_by of SeekerProfile)
     const seekerProfile = await base44.asServiceRole.entities.SeekerProfile.get(application.seeker_profile_id);

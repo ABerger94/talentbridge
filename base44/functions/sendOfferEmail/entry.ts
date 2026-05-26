@@ -3,10 +3,21 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
+    const user = await base44.auth.me();
+
+    if (!user) {
+      return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { application_id, job_id, offer_details } = await req.json();
 
     const application = await base44.entities.JobApplication.read(application_id);
     const job = await base44.entities.Job.read(job_id);
+
+    // Verify user owns this job or is admin
+    if (job.created_by_id !== user.id && user.role !== 'admin') {
+      return Response.json({ error: 'Forbidden: You can only send offers for your own jobs' }, { status: 403 });
+    }
 
     const salaryStr = offer_details.salary ? `${offer_details.salary_currency || 'USD'} ${offer_details.salary.toLocaleString()}` : 'To be discussed';
     const benefitsStr = offer_details.benefits || 'As discussed';
