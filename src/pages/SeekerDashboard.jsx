@@ -12,9 +12,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Sparkles, Loader2, Save, User, Briefcase, Network,
-  X, Plus, Zap, Brain, TrendingUp, GitBranch, Layers, FileText, Users
+  X, Plus, Zap, Brain, TrendingUp, GitBranch, Layers, FileText, Users, Eye
 } from "lucide-react";
 import { toast } from "sonner";
+import { Link } from "react-router-dom";
 import JobCard from "@/components/jobs/JobCard";
 import ResumeUploader from "@/components/resume/ResumeUploader";
 import ResumeCritique from "@/components/resume/ResumeCritique";
@@ -215,10 +216,22 @@ Return the top matches with specific reasoning.`,
   };
 
   const updateInvitationMutation = useMutation({
-    mutationFn: ({ id, status }) => base44.entities.Invitation.update(id, { status }),
-    onSuccess: () => {
+    mutationFn: async ({ id, status, job_id, seeker_profile_id }) => {
+      await base44.entities.Invitation.update(id, { status });
+      // If accepting, automatically apply for the job
+      if (status === "accepted") {
+        await base44.entities.JobApplication.create({
+          job_id,
+          seeker_profile_id,
+          cover_letter: "Accepted invitation from employer",
+          status: "applied",
+        });
+      }
+    },
+    onSuccess: (_, { status }) => {
       queryClient.invalidateQueries({ queryKey: ["myInvitations"] });
-      toast.success("Invitation updated!");
+      queryClient.invalidateQueries({ queryKey: ["myApplications"] });
+      toast.success(status === "accepted" ? "Applied to job!" : "Invitation updated!");
     },
   });
 
@@ -608,33 +621,42 @@ Return the top matches with specific reasoning.`,
            </Card>
           ) : (
            invitations.map(invitation => {
-             const job = jobs.find(j => j.id === invitation.job_id);
-             return (
-               <Card key={invitation.id} className="p-5">
-                 <div className="flex items-start justify-between">
-                   <div className="flex-1">
-                     <h3 className="font-semibold text-sm">{job?.title || "Unknown Role"}</h3>
-                     <p className="text-xs text-muted-foreground mt-0.5">{job?.company || ""}</p>
-                     {job?.location && (
-                       <p className="text-xs text-muted-foreground mt-1">{job.location}</p>
-                     )}
-                   </div>
-                   <Badge className={`text-xs ${invitationStatusColor[invitation.status] || "bg-gray-100 text-gray-700"}`}>
-                     {invitationStatusLabel[invitation.status] || invitation.status}
-                   </Badge>
+           const job = jobs.find(j => j.id === invitation.job_id);
+           return (
+             <Card key={invitation.id} className="p-5">
+               <div className="flex items-start justify-between">
+                 <div className="flex-1">
+                   <h3 className="font-semibold text-sm">{job?.title || "Unknown Role"}</h3>
+                   <p className="text-xs text-muted-foreground mt-0.5">{job?.company || ""}</p>
+                   {job?.location && (
+                     <p className="text-xs text-muted-foreground mt-1">{job.location}</p>
+                   )}
                  </div>
-                 {invitation.status === "pending" && (
-                   <div className="flex gap-2 mt-4">
-                     <Button size="sm" onClick={() => updateInvitationMutation.mutate({ id: invitation.id, status: "accepted" })}>
-                       Accept
+                 <Badge className={`text-xs ${invitationStatusColor[invitation.status] || "bg-gray-100 text-gray-700"}`}>
+                   {invitationStatusLabel[invitation.status] || invitation.status}
+                 </Badge>
+               </div>
+               <div className="flex gap-2 mt-4">
+                 {job && (
+                   <Link to={`/jobs/${job.id}`}>
+                     <Button size="sm" variant="ghost" className="gap-1">
+                       <Eye className="w-3.5 h-3.5" /> View Job
                      </Button>
-                     <Button size="sm" variant="outline" onClick={() => updateInvitationMutation.mutate({ id: invitation.id, status: "declined" })}>
+                   </Link>
+                 )}
+                 {invitation.status === "pending" && (
+                   <>
+                     <Button size="sm" onClick={() => updateInvitationMutation.mutate({ id: invitation.id, status: "accepted", job_id: invitation.job_id, seeker_profile_id: invitation.seeker_profile_id })} disabled={updateInvitationMutation.isPending}>
+                       Accept & Apply
+                     </Button>
+                     <Button size="sm" variant="outline" onClick={() => updateInvitationMutation.mutate({ id: invitation.id, status: "declined" })} disabled={updateInvitationMutation.isPending}>
                        Decline
                      </Button>
-                   </div>
+                   </>
                  )}
-               </Card>
-             );
+               </div>
+             </Card>
+           );
            })
           )}
           </TabsContent>
