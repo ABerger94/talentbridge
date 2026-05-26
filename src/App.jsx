@@ -13,6 +13,8 @@ import SeekerDashboard from './pages/SeekerDashboard';
 import EmployerDashboard from './pages/EmployerDashboard';
 import AppLayout from './components/layout/AppLayout';
 import Onboarding from './pages/Onboarding';
+import AuthBridge from './pages/AuthBridge';
+import LogoutBridge from './pages/LogoutBridge';
 
 // Wraps protected routes — redirects to login if not authenticated, optionally checks role
 const ProtectedRoute = ({ children, allowedRoles }) => {
@@ -62,6 +64,8 @@ const AuthenticatedApp = () => {
         <Route path="/dashboard" element={<ProtectedRoute allowedRoles={['job_seeker', 'admin']}><SeekerDashboard /></ProtectedRoute>} />
         <Route path="/employer" element={<ProtectedRoute allowedRoles={['employer', 'admin']}><EmployerDashboard /></ProtectedRoute>} />
       </Route>
+      <Route path="/auth-bridge" element={<AuthBridge />} />
+      <Route path="/logout-bridge" element={<LogoutBridge />} />
       <Route path="/onboarding" element={<Onboarding />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>

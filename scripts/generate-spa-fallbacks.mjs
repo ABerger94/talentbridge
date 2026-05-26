@@ -11,6 +11,8 @@ const routes = [
   'dashboard',
   'employer',
   'onboarding',
+  'auth-bridge',
+  'logout-bridge',
 ];
 
 await Promise.all(
