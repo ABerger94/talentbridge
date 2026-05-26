@@ -15,6 +15,11 @@ export default function Onboarding() {
 
   // If user already has a proper role, redirect them away
   useEffect(() => {
+    if (!isLoadingAuth && !isAuthenticated) {
+      navigate('/login?next=/onboarding', { replace: true });
+      return;
+    }
+
     if (!isLoadingAuth && isAuthenticated && user?.role && user.role !== 'user') {
       navigate(user.role === 'employer' ? '/employer' : '/dashboard', { replace: true });
     }

@@ -52,10 +52,20 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
   return children;
 };
 
+const RoleSelectionGate = ({ children }) => {
+  const { isLoadingAuth, isAuthenticated, user } = useAuth();
+
+  if (!isLoadingAuth && isAuthenticated && (!user?.role || user.role === 'user')) {
+    return <Navigate to="/onboarding" replace />;
+  }
+
+  return children;
+};
+
 const AuthenticatedApp = () => {
   return (
     <Routes>
-      <Route element={<AppLayout />}>
+      <Route element={<RoleSelectionGate><AppLayout /></RoleSelectionGate>}>
         {/* Public routes — no login required */}
         <Route path="/" element={<Landing />} />
         <Route path="/jobs" element={<JobBoard />} />

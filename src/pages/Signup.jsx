@@ -63,7 +63,7 @@ export default function Signup() {
 
     try {
       await verifyEmailOtpAndLogin(email.trim(), password, otpCode.trim());
-      navigate(nextPath, { replace: true });
+      navigate('/onboarding', { replace: true });
     } catch (err) {
       setError(err.message || 'Invalid or expired verification code.');
     } finally {
