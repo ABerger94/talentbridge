@@ -142,20 +142,13 @@
         },
         {
           "user_condition": {
-            "role": "admin"
+            "role": "employer"
           }
         },
         {
-          "$and": [
-            {
-              "user_condition": {
-                "role": "employer"
-              }
-            },
-            {
-              "data.open_to_opportunities": true
-            }
-          ]
+          "user_condition": {
+            "role": "admin"
+          }
         }
       ]
     },
