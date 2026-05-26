@@ -34,6 +34,9 @@ Deno.serve(async (req) => {
     }
 
     analysisPrompt += `
+
+Current date: ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+
 Please analyze and return a JSON object with:
 {
   "github_analysis": "Summary of coding patterns, quality, and project types (2-3 sentences)",

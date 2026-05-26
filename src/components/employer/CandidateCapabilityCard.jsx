@@ -59,6 +59,8 @@ export default function CandidateCapabilityCard({ application, job, onStatusChan
     const result = await base44.integrations.Core.InvokeLLM({
       prompt: `You are Symbiot's Employer Capability Assessment Engine. You are NOT a rejection filter. You are an ADVOCATE ENGINE for the employer — helping them see the full potential of this candidate for their role.
 
+Current date: ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+
 CRITICAL: Never recommend rejection. Always frame capability as proof points. If traditional qualifications are missing, surface operational execution evidence instead.
 
 Think like this: "This candidate doesn't have a CS degree, but they have deployed 10 operational apps in the past year, processed over 275M tokens, and possess elite QA logic that matches the employer's need for clean database schemas and reliable error handling."

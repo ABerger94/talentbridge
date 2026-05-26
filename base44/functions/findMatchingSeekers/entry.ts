@@ -29,6 +29,8 @@ Deno.serve(async (req) => {
     for (const seeker of seekers) {
       const prompt = `You are an expert recruiter. Score how well this job seeker matches the job role on a scale of 0-100.
 
+Current date: ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+
 Job Title: ${jobData.title}
 Job Description: ${jobData.description}
 Required Skills: ${jobData.skills?.join(', ') || 'N/A'}

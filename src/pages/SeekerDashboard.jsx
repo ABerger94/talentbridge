@@ -115,6 +115,8 @@ export default function SeekerDashboard() {
     const result = await base44.integrations.Core.InvokeLLM({
       prompt: `You are TalentBridge's Capability Graph Engine. Analyze this candidate's holistic profile and build a structured map of their true execution capabilities — not just their job titles.
 
+Current date: ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+
 Focus on:
 - Core execution vectors (what systems/problems they can actually solve)
 - Adjacent adaptability zones (areas they could move into quickly)
@@ -179,6 +181,8 @@ Generate a deep capability analysis.`,
 
     const result = await base44.integrations.Core.InvokeLLM({
       prompt: `You are TalentBridge's Bi-Directional Semantic Matcher. Match this candidate with roles using capability alignment, not keyword matching.
+
+Current date: ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
 
 CRITICAL RULES:
 - Find roles where the candidate's PROBLEM-SOLVING LOGIC maps to the PROBLEMS the role needs solved
