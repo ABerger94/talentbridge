@@ -12,10 +12,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Sparkles, Loader2, Save, User, Briefcase, Network,
-  X, Plus, Zap, Brain, TrendingUp, GitBranch, Globe, Layers
+  X, Plus, Zap, Brain, TrendingUp, GitBranch, Layers, FileText
 } from "lucide-react";
 import { toast } from "sonner";
 import JobCard from "@/components/jobs/JobCard";
+import ResumeUploader from "@/components/resume/ResumeUploader";
+import ResumeCritique from "@/components/resume/ResumeCritique";
 
 export default function SeekerDashboard() {
   const queryClient = useQueryClient();
@@ -95,7 +97,7 @@ export default function SeekerDashboard() {
     }
     setGraphLoading(true);
     const result = await base44.integrations.Core.InvokeLLM({
-      prompt: `You are Symbiot's Capability Graph Engine. Analyze this candidate's holistic profile and build a structured map of their true execution capabilities — not just their job titles.
+      prompt: `You are TalentBridge's Capability Graph Engine. Analyze this candidate's holistic profile and build a structured map of their true execution capabilities — not just their job titles.
 
 Focus on:
 - Core execution vectors (what systems/problems they can actually solve)
@@ -153,7 +155,7 @@ Generate a deep capability analysis.`,
     }));
 
     const result = await base44.integrations.Core.InvokeLLM({
-      prompt: `You are Symbiot's Bi-Directional Semantic Matcher. Match this candidate with roles using capability alignment, not keyword matching.
+      prompt: `You are TalentBridge's Bi-Directional Semantic Matcher. Match this candidate with roles using capability alignment, not keyword matching.
 
 CRITICAL RULES:
 - Find roles where the candidate's PROBLEM-SOLVING LOGIC maps to the PROBLEMS the role needs solved
@@ -222,8 +224,9 @@ Return the top matches with specific reasoning.`,
       </div>
 
       <Tabs defaultValue="profile">
-        <TabsList className="mb-6">
+        <TabsList className="mb-6 flex-wrap h-auto">
           <TabsTrigger value="profile" className="gap-2"><User className="w-4 h-4" /> Profile</TabsTrigger>
+          <TabsTrigger value="resume" className="gap-2"><FileText className="w-4 h-4" /> Resume</TabsTrigger>
           <TabsTrigger value="capability" className="gap-2"><Network className="w-4 h-4" /> Capability Graph</TabsTrigger>
           <TabsTrigger value="matches" className="gap-2"><Brain className="w-4 h-4" /> AI Matches</TabsTrigger>
           <TabsTrigger value="applications" className="gap-2"><Briefcase className="w-4 h-4" /> Applications</TabsTrigger>
@@ -354,6 +357,16 @@ Return the top matches with specific reasoning.`,
               Save Profile
             </Button>
           </div>
+        </TabsContent>
+
+        {/* Resume Tab */}
+        <TabsContent value="resume" className="space-y-5">
+          <ResumeUploader
+            profile={profile}
+            onProfileUpdate={update}
+            onSave={() => saveMutation.mutate()}
+          />
+          <ResumeCritique profile={profile} />
         </TabsContent>
 
         {/* Capability Graph Tab */}

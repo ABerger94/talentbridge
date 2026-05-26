@@ -16,7 +16,7 @@ const fadeUp = (delay = 0) => ({
 });
 
 const oldVsNew = [
-  { old: "Keyword filtering rejects 75% of qualified applicants", symbiot: "Semantic capability graph maps transferable logic to role problems" },
+  { old: "Keyword filtering rejects 75% of qualified applicants", symbiot: "Semantic capability graph maps your transferable logic to role problems" },
   { old: "Years-of-experience requirements filter out proven builders", symbiot: "Artifact analysis scores deployed projects, code quality & system architecture" },
   { old: "Black-box ATS scoring with zero transparency", symbiot: "Hidden Vectors panel shows candidates exactly how they map to each role" },
   { old: "Auto-rejections with no explanation or path forward", symbiot: "Every candidate receives an Adaptability & Match Report — never a silent no" },
@@ -70,7 +70,7 @@ export default function Landing() {
             <motion.div {...fadeUp(0)}>
               <Badge className="mb-6 bg-primary/10 text-primary border-primary/20 px-4 py-1.5 text-sm gap-2">
                 <Layers className="w-3.5 h-3.5" />
-                The Anti-ATS Platform
+                The People-First Platform
               </Badge>
             </motion.div>
 
@@ -83,7 +83,7 @@ export default function Landing() {
             </motion.h1>
 
             <motion.p {...fadeUp(0.16)} className="mt-7 text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-              Symbiot inverts the logic of modern ATS systems. Instead of filtering people out, our AI builds a
+              TalentBridge inverts the logic of modern ATS systems. Instead of filtering people out, our AI builds a
               <strong className="text-foreground"> Capability Graph</strong> around every candidate — mapping latent potential,
               adjacent adaptability, and deep cultural alignment to the roles that need exactly what you offer.
             </motion.p>
@@ -112,7 +112,7 @@ export default function Landing() {
           <div className="text-center mb-14">
             <h2 className="text-3xl sm:text-4xl font-bold">The hiring system is broken. We rebuilt it.</h2>
             <p className="mt-4 text-lg text-muted-foreground max-w-xl mx-auto">
-              Current ATS platforms use AI as a rejection machine. Symbiot uses AI as an advocate.
+              Current ATS platforms use AI as a rejection machine. TalentBridge uses AI as an advocate.
             </p>
           </div>
           <div className="rounded-2xl overflow-hidden border border-border/60 shadow-xl">
@@ -142,7 +142,7 @@ export default function Landing() {
       <section className="py-24">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl sm:text-4xl font-bold">How Symbiot works</h2>
+            <h2 className="text-3xl sm:text-4xl font-bold">How TalentBridge works</h2>
             <p className="mt-4 text-lg text-muted-foreground max-w-xl mx-auto">
               Six systems working together so talent is never overlooked again.
             </p>

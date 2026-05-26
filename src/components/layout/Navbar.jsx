@@ -22,7 +22,7 @@ export default function Navbar() {
             <div className="w-9 h-9 bg-primary rounded-xl flex items-center justify-center group-hover:scale-105 transition-transform shadow-md shadow-primary/30">
               <Layers className="w-5 h-5 text-primary-foreground" />
             </div>
-            <span className="text-xl font-bold tracking-tight">Symbiot</span>
+            <span className="text-xl font-bold tracking-tight">TalentBridge</span>
           </Link>
 
           <div className="hidden md:flex items-center gap-1">
@@ -60,7 +60,7 @@ export default function Navbar() {
                 <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
                   <Layers className="w-4 h-4 text-primary-foreground" />
                 </div>
-                <span className="font-bold">Symbiot</span>
+                <span className="font-bold">TalentBridge</span>
               </div>
               <div className="flex flex-col gap-2">
                 {navLinks.map((link) => (

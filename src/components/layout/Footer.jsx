@@ -12,7 +12,7 @@ export default function Footer() {
               <div className="w-9 h-9 bg-primary rounded-xl flex items-center justify-center">
                 <Layers className="w-5 h-5 text-primary-foreground" />
               </div>
-              <span className="text-xl font-bold">Symbiot</span>
+              <span className="text-xl font-bold">TalentBridge</span>
             </div>
             <p className="text-sm opacity-60 leading-relaxed">
               AI that advocates for people. We match on capability, potential, and character — not keywords and arbitrary filters.
@@ -42,7 +42,7 @@ export default function Footer() {
           </div>
         </div>
         <div className="border-t border-background/10 mt-12 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p className="text-sm opacity-40">© 2026 Symbiot. All rights reserved.</p>
+          <p className="text-sm opacity-40">© 2026 TalentBridge. All rights reserved.</p>
           <p className="text-sm opacity-40 flex items-center gap-1">
             Built with <Heart className="w-3.5 h-3.5 text-accent fill-accent" /> for humans who deserve better hiring
           </p>
