@@ -70,7 +70,7 @@ export default function EmployerDashboard() {
 
   const updateAppMutation = useMutation({
     mutationFn: ({ id, status }) => base44.entities.JobApplication.update(id, { status }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["jobApplications"] }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["allApplications"] }),
   });
 
   const inviteMutation = useMutation({
