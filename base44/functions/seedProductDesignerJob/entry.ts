@@ -3,16 +3,16 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
-    
-    // Find user by email
-    const users = await base44.asServiceRole.entities.User.filter({ email: "alek.n.berger@proton.me" });
-    if (!users || users.length === 0) {
-      return Response.json({ error: 'User not found' }, { status: 404 });
+
+    // Auth check: only admins can seed data
+    const user = await base44.auth.me();
+    if (!user) {
+      return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    
-    const userId = users[0].id;
-    
-    // Create product designer job posting
+    if (user.role !== 'admin') {
+      return Response.json({ error: 'Forbidden: Admin access required' }, { status: 403 });
+    }
+
     const job = await base44.asServiceRole.entities.Job.create({
       title: "Product Designer",
       company: "TalentBridge",
@@ -36,7 +36,7 @@ Deno.serve(async (req) => {
       status: "active",
       application_count: 0
     });
-    
+
     return Response.json({ success: true, job });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });

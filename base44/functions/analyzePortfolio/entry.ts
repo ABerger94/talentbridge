@@ -3,10 +3,31 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
+
+    // Auth check FIRST before reading body
+    const user = await base44.auth.me();
+    if (!user) {
+      return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { seeker_profile_id, github_url, portfolio_url } = await req.json();
+
+    if (!seeker_profile_id) {
+      return Response.json({ error: 'seeker_profile_id is required' }, { status: 400 });
+    }
 
     if (!github_url && !portfolio_url) {
       return Response.json({ error: 'At least one portfolio URL required' }, { status: 400 });
+    }
+
+    // Verify the caller owns this seeker profile (or is admin)
+    const profiles = await base44.asServiceRole.entities.SeekerProfile.filter({ id: seeker_profile_id });
+    if (!profiles || profiles.length === 0) {
+      return Response.json({ error: 'Seeker profile not found' }, { status: 404 });
+    }
+    const seekerProfile = profiles[0];
+    if (seekerProfile.created_by_id !== user.id && user.role !== 'admin') {
+      return Response.json({ error: 'Forbidden: You can only analyze your own profile' }, { status: 403 });
     }
 
     // Fetch portfolio website content if provided
@@ -16,7 +37,6 @@ Deno.serve(async (req) => {
         const response = await fetch(portfolio_url);
         if (response.ok) {
           portfolioContent = await response.text();
-          // Limit to first 5000 chars to avoid token overload
           portfolioContent = portfolioContent.substring(0, 5000);
         }
       } catch (e) {
@@ -24,11 +44,9 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Build analysis prompt
     let analysisPrompt = `Analyze this candidate's portfolio and provide structured insights:\n\n`;
     if (github_url) analysisPrompt += `GitHub Profile: ${github_url}\n`;
     if (portfolio_url) analysisPrompt += `Portfolio Website: ${portfolio_url}\n`;
-    
     if (portfolioContent) {
       analysisPrompt += `\nPortfolio Website Content (HTML):\n${portfolioContent}\n`;
     }
@@ -52,7 +70,7 @@ Please analyze and return a JSON object with:
   "collaboration_signals": "Evidence of collaboration, code review, or team contribution"
 }
 
-Be specific and evidence-based. Analyze BOTH the GitHub profile AND the portfolio website content if both are provided. Extract project information, technologies used, and demonstrated capabilities from the portfolio website content.`;
+Be specific and evidence-based. Analyze BOTH the GitHub profile AND the portfolio website content if both are provided.`;
 
     const analysisResult = await base44.integrations.Core.InvokeLLM({
       prompt: analysisPrompt,
@@ -84,7 +102,6 @@ Be specific and evidence-based. Analyze BOTH the GitHub profile AND the portfoli
       last_analyzed: new Date().toISOString()
     };
 
-    // Update seeker profile with analysis
     await base44.asServiceRole.entities.SeekerProfile.update(seeker_profile_id, {
       portfolio_analysis: portfolioAnalysis
     });
