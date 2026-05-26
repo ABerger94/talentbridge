@@ -35,9 +35,9 @@ export default function JobBoard() {
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Find Your Next Opportunity</h1>
+        <h1 className="text-3xl font-bold mb-2">Explore Roles</h1>
         <p className="text-muted-foreground">
-          Browse {jobs.length} open positions matched by AI to value your potential.
+          {jobs.length} open roles — matched on capability and potential, not just keywords.
         </p>
       </div>
 

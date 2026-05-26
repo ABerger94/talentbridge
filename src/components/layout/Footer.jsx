@@ -1,6 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { Sparkles, Heart } from "lucide-react";
+import { Layers, Heart } from "lucide-react";
 
 export default function Footer() {
   return (
@@ -10,41 +10,41 @@ export default function Footer() {
           <div className="md:col-span-1">
             <div className="flex items-center gap-2.5 mb-4">
               <div className="w-9 h-9 bg-primary rounded-xl flex items-center justify-center">
-                <Sparkles className="w-5 h-5 text-primary-foreground" />
+                <Layers className="w-5 h-5 text-primary-foreground" />
               </div>
-              <span className="text-xl font-bold">TalentBridge</span>
+              <span className="text-xl font-bold">Symbiot</span>
             </div>
             <p className="text-sm opacity-60 leading-relaxed">
-              AI that works for people. Connecting talent with opportunity through understanding, not filtering.
+              AI that advocates for people. We match on capability, potential, and character — not keywords and arbitrary filters.
             </p>
           </div>
           <div>
-            <h4 className="font-semibold mb-4 text-sm uppercase tracking-wider opacity-40">For Seekers</h4>
+            <h4 className="font-semibold mb-4 text-sm uppercase tracking-wider opacity-40">For Talent</h4>
             <div className="flex flex-col gap-2.5">
-              <Link to="/jobs" className="text-sm opacity-60 hover:opacity-100 transition-opacity">Browse Jobs</Link>
-              <Link to="/dashboard" className="text-sm opacity-60 hover:opacity-100 transition-opacity">My Dashboard</Link>
+              <Link to="/jobs" className="text-sm opacity-60 hover:opacity-100 transition-opacity">Explore Roles</Link>
+              <Link to="/dashboard" className="text-sm opacity-60 hover:opacity-100 transition-opacity">My Profile</Link>
             </div>
           </div>
           <div>
             <h4 className="font-semibold mb-4 text-sm uppercase tracking-wider opacity-40">For Employers</h4>
             <div className="flex flex-col gap-2.5">
-              <Link to="/post-job" className="text-sm opacity-60 hover:opacity-100 transition-opacity">Post a Job</Link>
+              <Link to="/post-job" className="text-sm opacity-60 hover:opacity-100 transition-opacity">Post a Role</Link>
               <Link to="/employer" className="text-sm opacity-60 hover:opacity-100 transition-opacity">Employer Dashboard</Link>
             </div>
           </div>
           <div>
-            <h4 className="font-semibold mb-4 text-sm uppercase tracking-wider opacity-40">Company</h4>
+            <h4 className="font-semibold mb-4 text-sm uppercase tracking-wider opacity-40">Philosophy</h4>
             <div className="flex flex-col gap-2.5">
-              <span className="text-sm opacity-60">About Us</span>
-              <span className="text-sm opacity-60">Privacy</span>
-              <span className="text-sm opacity-60">Terms</span>
+              <span className="text-sm opacity-60">No Auto-Rejections</span>
+              <span className="text-sm opacity-60">Capability-First Matching</span>
+              <span className="text-sm opacity-60">Bi-Directional Fit</span>
             </div>
           </div>
         </div>
         <div className="border-t border-background/10 mt-12 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p className="text-sm opacity-40">© 2026 TalentBridge. All rights reserved.</p>
+          <p className="text-sm opacity-40">© 2026 Symbiot. All rights reserved.</p>
           <p className="text-sm opacity-40 flex items-center gap-1">
-            Built with <Heart className="w-3.5 h-3.5 text-accent fill-accent" /> for job seekers everywhere
+            Built with <Heart className="w-3.5 h-3.5 text-accent fill-accent" /> for humans who deserve better hiring
           </p>
         </div>
       </div>

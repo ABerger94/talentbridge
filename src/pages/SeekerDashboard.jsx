@@ -7,9 +7,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Sparkles, Loader2, Save, User, Briefcase, TrendingUp, X, Plus, Zap, Brain } from "lucide-react";
+import {
+  Sparkles, Loader2, Save, User, Briefcase, Network,
+  X, Plus, Zap, Brain, TrendingUp, GitBranch, Globe, Layers
+} from "lucide-react";
 import { toast } from "sonner";
 import JobCard from "@/components/jobs/JobCard";
 
@@ -20,6 +24,8 @@ export default function SeekerDashboard() {
   const [valueInput, setValueInput] = useState("");
   const [aiMatches, setAiMatches] = useState(null);
   const [matchLoading, setMatchLoading] = useState(false);
+  const [capabilityGraph, setCapabilityGraph] = useState(null);
+  const [graphLoading, setGraphLoading] = useState(false);
 
   const { data: profiles = [], isLoading: profileLoading } = useQuery({
     queryKey: ["seekerProfile"],
@@ -59,9 +65,8 @@ export default function SeekerDashboard() {
     mutationFn: async () => {
       if (profiles.length > 0) {
         return base44.entities.SeekerProfile.update(profiles[0].id, profile);
-      } else {
-        return base44.entities.SeekerProfile.create(profile);
       }
+      return base44.entities.SeekerProfile.create(profile);
     },
     onSuccess: () => {
       toast.success("Profile saved!");
@@ -69,15 +74,13 @@ export default function SeekerDashboard() {
     },
   });
 
-  const update = (key, value) => setProfile((p) => ({ ...p, [key]: value }));
-
+  const update = (key, val) => setProfile(p => ({ ...p, [key]: val }));
   const addSkill = () => {
     if (skillInput.trim() && !profile.skills?.includes(skillInput.trim())) {
       update("skills", [...(profile.skills || []), skillInput.trim()]);
       setSkillInput("");
     }
   };
-
   const addValue = () => {
     if (valueInput.trim() && !profile.values?.includes(valueInput.trim())) {
       update("values", [...(profile.values || []), valueInput.trim()]);
@@ -85,39 +88,86 @@ export default function SeekerDashboard() {
     }
   };
 
+  const buildCapabilityGraph = async () => {
+    if (!profile?.skills?.length && !profile?.work_history) {
+      toast.error("Fill in your skills and work history first.");
+      return;
+    }
+    setGraphLoading(true);
+    const result = await base44.integrations.Core.InvokeLLM({
+      prompt: `You are Symbiot's Capability Graph Engine. Analyze this candidate's holistic profile and build a structured map of their true execution capabilities — not just their job titles.
+
+Focus on:
+- Core execution vectors (what systems/problems they can actually solve)
+- Adjacent adaptability zones (areas they could move into quickly)
+- Architectural logic patterns (how they think about systems)
+- Transferable methodology (approaches that work across domains)
+
+CANDIDATE:
+Headline: ${profile.headline}
+Skills: ${profile.skills?.join(", ")}
+Experience: ${profile.experience_years} years (${profile.experience_level})
+Work History: ${profile.work_history}
+Education: ${profile.education}
+Career Goals: ${profile.career_goals}
+Values: ${profile.values?.join(", ")}
+
+Generate a deep capability analysis.`,
+      response_json_schema: {
+        type: "object",
+        properties: {
+          core_execution_vectors: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                vector: { type: "string" },
+                strength: { type: "number" },
+                evidence: { type: "string" }
+              }
+            }
+          },
+          adjacent_zones: { type: "array", items: { type: "string" } },
+          architectural_pattern: { type: "string" },
+          unique_methodology: { type: "string" },
+          suggested_role_types: { type: "array", items: { type: "string" } },
+          capability_headline: { type: "string" }
+        }
+      }
+    });
+    setCapabilityGraph(result);
+    setGraphLoading(false);
+  };
+
   const getAiMatches = async () => {
     if (!profile?.headline && !profile?.skills?.length) {
-      toast.error("Fill in your profile first for better matches!");
+      toast.error("Fill in your profile first for better matches.");
       return;
     }
     setMatchLoading(true);
-    const jobSummaries = jobs.slice(0, 20).map((j) => ({
+    const jobSummaries = jobs.slice(0, 25).map(j => ({
       id: j.id, title: j.title, company: j.company, skills: j.skills,
       work_type: j.work_type, experience_level: j.experience_level,
       culture_values: j.culture_values, description: j.description?.slice(0, 200),
+      qualifications: j.qualifications?.slice(0, 200),
     }));
 
     const result = await base44.integrations.Core.InvokeLLM({
-      prompt: `You are an empathetic AI career matcher. Your job is to match job seekers with positions focusing on:
-- Transferable skills (not exact keyword matches)
-- Growth potential
-- Culture and value alignment
-- Where the person could thrive, not just survive
+      prompt: `You are Symbiot's Bi-Directional Semantic Matcher. Match this candidate with roles using capability alignment, not keyword matching.
 
-Seeker Profile:
-- Headline: ${profile.headline}
-- Skills: ${profile.skills?.join(", ")}
-- Experience: ${profile.experience_years} years, ${profile.experience_level} level
-- Values: ${profile.values?.join(", ")}
-- Career Goals: ${profile.career_goals}
-- Work History: ${profile.work_history}
-- Preferred work type: ${profile.preferred_work_type}
+CRITICAL RULES:
+- Find roles where the candidate's PROBLEM-SOLVING LOGIC maps to the PROBLEMS the role needs solved
+- Consider adjacent skills and transferable methodology — not just direct matches
+- Score generously for candidates with strong trajectory and growth indicators
+- Never dismiss someone for lacking arbitrary years of experience
 
-Available Jobs:
+CANDIDATE:
+${JSON.stringify({ headline: profile.headline, skills: profile.skills, experience_years: profile.experience_years, experience_level: profile.experience_level, values: profile.values, career_goals: profile.career_goals, work_history: profile.work_history?.slice(0, 300) })}
+
+AVAILABLE ROLES:
 ${JSON.stringify(jobSummaries)}
 
-Match the seeker with the best jobs. Be generous — look for potential and transferable skills, not just exact matches. 
-Score each match 0-100 and explain WHY they'd be great, focusing on their potential and growth.`,
+Return the top matches with specific reasoning.`,
       response_json_schema: {
         type: "object",
         properties: {
@@ -128,14 +178,15 @@ Score each match 0-100 and explain WHY they'd be great, focusing on their potent
               properties: {
                 job_id: { type: "string" },
                 score: { type: "number" },
-                reason: { type: "string" },
-                growth_note: { type: "string" },
-              },
-            },
+                capability_reason: { type: "string" },
+                adaptability_note: { type: "string" },
+                growth_signal: { type: "string" }
+              }
+            }
           },
-          overall_advice: { type: "string" },
-        },
-      },
+          search_insight: { type: "string" }
+        }
+      }
     });
     setAiMatches(result);
     setMatchLoading(false);
@@ -149,34 +200,61 @@ Score each match 0-100 and explain WHY they'd be great, focusing on their potent
     );
   }
 
-  const statusLabel = { applied: "Applied", reviewed: "Reviewed", shortlisted: "Shortlisted", interview: "Interview", offered: "Offered", rejected: "Not Selected", withdrawn: "Withdrawn" };
-  const statusColor = { applied: "bg-blue-100 text-blue-700", reviewed: "bg-yellow-100 text-yellow-700", shortlisted: "bg-green-100 text-green-700", interview: "bg-purple-100 text-purple-700", offered: "bg-emerald-100 text-emerald-700", rejected: "bg-red-100 text-red-700", withdrawn: "bg-gray-100 text-gray-700" };
+  const statusLabel = { applied: "Applied", reviewed: "Under Review", shortlisted: "Shortlisted", interview: "Interview", offered: "Offer Received!", rejected: "Passed", withdrawn: "Withdrawn" };
+  const statusColor = { applied: "bg-blue-100 text-blue-700", reviewed: "bg-yellow-100 text-yellow-700", shortlisted: "bg-green-100 text-green-700", interview: "bg-purple-100 text-purple-700", offered: "bg-emerald-100 text-emerald-700", rejected: "bg-gray-100 text-gray-500", withdrawn: "bg-gray-100 text-gray-400" };
+
+  const profileScore = (() => {
+    let s = 0;
+    if (profile.headline) s += 20;
+    if (profile.bio) s += 15;
+    if (profile.skills?.length > 0) s += 20;
+    if (profile.work_history) s += 20;
+    if (profile.career_goals) s += 15;
+    if (profile.values?.length > 0) s += 10;
+    return s;
+  })();
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">My Dashboard</h1>
-        <p className="text-muted-foreground">Manage your profile and discover AI-powered job matches.</p>
+        <h1 className="text-3xl font-bold mb-2">My Capability Profile</h1>
+        <p className="text-muted-foreground">Build your Capability Graph. Let AI surface your full potential to the right employers.</p>
       </div>
 
       <Tabs defaultValue="profile">
         <TabsList className="mb-6">
           <TabsTrigger value="profile" className="gap-2"><User className="w-4 h-4" /> Profile</TabsTrigger>
-          <TabsTrigger value="matches" className="gap-2"><Sparkles className="w-4 h-4" /> AI Matches</TabsTrigger>
+          <TabsTrigger value="capability" className="gap-2"><Network className="w-4 h-4" /> Capability Graph</TabsTrigger>
+          <TabsTrigger value="matches" className="gap-2"><Brain className="w-4 h-4" /> AI Matches</TabsTrigger>
           <TabsTrigger value="applications" className="gap-2"><Briefcase className="w-4 h-4" /> Applications</TabsTrigger>
         </TabsList>
 
+        {/* Profile Tab */}
         <TabsContent value="profile" className="space-y-6">
+          {/* Completion score */}
+          <Card className="p-5 bg-primary/5 border-primary/15">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium flex items-center gap-2">
+                <Layers className="w-4 h-4 text-primary" /> Capability Profile Strength
+              </span>
+              <span className="text-sm font-bold text-primary">{profileScore}%</span>
+            </div>
+            <Progress value={profileScore} className="h-2" />
+            <p className="text-xs text-muted-foreground mt-2">
+              {profileScore < 60 ? "Complete your profile to improve match quality." : profileScore < 90 ? "Strong profile — add more context to maximize AI matching." : "Excellent profile — your Capability Graph is rich with signal."}
+            </p>
+          </Card>
+
           <Card className="p-6 space-y-5">
-            <h2 className="font-semibold text-lg">About You</h2>
+            <h2 className="font-semibold">About You</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2 sm:col-span-2">
                 <Label>Professional Headline</Label>
-                <Input placeholder="e.g. Creative Software Engineer with a passion for accessibility" value={profile.headline || ""} onChange={(e) => update("headline", e.target.value)} />
+                <Input placeholder="e.g. Systems builder who ships at velocity — React, Node, Supabase" value={profile.headline || ""} onChange={(e) => update("headline", e.target.value)} />
               </div>
               <div className="space-y-2 sm:col-span-2">
                 <Label>About Me</Label>
-                <Textarea placeholder="Tell employers about yourself, your journey, and what drives you..." value={profile.bio || ""} onChange={(e) => update("bio", e.target.value)} className="min-h-[100px]" />
+                <Textarea placeholder="Tell the story of your trajectory. What problems do you love solving? What have you built that matters?" value={profile.bio || ""} onChange={(e) => update("bio", e.target.value)} className="min-h-[100px]" />
               </div>
               <div className="space-y-2">
                 <Label>Years of Experience</Label>
@@ -187,8 +265,8 @@ Score each match 0-100 and explain WHY they'd be great, focusing on their potent
                 <Select value={profile.experience_level || "entry"} onValueChange={(v) => update("experience_level", v)}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="entry">Entry Level</SelectItem>
-                    <SelectItem value="mid">Mid Level</SelectItem>
+                    <SelectItem value="entry">Entry</SelectItem>
+                    <SelectItem value="mid">Mid</SelectItem>
                     <SelectItem value="senior">Senior</SelectItem>
                     <SelectItem value="lead">Lead</SelectItem>
                     <SelectItem value="executive">Executive</SelectItem>
@@ -199,48 +277,39 @@ Score each match 0-100 and explain WHY they'd be great, focusing on their potent
           </Card>
 
           <Card className="p-6 space-y-5">
-            <h2 className="font-semibold text-lg">Skills & Values</h2>
+            <h2 className="font-semibold">Execution Capabilities</h2>
             <div className="space-y-2">
-              <Label>Skills</Label>
+              <Label>Skills & Technologies</Label>
               <div className="flex gap-2">
-                <Input placeholder="Add a skill" value={skillInput} onChange={(e) => setSkillInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addSkill())} />
+                <Input placeholder="Add a skill or tool" value={skillInput} onChange={(e) => setSkillInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addSkill())} />
                 <Button variant="outline" size="icon" onClick={addSkill}><Plus className="w-4 h-4" /></Button>
               </div>
               {profile.skills?.length > 0 && (
                 <div className="flex flex-wrap gap-1.5 mt-2">
-                  {profile.skills.map((s) => (
+                  {profile.skills.map(s => (
                     <Badge key={s} variant="secondary" className="gap-1 pr-1">
                       {s}
-                      <button onClick={() => update("skills", profile.skills.filter((sk) => sk !== s))} className="ml-1 hover:bg-foreground/10 rounded-full p-0.5"><X className="w-3 h-3" /></button>
+                      <button onClick={() => update("skills", profile.skills.filter(sk => sk !== s))} className="ml-1 rounded-full p-0.5 hover:bg-foreground/10"><X className="w-3 h-3" /></button>
                     </Badge>
                   ))}
                 </div>
               )}
             </div>
             <div className="space-y-2">
-              <Label>What matters to you at work?</Label>
-              <div className="flex gap-2">
-                <Input placeholder="e.g. Work-life balance, mentorship" value={valueInput} onChange={(e) => setValueInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addValue())} />
-                <Button variant="outline" size="icon" onClick={addValue}><Plus className="w-4 h-4" /></Button>
-              </div>
-              {profile.values?.length > 0 && (
-                <div className="flex flex-wrap gap-1.5 mt-2">
-                  {profile.values.map((v) => (
-                    <Badge key={v} variant="outline" className="gap-1 pr-1 bg-accent/5 border-accent/20 text-accent">
-                      {v}
-                      <button onClick={() => update("values", profile.values.filter((vl) => vl !== v))} className="ml-1 hover:bg-foreground/10 rounded-full p-0.5"><X className="w-3 h-3" /></button>
-                    </Badge>
-                  ))}
-                </div>
-              )}
+              <Label>Work History</Label>
+              <Textarea placeholder="Describe what you've built, shipped, or led. Be specific about outcomes and scale — this feeds your Capability Graph." value={profile.work_history || ""} onChange={(e) => update("work_history", e.target.value)} className="min-h-[100px]" />
+            </div>
+            <div className="space-y-2">
+              <Label>Education</Label>
+              <Textarea placeholder="Formal education, bootcamps, self-directed learning, certifications..." value={profile.education || ""} onChange={(e) => update("education", e.target.value)} />
             </div>
           </Card>
 
           <Card className="p-6 space-y-5">
-            <h2 className="font-semibold text-lg">Preferences & Goals</h2>
+            <h2 className="font-semibold">What You're Looking For</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Preferred Work Type</Label>
+                <Label>Work Preference</Label>
                 <Select value={profile.preferred_work_type || "any"} onValueChange={(v) => update("preferred_work_type", v)}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
@@ -252,21 +321,30 @@ Score each match 0-100 and explain WHY they'd be great, focusing on their potent
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>Preferred Location</Label>
-                <Input placeholder="e.g. San Francisco, CA" value={profile.preferred_location || ""} onChange={(e) => update("preferred_location", e.target.value)} />
+                <Label>Location</Label>
+                <Input placeholder="e.g. New York, NY or Anywhere" value={profile.preferred_location || ""} onChange={(e) => update("preferred_location", e.target.value)} />
               </div>
             </div>
             <div className="space-y-2">
               <Label>Career Goals</Label>
-              <Textarea placeholder="Where do you see yourself growing? What excites you about the future?" value={profile.career_goals || ""} onChange={(e) => update("career_goals", e.target.value)} />
+              <Textarea placeholder="Where are you going? What problems do you want to be solving in 3 years?" value={profile.career_goals || ""} onChange={(e) => update("career_goals", e.target.value)} />
             </div>
             <div className="space-y-2">
-              <Label>Work History</Label>
-              <Textarea placeholder="Summarize your work experience..." value={profile.work_history || ""} onChange={(e) => update("work_history", e.target.value)} className="min-h-[80px]" />
-            </div>
-            <div className="space-y-2">
-              <Label>Education</Label>
-              <Textarea placeholder="Your education background..." value={profile.education || ""} onChange={(e) => update("education", e.target.value)} />
+              <Label>Values — What matters to you at work?</Label>
+              <div className="flex gap-2">
+                <Input placeholder="e.g. Ownership, remote-first, mission-driven" value={valueInput} onChange={(e) => setValueInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addValue())} />
+                <Button variant="outline" size="icon" onClick={addValue}><Plus className="w-4 h-4" /></Button>
+              </div>
+              {profile.values?.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 mt-2">
+                  {profile.values.map(v => (
+                    <Badge key={v} variant="outline" className="gap-1 pr-1 bg-accent/8 border-accent/20 text-accent">
+                      {v}
+                      <button onClick={() => update("values", profile.values.filter(vl => vl !== v))} className="ml-1 rounded-full p-0.5 hover:bg-foreground/10"><X className="w-3 h-3" /></button>
+                    </Badge>
+                  ))}
+                </div>
+              )}
             </div>
           </Card>
 
@@ -278,16 +356,108 @@ Score each match 0-100 and explain WHY they'd be great, focusing on their potent
           </div>
         </TabsContent>
 
-        <TabsContent value="matches" className="space-y-6">
+        {/* Capability Graph Tab */}
+        <TabsContent value="capability" className="space-y-5">
           <Card className="p-6">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h2 className="font-semibold text-lg flex items-center gap-2">
-                  <Brain className="w-5 h-5 text-primary" />
-                  AI-Powered Job Matches
+                <h2 className="font-semibold flex items-center gap-2">
+                  <Network className="w-5 h-5 text-primary" /> Your Capability Graph
                 </h2>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Our AI looks beyond keywords to find roles where you'll truly thrive.
+                  AI maps your actual execution capabilities — not just titles — into a semantic profile employers can understand at a glance.
+                </p>
+              </div>
+              <Button className="gap-2" onClick={buildCapabilityGraph} disabled={graphLoading}>
+                {graphLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <GitBranch className="w-4 h-4" />}
+                Build Graph
+              </Button>
+            </div>
+
+            {!capabilityGraph && !graphLoading && (
+              <div className="text-center py-14 text-muted-foreground border-2 border-dashed border-border rounded-xl">
+                <Network className="w-10 h-10 mx-auto mb-3 opacity-20" />
+                <p className="font-medium text-sm">No Capability Graph yet</p>
+                <p className="text-xs mt-1 opacity-60">Fill in your profile and click "Build Graph" to generate your semantic capability map</p>
+              </div>
+            )}
+
+            {capabilityGraph && (
+              <div className="space-y-5">
+                {capabilityGraph.capability_headline && (
+                  <div className="rounded-xl bg-primary/8 border border-primary/15 p-4">
+                    <p className="text-sm font-semibold text-primary mb-1">Capability Headline</p>
+                    <p className="text-base font-medium text-foreground">{capabilityGraph.capability_headline}</p>
+                  </div>
+                )}
+
+                {capabilityGraph.core_execution_vectors?.length > 0 && (
+                  <div className="space-y-3">
+                    <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Core Execution Vectors</h3>
+                    {capabilityGraph.core_execution_vectors.map((v, i) => (
+                      <div key={i} className="space-y-1.5">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-medium">{v.vector}</span>
+                          <span className="text-xs text-muted-foreground">{v.strength}%</span>
+                        </div>
+                        <Progress value={v.strength} className="h-1.5" />
+                        <p className="text-xs text-muted-foreground">{v.evidence}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {capabilityGraph.architectural_pattern && (
+                    <div className="rounded-lg bg-secondary p-4">
+                      <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">Architectural Pattern</p>
+                      <p className="text-sm">{capabilityGraph.architectural_pattern}</p>
+                    </div>
+                  )}
+                  {capabilityGraph.unique_methodology && (
+                    <div className="rounded-lg bg-secondary p-4">
+                      <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">Unique Methodology</p>
+                      <p className="text-sm">{capabilityGraph.unique_methodology}</p>
+                    </div>
+                  )}
+                </div>
+
+                {capabilityGraph.adjacent_zones?.length > 0 && (
+                  <div>
+                    <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Adjacent Adaptability Zones</h3>
+                    <div className="flex flex-wrap gap-2">
+                      {capabilityGraph.adjacent_zones.map((z, i) => (
+                        <Badge key={i} variant="outline" className="text-xs bg-accent/8 border-accent/20 text-accent">{z}</Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {capabilityGraph.suggested_role_types?.length > 0 && (
+                  <div>
+                    <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Roles You're Built For</h3>
+                    <div className="flex flex-wrap gap-2">
+                      {capabilityGraph.suggested_role_types.map((r, i) => (
+                        <Badge key={i} variant="secondary" className="text-xs">{r}</Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </Card>
+        </TabsContent>
+
+        {/* Matches Tab */}
+        <TabsContent value="matches" className="space-y-5">
+          <Card className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h2 className="font-semibold flex items-center gap-2">
+                  <Brain className="w-5 h-5 text-primary" /> Semantic Role Matches
+                </h2>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Matched on capability alignment and problem-solving overlap — not keyword counting.
                 </p>
               </div>
               <Button className="gap-2" onClick={getAiMatches} disabled={matchLoading}>
@@ -296,31 +466,38 @@ Score each match 0-100 and explain WHY they'd be great, focusing on their potent
               </Button>
             </div>
 
-            {aiMatches && (
+            {aiMatches?.search_insight && (
+              <div className="p-3 bg-primary/5 rounded-lg border border-primary/10 mb-4">
+                <p className="text-sm flex items-start gap-2 text-muted-foreground">
+                  <Sparkles className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                  {aiMatches.search_insight}
+                </p>
+              </div>
+            )}
+
+            {aiMatches?.matches?.length > 0 && (
               <div className="space-y-4">
-                {aiMatches.overall_advice && (
-                  <div className="p-4 bg-primary/5 rounded-xl border border-primary/10">
-                    <p className="text-sm flex items-start gap-2">
-                      <Sparkles className="w-4 h-4 text-primary shrink-0 mt-0.5" />
-                      {aiMatches.overall_advice}
-                    </p>
-                  </div>
-                )}
-                {aiMatches.matches?.map((match) => {
-                  const job = jobs.find((j) => j.id === match.job_id);
+                {aiMatches.matches.map(match => {
+                  const job = jobs.find(j => j.id === match.job_id);
                   if (!job) return null;
                   return (
                     <div key={match.job_id} className="space-y-2">
                       <JobCard job={job} matchScore={match.score} />
-                      <div className="ml-16 space-y-1">
-                        <p className="text-sm text-muted-foreground flex items-start gap-2">
+                      <div className="ml-2 pl-4 border-l-2 border-border space-y-1 pb-2">
+                        <p className="text-xs text-muted-foreground flex items-start gap-1.5">
                           <Zap className="w-3.5 h-3.5 text-accent shrink-0 mt-0.5" />
-                          {match.reason}
+                          {match.capability_reason}
                         </p>
-                        {match.growth_note && (
-                          <p className="text-sm text-muted-foreground flex items-start gap-2">
+                        {match.adaptability_note && (
+                          <p className="text-xs text-muted-foreground flex items-start gap-1.5">
+                            <Network className="w-3.5 h-3.5 text-primary shrink-0 mt-0.5" />
+                            {match.adaptability_note}
+                          </p>
+                        )}
+                        {match.growth_signal && (
+                          <p className="text-xs text-muted-foreground flex items-start gap-1.5">
                             <TrendingUp className="w-3.5 h-3.5 text-primary shrink-0 mt-0.5" />
-                            {match.growth_note}
+                            {match.growth_signal}
                           </p>
                         )}
                       </div>
@@ -331,36 +508,45 @@ Score each match 0-100 and explain WHY they'd be great, focusing on their potent
             )}
 
             {!aiMatches && !matchLoading && (
-              <div className="text-center py-12 text-muted-foreground">
-                <Brain className="w-12 h-12 mx-auto mb-4 opacity-20" />
-                <p>Click "Find Matches" to discover AI-curated jobs for you</p>
-                <p className="text-sm mt-1 opacity-60">Make sure your profile is filled in for best results</p>
+              <div className="text-center py-14 border-2 border-dashed border-border rounded-xl text-muted-foreground">
+                <Brain className="w-10 h-10 mx-auto mb-3 opacity-20" />
+                <p className="text-sm font-medium">Ready to find your matches</p>
+                <p className="text-xs mt-1 opacity-60">A complete profile produces significantly better matches</p>
               </div>
             )}
           </Card>
         </TabsContent>
 
-        <TabsContent value="applications" className="space-y-4">
+        {/* Applications Tab */}
+        <TabsContent value="applications" className="space-y-3">
           {applications.length === 0 ? (
             <Card className="p-12 text-center text-muted-foreground">
               <Briefcase className="w-12 h-12 mx-auto mb-4 opacity-20" />
               <p className="font-medium">No applications yet</p>
-              <p className="text-sm mt-1">Browse jobs and apply to get started</p>
+              <p className="text-sm mt-1">Browse roles and apply to get started</p>
             </Card>
           ) : (
-            applications.map((app) => {
-              const job = jobs.find((j) => j.id === app.job_id);
+            applications.map(app => {
+              const job = jobs.find(j => j.id === app.job_id);
               return (
                 <Card key={app.id} className="p-5">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h3 className="font-semibold">{job?.title || "Unknown Job"}</h3>
-                      <p className="text-sm text-muted-foreground">{job?.company || ""}</p>
+                      <h3 className="font-semibold text-sm">{job?.title || "Unknown Role"}</h3>
+                      <p className="text-xs text-muted-foreground mt-0.5">{job?.company || ""}</p>
                     </div>
-                    <Badge className={statusColor[app.status] || "bg-gray-100 text-gray-700"}>
-                      {statusLabel[app.status] || app.status}
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      {app.ai_match_score && (
+                        <span className="text-xs text-muted-foreground">{app.ai_match_score}% match</span>
+                      )}
+                      <Badge className={`text-xs ${statusColor[app.status] || "bg-gray-100 text-gray-700"}`}>
+                        {statusLabel[app.status] || app.status}
+                      </Badge>
+                    </div>
                   </div>
+                  {app.ai_match_summary && (
+                    <p className="text-xs text-muted-foreground mt-2 line-clamp-2">{app.ai_match_summary}</p>
+                  )}
                 </Card>
               );
             })

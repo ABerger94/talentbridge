@@ -3,45 +3,56 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { Sparkles, ArrowRight, Heart, Brain, Users, TrendingUp, Shield, Zap, Search, Building2 } from "lucide-react";
+import {
+  Layers, ArrowRight, Network, GitBranch, ShieldCheck, Cpu,
+  BarChart3, Zap, Search, Building2, CheckCircle2, XCircle
+} from "lucide-react";
 import { motion } from "framer-motion";
 
 const fadeUp = (delay = 0) => ({
   initial: { opacity: 0, y: 30 },
   animate: { opacity: 1, y: 0 },
-  transition: { duration: 0.6, delay },
+  transition: { duration: 0.55, delay },
 });
 
-const features = [
+const oldVsNew = [
+  { old: "Keyword filtering rejects 75% of qualified applicants", symbiot: "Semantic capability graph maps transferable logic to role problems" },
+  { old: "Years-of-experience requirements filter out proven builders", symbiot: "Artifact analysis scores deployed projects, code quality & system architecture" },
+  { old: "Black-box ATS scoring with zero transparency", symbiot: "Hidden Vectors panel shows candidates exactly how they map to each role" },
+  { old: "Auto-rejections with no explanation or path forward", symbiot: "Every candidate receives an Adaptability & Match Report — never a silent no" },
+  { old: "Resumes penalized for formatting, not substance", symbiot: "Portfolio ingestion analyzes GitHub repos, live apps, and case studies" },
+];
+
+const pillars = [
   {
-    icon: Brain,
-    title: "Holistic AI Matching",
-    description: "Our AI sees the whole person — transferable skills, potential, and values — not just keyword matches.",
+    icon: Network,
+    title: "Capability Graph Engine",
+    description: "Your profile becomes a high-dimensional semantic vector — capturing what you can build, solve, and execute. Not just titles and bullet points.",
   },
   {
-    icon: Heart,
-    title: "People-First Approach",
-    description: "No harsh screening. We surface hidden potential and give every candidate a fair chance to shine.",
+    icon: GitBranch,
+    title: "Artifact Ingestion",
+    description: "Connect your GitHub, portfolio, or past projects. Our engine analyzes architecture, code quality, testing rigor, and system-level logic.",
   },
   {
-    icon: TrendingUp,
-    title: "Growth-Oriented",
-    description: "We match based on where you're going, not just where you've been. Your potential matters here.",
+    icon: Cpu,
+    title: "Bi-Directional Matching",
+    description: "Jobs are also encoded as capability vectors. We find the intersection of problems to be solved and proven problem-solving methodologies.",
   },
   {
-    icon: Shield,
-    title: "Bias-Aware",
-    description: "Built with fairness at its core. Our AI is designed to reduce hiring bias, not amplify it.",
+    icon: ShieldCheck,
+    title: "No Auto-Rejections",
+    description: "The AI never rejects a human. It produces an Adaptability & Match Report for the employer — surfacing every possible bridge between candidate and role.",
   },
   {
-    icon: Users,
-    title: "Culture Fit",
-    description: "Match on values and work style. Find teams where you truly belong and thrive.",
+    icon: BarChart3,
+    title: "Hidden Vectors Panel",
+    description: "Candidates see a live map of exactly how their underlying skills connect to a role's core problems — with specific portfolio highlights to surface.",
   },
   {
     icon: Zap,
-    title: "Smart Insights",
-    description: "Get personalized feedback and suggestions to improve your profile and find better matches.",
+    title: "Interview Prep Engine",
+    description: "Personalized prep guides tell you exactly which projects to talk about and which capabilities to emphasize for each specific employer.",
   },
 ];
 
@@ -50,82 +61,101 @@ export default function Landing() {
     <div>
       {/* Hero */}
       <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5" />
-        <div className="absolute top-20 left-10 w-72 h-72 bg-primary/10 rounded-full blur-3xl" />
-        <div className="absolute bottom-20 right-10 w-96 h-96 bg-accent/10 rounded-full blur-3xl" />
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/8 via-transparent to-accent/8" />
+        <div className="absolute top-10 left-1/4 w-96 h-96 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 right-1/4 w-80 h-80 bg-accent/10 rounded-full blur-3xl pointer-events-none" />
 
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 lg:py-36">
-          <div className="max-w-3xl mx-auto text-center">
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 lg:py-40">
+          <div className="max-w-4xl mx-auto text-center">
             <motion.div {...fadeUp(0)}>
-              <Badge className="mb-6 bg-primary/10 text-primary border-primary/20 px-4 py-1.5 text-sm">
-                <Sparkles className="w-3.5 h-3.5 mr-1.5" />
-                AI That Works For People
+              <Badge className="mb-6 bg-primary/10 text-primary border-primary/20 px-4 py-1.5 text-sm gap-2">
+                <Layers className="w-3.5 h-3.5" />
+                The Anti-ATS Platform
               </Badge>
             </motion.div>
 
-            <motion.h1 {...fadeUp(0.1)} className="text-4xl sm:text-5xl lg:text-7xl font-bold tracking-tight leading-[1.1]">
-              Find where you{" "}
-              <span className="bg-gradient-to-r from-primary via-primary to-accent bg-clip-text text-transparent">
-                truly belong
+            <motion.h1 {...fadeUp(0.08)} className="text-4xl sm:text-5xl lg:text-[4.5rem] font-bold tracking-tight leading-[1.08]">
+              Hiring that sees{" "}
+              <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                your whole capability
               </span>
+              , not just your keywords.
             </motion.h1>
 
-            <motion.p {...fadeUp(0.2)} className="mt-6 text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-              TalentBridge uses AI to understand your unique strengths, values, and potential — 
-              matching you with opportunities where you'll actually thrive. No harsh filters. No black boxes. Just better connections.
+            <motion.p {...fadeUp(0.16)} className="mt-7 text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
+              Symbiot inverts the logic of modern ATS systems. Instead of filtering people out, our AI builds a
+              <strong className="text-foreground"> Capability Graph</strong> around every candidate — mapping latent potential,
+              adjacent adaptability, and deep cultural alignment to the roles that need exactly what you offer.
             </motion.p>
 
-            <motion.div {...fadeUp(0.3)} className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Link to="/jobs">
-                <Button size="lg" className="text-base px-8 gap-2 shadow-lg shadow-primary/20 h-12">
-                  <Search className="w-4 h-4" />
-                  Find Your Match
+            <motion.div {...fadeUp(0.24)} className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
+              <Link to="/dashboard">
+                <Button size="lg" className="text-base px-8 gap-2 shadow-lg shadow-primary/25 h-12">
+                  Build My Capability Profile
+                  <ArrowRight className="w-4 h-4" />
                 </Button>
               </Link>
               <Link to="/post-job">
                 <Button size="lg" variant="outline" className="text-base px-8 gap-2 h-12">
                   <Building2 className="w-4 h-4" />
-                  I'm Hiring
+                  I'm Hiring Differently
                 </Button>
               </Link>
-            </motion.div>
-
-            <motion.div {...fadeUp(0.4)} className="mt-12 flex items-center justify-center gap-8 text-sm text-muted-foreground">
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-green-500" />
-                <span>1,000+ Active Jobs</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-primary" />
-                <span>AI-Powered Matching</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-accent" />
-                <span>Free for Seekers</span>
-              </div>
             </motion.div>
           </div>
         </div>
       </section>
 
-      {/* How It Works */}
-      <section className="py-24 bg-secondary/30">
+      {/* Old Way vs Symbiot */}
+      <section className="py-24 bg-secondary/40">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-14">
+            <h2 className="text-3xl sm:text-4xl font-bold">The hiring system is broken. We rebuilt it.</h2>
+            <p className="mt-4 text-lg text-muted-foreground max-w-xl mx-auto">
+              Current ATS platforms use AI as a rejection machine. Symbiot uses AI as an advocate.
+            </p>
+          </div>
+          <div className="rounded-2xl overflow-hidden border border-border/60 shadow-xl">
+            <div className="grid grid-cols-2 text-sm">
+              <div className="bg-destructive/8 px-5 py-3 font-semibold text-destructive flex items-center gap-2 border-b border-border/60">
+                <XCircle className="w-4 h-4" /> Legacy ATS
+              </div>
+              <div className="bg-accent/10 px-5 py-3 font-semibold text-accent flex items-center gap-2 border-b border-border/60">
+                <CheckCircle2 className="w-4 h-4" /> Symbiot
+              </div>
+              {oldVsNew.map((row, i) => (
+                <React.Fragment key={i}>
+                  <div className={`px-5 py-4 text-sm text-muted-foreground border-border/40 ${i < oldVsNew.length - 1 ? "border-b" : ""} bg-background/50`}>
+                    {row.old}
+                  </div>
+                  <div className={`px-5 py-4 text-sm text-foreground border-border/40 ${i < oldVsNew.length - 1 ? "border-b" : ""} bg-accent/5`}>
+                    {row.symbiot}
+                  </div>
+                </React.Fragment>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Core Pillars */}
+      <section className="py-24">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl sm:text-4xl font-bold">How TalentBridge is different</h2>
-            <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
-              Traditional job sites filter people out. We work to bring the right people in.
+            <h2 className="text-3xl sm:text-4xl font-bold">How Symbiot works</h2>
+            <p className="mt-4 text-lg text-muted-foreground max-w-xl mx-auto">
+              Six systems working together so talent is never overlooked again.
             </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {features.map((feature, i) => (
-              <motion.div key={feature.title} {...fadeUp(i * 0.08)}>
-                <Card className="p-6 h-full hover:shadow-lg hover:shadow-primary/5 transition-all duration-300 border-border/50">
-                  <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center mb-4">
-                    <feature.icon className="w-6 h-6 text-primary" />
+            {pillars.map((p, i) => (
+              <motion.div key={p.title} {...fadeUp(i * 0.07)}>
+                <Card className="p-6 h-full hover:shadow-lg hover:shadow-primary/8 transition-all duration-300 border-border/60 group">
+                  <div className="w-11 h-11 bg-primary/10 rounded-xl flex items-center justify-center mb-4 group-hover:bg-primary/15 transition-colors">
+                    <p.icon className="w-5 h-5 text-primary" />
                   </div>
-                  <h3 className="text-lg font-semibold mb-2">{feature.title}</h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed">{feature.description}</p>
+                  <h3 className="text-base font-semibold mb-2">{p.title}</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{p.description}</p>
                 </Card>
               </motion.div>
             ))}
@@ -136,20 +166,24 @@ export default function Landing() {
       {/* CTA */}
       <section className="py-24">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <div className="bg-gradient-to-br from-primary to-primary/80 rounded-3xl p-12 sm:p-16 text-primary-foreground relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl" />
+          <div className="bg-gradient-to-br from-primary to-primary/75 rounded-3xl p-12 sm:p-16 text-primary-foreground relative overflow-hidden">
+            <div className="absolute inset-0 opacity-10">
+              <div className="absolute top-4 right-8 w-48 h-48 rounded-full bg-white blur-3xl" />
+              <div className="absolute bottom-4 left-8 w-32 h-32 rounded-full bg-accent blur-3xl" />
+            </div>
             <div className="relative">
-              <h2 className="text-3xl sm:text-4xl font-bold mb-4">Ready to find your place?</h2>
+              <Badge className="mb-6 bg-white/15 text-white border-white/20 px-4 py-1.5">
+                No auto-rejections. Ever.
+              </Badge>
+              <h2 className="text-3xl sm:text-4xl font-bold mb-4">Ready for hiring that works for humans?</h2>
               <p className="text-lg opacity-80 mb-8 max-w-xl mx-auto">
-                Join thousands of job seekers and employers who believe hiring should be about people, not just paper.
+                Build your Capability Graph. Let our AI show employers what you're truly capable of — not just what your resume says.
               </p>
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                <Link to="/jobs">
-                  <Button size="lg" variant="secondary" className="text-base px-8 gap-2 h-12">
-                    Start Exploring <ArrowRight className="w-4 h-4" />
-                  </Button>
-                </Link>
-              </div>
+              <Link to="/dashboard">
+                <Button size="lg" variant="secondary" className="text-base px-8 gap-2 h-12 text-primary font-semibold">
+                  Get Started Free <ArrowRight className="w-4 h-4" />
+                </Button>
+              </Link>
             </div>
           </div>
         </div>

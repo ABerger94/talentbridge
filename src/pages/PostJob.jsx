@@ -108,10 +108,10 @@ Return ONLY a JSON object.`,
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2 flex items-center gap-3">
           <Briefcase className="w-8 h-8 text-primary" />
-          Post a New Job
+          Post a Role
         </h1>
         <p className="text-muted-foreground">
-          Create a people-first job posting. Our AI will help you write inclusively.
+          Write a capability-first job posting. Our AI helps you describe the <strong>problems to be solved</strong>, not just a checklist of credentials.
         </p>
       </div>
 
