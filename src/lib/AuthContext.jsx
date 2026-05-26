@@ -110,8 +110,7 @@ export const AuthProvider = ({ children }) => {
 
     try {
       await base44.auth.register({ email, password });
-      await base44.auth.loginViaEmailPassword(email, password);
-      await checkUserAuth();
+      setIsLoadingAuth(false);
     } catch (error) {
       setIsLoadingAuth(false);
       setIsAuthenticated(false);
@@ -121,6 +120,29 @@ export const AuthProvider = ({ children }) => {
       });
       throw error;
     }
+  };
+
+  const verifyEmailOtpAndLogin = async (email, password, otpCode) => {
+    setIsLoadingAuth(true);
+    setAuthError(null);
+
+    try {
+      await base44.auth.verifyOtp({ email, otpCode });
+      await base44.auth.loginViaEmailPassword(email, password);
+      await checkUserAuth();
+    } catch (error) {
+      setIsLoadingAuth(false);
+      setIsAuthenticated(false);
+      setAuthError({
+        type: 'auth_failed',
+        message: error.message || 'Unable to verify email'
+      });
+      throw error;
+    }
+  };
+
+  const resendVerificationCode = async (email) => {
+    await base44.auth.resendOtp(email);
   };
 
   return (
@@ -136,6 +158,8 @@ export const AuthProvider = ({ children }) => {
       navigateToLogin,
       loginWithEmailPassword,
       registerWithEmailPassword,
+      verifyEmailOtpAndLogin,
+      resendVerificationCode,
       checkUserAuth,
       checkAppState
     }}>
