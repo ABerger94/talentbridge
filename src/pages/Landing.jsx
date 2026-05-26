@@ -17,11 +17,11 @@ const fadeUp = (delay = 0) => ({
 });
 
 const oldVsNew = [
-  { old: "Keyword filtering rejects 75% of qualified applicants", symbiot: "Semantic capability graph maps your transferable logic to role problems" },
-  { old: "Years-of-experience requirements filter out proven builders", symbiot: "Artifact analysis scores deployed projects, code quality & system architecture" },
-  { old: "Black-box ATS scoring with zero transparency", symbiot: "Hidden Vectors panel shows candidates exactly how they map to each role" },
-  { old: "Auto-rejections with no explanation or path forward", symbiot: "Every candidate receives an Adaptability & Match Report — never a silent no" },
-  { old: "Resumes penalized for formatting, not substance", symbiot: "Portfolio ingestion analyzes GitHub repos, live apps, and case studies" },
+  { old: "Keyword filtering rejects 75% of qualified applicants", talentbridge: "Semantic capability graph maps your transferable logic to role problems" },
+  { old: "Years-of-experience requirements filter out proven builders", talentbridge: "Artifact analysis scores deployed projects, code quality & system architecture" },
+  { old: "Black-box ATS scoring with zero transparency", talentbridge: "Hidden Vectors panel shows candidates exactly how they map to each role" },
+  { old: "Auto-rejections with no explanation or path forward", talentbridge: "Every candidate receives an Adaptability & Match Report — never a silent no" },
+  { old: "Resumes penalized for formatting, not substance", talentbridge: "Portfolio ingestion analyzes GitHub repos, live apps, and case studies" },
 ];
 
 const pillars = [
@@ -113,7 +113,7 @@ export default function Landing() {
           <div className="text-center mb-14">
             <h2 className="text-3xl sm:text-4xl font-bold">The hiring system is broken. We rebuilt it.</h2>
             <p className="mt-4 text-lg text-muted-foreground max-w-xl mx-auto">
-              Current ATS platforms use AI as a rejection machine. TalentBridge uses AI as an advocate.
+              Current ATS platforms use AI as a rejection machine. TalentBridge uses AI as an advocate for candidates.
             </p>
           </div>
           <div className="rounded-2xl overflow-hidden border border-border/60 shadow-xl">
@@ -122,7 +122,7 @@ export default function Landing() {
                 <XCircle className="w-4 h-4" /> Legacy ATS
               </div>
               <div className="bg-accent/10 px-5 py-3 font-semibold text-accent flex items-center gap-2 border-b border-border/60">
-                <CheckCircle2 className="w-4 h-4" /> Symbiot
+               <CheckCircle2 className="w-4 h-4" /> TalentBridge
               </div>
               {oldVsNew.map((row, i) => (
                 <React.Fragment key={i}>
@@ -130,7 +130,7 @@ export default function Landing() {
                     {row.old}
                   </div>
                   <div className={`px-5 py-4 text-sm text-foreground border-border/40 ${i < oldVsNew.length - 1 ? "border-b" : ""} bg-accent/5`}>
-                    {row.symbiot}
+                    {row.talentbridge}
                   </div>
                 </React.Fragment>
               ))}
