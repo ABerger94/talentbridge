@@ -35,7 +35,7 @@ export default function InterviewScheduler({ application, job, onScheduled }) {
       toast.success("Interview invitation sent!");
       setOpen(false);
       setDatetime("");
-      onScheduled?.();
+      onScheduled?.();  
     } catch (error) {
       toast.error("Failed to schedule interview");
     }

@@ -7,6 +7,11 @@ Deno.serve(async (req) => {
 
     const application = await base44.asServiceRole.entities.JobApplication.get(application_id);
     const job = await base44.asServiceRole.entities.Job.get(job_id);
+    
+    // Get seeker's email from the User entity (created_by of SeekerProfile)
+    const seekerProfile = await base44.asServiceRole.entities.SeekerProfile.get(application.seeker_profile_id);
+    const seekerUser = await base44.asServiceRole.entities.User.get(seekerProfile.created_by_id);
+    const applicantEmail = seekerUser.email;
 
     const formattedTime = new Date(proposed_time).toLocaleString('en-US', {
       weekday: 'long',
@@ -18,9 +23,9 @@ Deno.serve(async (req) => {
     });
 
     await base44.integrations.Core.SendEmail({
-      to: application.applicant_email,
+      to: applicantEmail,
       subject: `Interview Invitation: ${job.title} at ${job.company}`,
-      body: `Hi ${application.applicant_name},\n\nWe're excited to invite you to interview for the ${job.title} position at ${job.company}.\n\nProposed Interview Time: ${formattedTime} (EST)\n\nPlease reply to confirm this time or propose an alternative. You can do this directly in your TalentBridge dashboard.\n\nLooking forward to hearing from you!\n\nBest regards,\nThe ${job.company} Team`
+      body: `Hi ${seekerProfile.headline || 'there'},\n\nWe're excited to invite you to interview for the ${job.title} position at ${job.company}.\n\nProposed Interview Time: ${formattedTime}\n\nPlease reply to confirm this time or propose an alternative. You can do this directly in your TalentBridge dashboard.\n\nLooking forward to hearing from you!\n\nBest regards,\nThe ${job.company} Team`
     });
 
     await base44.asServiceRole.entities.JobApplication.update(application_id, {
