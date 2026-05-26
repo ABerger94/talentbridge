@@ -130,6 +130,7 @@
   ],
   "rls": {
     "create": {
+      "created_by_id": "{{user.id}}",
       "user_condition": {
         "role": "job_seeker"
       }
@@ -141,13 +142,20 @@
         },
         {
           "user_condition": {
-            "role": "employer"
+            "role": "admin"
           }
         },
         {
-          "user_condition": {
-            "role": "admin"
-          }
+          "$and": [
+            {
+              "user_condition": {
+                "role": "employer"
+              }
+            },
+            {
+              "data.open_to_opportunities": true
+            }
+          ]
         }
       ]
     },
