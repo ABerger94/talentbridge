@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Sparkles, Loader2, Save, User, Briefcase, Network,
-  X, Plus, Zap, Brain, TrendingUp, GitBranch, Layers, FileText
+  X, Plus, Zap, Brain, TrendingUp, GitBranch, Layers, FileText, Users
 } from "lucide-react";
 import { toast } from "sonner";
 import JobCard from "@/components/jobs/JobCard";
@@ -48,6 +48,16 @@ export default function SeekerDashboard() {
   const { data: jobs = [] } = useQuery({
     queryKey: ["allJobs"],
     queryFn: () => base44.entities.Job.filter({ status: "active" }),
+  });
+
+  const { data: invitations = [] } = useQuery({
+    queryKey: ["myInvitations"],
+    queryFn: async () => {
+      const user = await base44.auth.me();
+      const seekerProfiles = await base44.entities.SeekerProfile.filter({ created_by_id: user.id });
+      if (seekerProfiles.length === 0) return [];
+      return base44.entities.Invitation.filter({ seeker_profile_id: seekerProfiles[0].id }, "-created_date");
+    },
   });
 
   useEffect(() => {
@@ -204,6 +214,14 @@ Return the top matches with specific reasoning.`,
     setMatchLoading(false);
   };
 
+  const updateInvitationMutation = useMutation({
+    mutationFn: ({ id, status }) => base44.entities.Invitation.update(id, { status }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["myInvitations"] });
+      toast.success("Invitation updated!");
+    },
+  });
+
   if (profileLoading || !profile) {
     return (
       <div className="flex items-center justify-center h-96">
@@ -214,6 +232,9 @@ Return the top matches with specific reasoning.`,
 
   const statusLabel = { applied: "Applied", reviewed: "Under Review", shortlisted: "Shortlisted", interview: "Interview", offered: "Offer Received!", rejected: "Passed", withdrawn: "Withdrawn" };
   const statusColor = { applied: "bg-blue-100 text-blue-700", reviewed: "bg-yellow-100 text-yellow-700", shortlisted: "bg-green-100 text-green-700", interview: "bg-purple-100 text-purple-700", offered: "bg-emerald-100 text-emerald-700", rejected: "bg-gray-100 text-gray-500", withdrawn: "bg-gray-100 text-gray-400" };
+  
+  const invitationStatusLabel = { pending: "Pending", accepted: "Accepted", declined: "Declined" };
+  const invitationStatusColor = { pending: "bg-amber-100 text-amber-700", accepted: "bg-green-100 text-green-700", declined: "bg-red-100 text-red-700" };
 
   const profileScore = (() => {
     let s = 0;
@@ -240,6 +261,7 @@ Return the top matches with specific reasoning.`,
           <TabsTrigger value="capability" className="gap-2"><Network className="w-4 h-4" /> Capability Graph</TabsTrigger>
           <TabsTrigger value="matches" className="gap-2"><Brain className="w-4 h-4" /> AI Matches</TabsTrigger>
           <TabsTrigger value="applications" className="gap-2"><Briefcase className="w-4 h-4" /> Applications</TabsTrigger>
+          <TabsTrigger value="invitations" className="gap-2"><Users className="w-4 h-4" /> Invitations ({invitations.length})</TabsTrigger>
         </TabsList>
 
         {/* Profile Tab */}
@@ -574,8 +596,49 @@ Return the top matches with specific reasoning.`,
               );
             })
           )}
-        </TabsContent>
-      </Tabs>
-    </div>
-  );
-}
+          </TabsContent>
+
+          {/* Invitations Tab */}
+          <TabsContent value="invitations" className="space-y-3">
+          {invitations.length === 0 ? (
+           <Card className="p-12 text-center text-muted-foreground">
+             <Users className="w-12 h-12 mx-auto mb-4 opacity-20" />
+             <p className="font-medium">No invitations yet</p>
+             <p className="text-sm mt-1">Employers will invite you to roles they think you're a great fit for</p>
+           </Card>
+          ) : (
+           invitations.map(invitation => {
+             const job = jobs.find(j => j.id === invitation.job_id);
+             return (
+               <Card key={invitation.id} className="p-5">
+                 <div className="flex items-start justify-between">
+                   <div className="flex-1">
+                     <h3 className="font-semibold text-sm">{job?.title || "Unknown Role"}</h3>
+                     <p className="text-xs text-muted-foreground mt-0.5">{job?.company || ""}</p>
+                     {job?.location && (
+                       <p className="text-xs text-muted-foreground mt-1">{job.location}</p>
+                     )}
+                   </div>
+                   <Badge className={`text-xs ${invitationStatusColor[invitation.status] || "bg-gray-100 text-gray-700"}`}>
+                     {invitationStatusLabel[invitation.status] || invitation.status}
+                   </Badge>
+                 </div>
+                 {invitation.status === "pending" && (
+                   <div className="flex gap-2 mt-4">
+                     <Button size="sm" onClick={() => updateInvitationMutation.mutate({ id: invitation.id, status: "accepted" })}>
+                       Accept
+                     </Button>
+                     <Button size="sm" variant="outline" onClick={() => updateInvitationMutation.mutate({ id: invitation.id, status: "declined" })}>
+                       Decline
+                     </Button>
+                   </div>
+                 )}
+               </Card>
+             );
+           })
+          )}
+          </TabsContent>
+          </Tabs>
+          </div>
+          );
+          }

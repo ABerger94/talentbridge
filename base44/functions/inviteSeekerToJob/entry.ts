@@ -9,45 +9,45 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
-    const { seeker_id, job_id } = await req.json();
+    const { seeker_profile_id, job_id } = await req.json();
 
-    // Fetch job and seeker
+    // Fetch job and seeker profile
     const jobs = await base44.entities.Job.filter({ id: job_id });
+    const seekers = await base44.entities.SeekerProfile.filter({ id: seeker_profile_id });
+
     if (!jobs || jobs.length === 0) {
       return Response.json({ error: 'Job not found' }, { status: 404 });
     }
-    const jobData = jobs[0];
-
-    const seekers = await base44.entities.SeekerProfile.filter({ id: seeker_id });
     if (!seekers || seekers.length === 0) {
-      return Response.json({ error: 'Seeker not found' }, { status: 404 });
+      return Response.json({ error: 'Seeker profile not found' }, { status: 404 });
     }
-    const seekerData = seekers[0];
 
-    // Get seeker's user email for outreach
-    const seekerUser = await base44.asServiceRole.entities.User.list();
-    const foundUser = seekerUser.find(u => u.id === seekerData.created_by_id);
-    const seekerEmail = foundUser?.email || '';
+    const job = jobs[0];
+    const seeker = seekers[0];
 
-    // Send invite email
+    // Create invitation record
+    await base44.entities.Invitation.create({
+      job_id,
+      seeker_profile_id,
+      employer_id: user.id,
+      status: 'pending'
+    });
+
+    // Get seeker's email from user record
+    const users = await base44.asServiceRole.entities.User.filter({ id: seeker.created_by_id });
+    if (!users || users.length === 0) {
+      return Response.json({ error: 'Seeker user not found' }, { status: 404 });
+    }
+    const seekerUser = users[0];
+
+    // Send invitation email
     await base44.integrations.Core.SendEmail({
-      to: seekerEmail,
-      subject: `You're a great fit for ${jobData.title} at ${jobData.company}`,
-      body: `Hi ${seekerData.headline},
-
-We think you'd be a great fit for the ${jobData.title} role at ${jobData.company}. We've reviewed your profile and your skills align well with what we're looking for.
-
-We'd love for you to apply! Check out the job details and submit your application.
-
-Best regards,
-The TalentBridge Team`
+      to: seekerUser.email,
+      subject: `You're invited to apply for ${job.title} at ${job.company}`,
+      body: `Hi ${seekerUser.full_name},\n\n${job.company} thinks you'd be a great fit for the ${job.title} role.\n\nCheck it out and apply here!\n\nBest,\nTalentBridge`
     });
 
-    // Create a notification/record if needed
-    return Response.json({ 
-      success: true, 
-      message: `Invite sent to ${seekerEmail}` 
-    });
+    return Response.json({ success: true });
   } catch (error) {
     return Response.json({ error: error.message }, { status: 500 });
   }

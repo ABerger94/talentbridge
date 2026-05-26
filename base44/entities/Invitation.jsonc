@@ -1,0 +1,36 @@
+{
+  "name": "Invitation",
+  "type": "object",
+  "properties": {
+    "job_id": {
+      "type": "string",
+      "description": "Reference to the Job"
+    },
+    "seeker_profile_id": {
+      "type": "string",
+      "description": "Reference to the SeekerProfile"
+    },
+    "employer_id": {
+      "type": "string",
+      "description": "ID of the employer who sent the invitation"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "accepted",
+        "declined"
+      ],
+      "default": "pending",
+      "description": "Status of the invitation"
+    },
+    "message": {
+      "type": "string",
+      "description": "Optional message from employer"
+    }
+  },
+  "required": [
+    "job_id",
+    "seeker_profile_id"
+  ]
+}
