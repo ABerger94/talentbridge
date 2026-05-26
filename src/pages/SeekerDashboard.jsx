@@ -53,6 +53,9 @@ export default function SeekerDashboard() {
   useEffect(() => {
     if (profiles.length > 0) {
       setProfile(profiles[0]);
+      if (profiles[0].capability_graph) {
+        setCapabilityGraph(profiles[0].capability_graph);
+      }
     } else if (!profileLoading) {
       setProfile({
         headline: "", bio: "", skills: [], experience_years: 0, experience_level: "entry",
@@ -138,6 +141,13 @@ Generate a deep capability analysis.`,
       }
     });
     setCapabilityGraph(result);
+    // Persist to the profile so employers can see it
+    const profileId = profiles[0]?.id;
+    if (profileId) {
+      await base44.entities.SeekerProfile.update(profileId, { capability_graph: result });
+      queryClient.invalidateQueries({ queryKey: ["seekerProfile"] });
+    }
+    toast.success("Capability Graph saved to your profile!");
     setGraphLoading(false);
   };
 

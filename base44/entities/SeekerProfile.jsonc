@@ -84,6 +84,10 @@
     "open_to_opportunities": {
       "type": "boolean",
       "default": true
+    },
+    "capability_graph": {
+      "type": "object",
+      "description": "AI-generated capability graph \u2014 saved after generation so employers can view it"
     }
   },
   "required": [
