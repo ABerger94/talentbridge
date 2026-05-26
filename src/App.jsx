@@ -16,6 +16,7 @@ import Onboarding from './pages/Onboarding';
 import AuthBridge from './pages/AuthBridge';
 import LogoutBridge from './pages/LogoutBridge';
 import Login from './pages/Login';
+import Signup from './pages/Signup';
 
 // Wraps protected routes — redirects to login if not authenticated, optionally checks role
 const ProtectedRoute = ({ children, allowedRoles }) => {
@@ -68,6 +69,7 @@ const AuthenticatedApp = () => {
       <Route path="/auth-bridge" element={<AuthBridge />} />
       <Route path="/logout-bridge" element={<LogoutBridge />} />
       <Route path="/login" element={<Login />} />
+      <Route path="/signup" element={<Signup />} />
       <Route path="/onboarding" element={<Onboarding />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>

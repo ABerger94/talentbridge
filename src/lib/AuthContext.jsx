@@ -104,6 +104,25 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const registerWithEmailPassword = async (email, password) => {
+    setIsLoadingAuth(true);
+    setAuthError(null);
+
+    try {
+      await base44.auth.register({ email, password });
+      await base44.auth.loginViaEmailPassword(email, password);
+      await checkUserAuth();
+    } catch (error) {
+      setIsLoadingAuth(false);
+      setIsAuthenticated(false);
+      setAuthError({
+        type: 'auth_failed',
+        message: error.message || 'Unable to create account'
+      });
+      throw error;
+    }
+  };
+
   return (
     <AuthContext.Provider value={{ 
       user, 
@@ -116,6 +135,7 @@ export const AuthProvider = ({ children }) => {
       logout,
       navigateToLogin,
       loginWithEmailPassword,
+      registerWithEmailPassword,
       checkUserAuth,
       checkAppState
     }}>

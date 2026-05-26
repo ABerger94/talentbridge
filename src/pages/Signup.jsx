@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { LogIn } from 'lucide-react';
+import { UserPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -18,12 +18,13 @@ const getSafeNextPath = (next) => {
   }
 };
 
-export default function Login() {
+export default function Signup() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { loginWithEmailPassword } = useAuth();
+  const { registerWithEmailPassword } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -32,19 +33,25 @@ export default function Login() {
   const handleSubmit = async (event) => {
     event.preventDefault();
     setError('');
+
+    if (password !== confirmPassword) {
+      setError('Passwords do not match.');
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
-      await loginWithEmailPassword(email.trim(), password);
+      await registerWithEmailPassword(email.trim(), password);
       navigate(nextPath, { replace: true });
     } catch (err) {
-      setError(err.message || 'Sign in failed. Check your email and password.');
+      setError(err.message || 'Unable to create account.');
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleHostedLogin = () => {
+  const handleGoogleSignup = () => {
     redirectToGoogleLogin(new URL(nextPath, window.location.origin).toString());
   };
 
@@ -53,20 +60,20 @@ export default function Login() {
       <Card className="w-full max-w-md p-6 sm:p-8">
         <Link to="/" className="flex items-center gap-2.5 mb-8">
           <div className="w-9 h-9 bg-primary rounded-xl flex items-center justify-center text-primary-foreground">
-            <LogIn className="w-4 h-4" />
+            <UserPlus className="w-4 h-4" />
           </div>
           <span className="text-xl font-bold tracking-tight">TalentBridge</span>
         </Link>
 
         <div className="mb-6">
-          <h1 className="text-2xl font-bold">Sign in</h1>
+          <h1 className="text-2xl font-bold">Create account</h1>
           <p className="text-sm text-muted-foreground mt-2">
-            Use Google or your TalentBridge email and password.
+            Join with Google or create a TalentBridge password.
           </p>
         </div>
 
-        <Button type="button" variant="outline" className="w-full gap-2 mb-5" onClick={handleHostedLogin}>
-          <LogIn className="w-4 h-4" />
+        <Button type="button" variant="outline" className="w-full gap-2 mb-5" onClick={handleGoogleSignup}>
+          <UserPlus className="w-4 h-4" />
           Continue with Google
         </Button>
 
@@ -81,9 +88,9 @@ export default function Login() {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="signup-email">Email</Label>
             <Input
-              id="email"
+              id="signup-email"
               type="email"
               autoComplete="email"
               value={email}
@@ -93,13 +100,27 @@ export default function Login() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
+            <Label htmlFor="signup-password">Password</Label>
             <Input
-              id="password"
+              id="signup-password"
               type="password"
-              autoComplete="current-password"
+              autoComplete="new-password"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
+              minLength={8}
+              required
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="confirm-password">Confirm password</Label>
+            <Input
+              id="confirm-password"
+              type="password"
+              autoComplete="new-password"
+              value={confirmPassword}
+              onChange={(event) => setConfirmPassword(event.target.value)}
+              minLength={8}
               required
             />
           </div>
@@ -111,18 +132,18 @@ export default function Login() {
           )}
 
           <Button type="submit" className="w-full gap-2" disabled={isSubmitting}>
-            <LogIn className="w-4 h-4" />
-            {isSubmitting ? 'Signing in...' : 'Sign In'}
+            <UserPlus className="w-4 h-4" />
+            {isSubmitting ? 'Creating account...' : 'Create Account'}
           </Button>
         </form>
 
         <p className="text-sm text-muted-foreground text-center mt-6">
-          New to TalentBridge?{' '}
+          Already have an account?{' '}
           <Link
-            to={`/signup?next=${encodeURIComponent(new URL(nextPath, window.location.origin).toString())}`}
+            to={`/login?next=${encodeURIComponent(new URL(nextPath, window.location.origin).toString())}`}
             className="font-medium text-primary hover:underline"
           >
-            Create an account
+            Sign in
           </Link>
         </p>
       </Card>
