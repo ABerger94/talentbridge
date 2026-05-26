@@ -5,8 +5,8 @@ Deno.serve(async (req) => {
     const base44 = createClientFromRequest(req);
     const { application_id, job_id, proposed_time } = await req.json();
 
-    const application = await base44.entities.JobApplication.read(application_id);
-    const job = await base44.entities.Job.read(job_id);
+    const application = await base44.asServiceRole.entities.JobApplication.read(application_id);
+    const job = await base44.asServiceRole.entities.Job.read(job_id);
 
     const formattedTime = new Date(proposed_time).toLocaleString('en-US', {
       weekday: 'long',
@@ -23,7 +23,7 @@ Deno.serve(async (req) => {
       body: `Hi ${application.applicant_name},\n\nWe're excited to invite you to interview for the ${job.title} position at ${job.company}.\n\nProposed Interview Time: ${formattedTime} (EST)\n\nPlease reply to confirm this time or propose an alternative. You can do this directly in your TalentBridge dashboard.\n\nLooking forward to hearing from you!\n\nBest regards,\nThe ${job.company} Team`
     });
 
-    await base44.entities.JobApplication.update(application_id, {
+    await base44.asServiceRole.entities.JobApplication.update(application_id, {
       interview_proposed_time: proposed_time,
       interview_response: "pending"
     });

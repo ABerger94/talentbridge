@@ -123,8 +123,8 @@ export default function Landing() {
               <div className="bg-accent/10 px-5 py-3 font-semibold text-accent flex items-center gap-2 border-b border-border/60">
                <CheckCircle2 className="w-4 h-4" /> TalentBridge
               </div>
-              {oldVsNew.map((row, i) =>
-              <React.Fragment key={i}>
+              {oldVsNew.map((row, i) => (
+                <React.Fragment key={i}>
                   <div className={`px-5 py-4 text-sm text-muted-foreground border-border/40 ${i < oldVsNew.length - 1 ? "border-b" : ""} bg-background/50`}>
                     {row.old}
                   </div>
@@ -132,7 +132,7 @@ export default function Landing() {
                     {row.talentbridge}
                   </div>
                 </React.Fragment>
-              )}
+              ))}
             </div>
           </div>
         </div>
@@ -148,8 +148,8 @@ export default function Landing() {
             </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {pillars.map((p, i) =>
-            <motion.div key={p.title} {...fadeUp(i * 0.07)}>
+            {pillars.map((p, i) => (
+              <motion.div key={p.title} {...fadeUp(i * 0.07)}>
                 <Card className="p-6 h-full hover:shadow-lg hover:shadow-primary/8 transition-all duration-300 border-border/60 group">
                   <div className="w-11 h-11 bg-primary/10 rounded-xl flex items-center justify-center mb-4 group-hover:bg-primary/15 transition-colors">
                     <p.icon className="w-5 h-5 text-primary" />
@@ -158,7 +158,7 @@ export default function Landing() {
                   <p className="text-sm text-muted-foreground leading-relaxed">{p.description}</p>
                 </Card>
               </motion.div>
-            )}
+            ))}
           </div>
         </div>
       </section>
