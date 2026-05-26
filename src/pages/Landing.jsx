@@ -5,57 +5,57 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import {
   ArrowRight, Network, GitBranch, ShieldCheck, Cpu,
-  BarChart3, Zap, Search, Building2, CheckCircle2, XCircle
-} from "lucide-react";
+  BarChart3, Zap, Search, Building2, CheckCircle2, XCircle } from
+"lucide-react";
 import { motion } from "framer-motion";
 import TalentBridgeLogo from "@/components/TalentBridgeLogo";
 
 const fadeUp = (delay = 0) => ({
   initial: { opacity: 0, y: 30 },
   animate: { opacity: 1, y: 0 },
-  transition: { duration: 0.55, delay },
+  transition: { duration: 0.55, delay }
 });
 
 const oldVsNew = [
-  { old: "Keyword filtering rejects 75% of qualified applicants", talentbridge: "Semantic capability graph maps your transferable logic to role problems" },
-  { old: "Years-of-experience requirements filter out proven builders", talentbridge: "Artifact analysis scores deployed projects, code quality & system architecture" },
-  { old: "Black-box ATS scoring with zero transparency", talentbridge: "Hidden Vectors panel shows candidates exactly how they map to each role" },
-  { old: "Auto-rejections with no explanation or path forward", talentbridge: "Every candidate receives an Adaptability & Match Report — never a silent no" },
-  { old: "Resumes penalized for formatting, not substance", talentbridge: "Portfolio ingestion analyzes GitHub repos, live apps, and case studies" },
-];
+{ old: "Keyword filtering rejects 75% of qualified applicants", talentbridge: "Semantic capability graph maps your transferable logic to role problems" },
+{ old: "Years-of-experience requirements filter out proven builders", talentbridge: "Artifact analysis scores deployed projects, code quality & system architecture" },
+{ old: "Black-box ATS scoring with zero transparency", talentbridge: "Hidden Vectors panel shows candidates exactly how they map to each role" },
+{ old: "Auto-rejections with no explanation or path forward", talentbridge: "Every candidate receives an Adaptability & Match Report — never a silent no" },
+{ old: "Resumes penalized for formatting, not substance", talentbridge: "Portfolio ingestion analyzes GitHub repos, live apps, and case studies" }];
+
 
 const pillars = [
-  {
-    icon: Network,
-    title: "Capability Graph Engine",
-    description: "Your profile becomes a high-dimensional semantic vector — capturing what you can build, solve, and execute. Not just titles and bullet points.",
-  },
-  {
-    icon: GitBranch,
-    title: "Artifact Ingestion",
-    description: "Connect your GitHub, portfolio, or past projects. Our engine analyzes architecture, code quality, testing rigor, and system-level logic.",
-  },
-  {
-    icon: Cpu,
-    title: "Bi-Directional Matching",
-    description: "Jobs are also encoded as capability vectors. We find the intersection of problems to be solved and proven problem-solving methodologies.",
-  },
-  {
-    icon: ShieldCheck,
-    title: "No Auto-Rejections",
-    description: "The AI never rejects a human. It produces an Adaptability & Match Report for the employer — surfacing every possible bridge between candidate and role.",
-  },
-  {
-    icon: BarChart3,
-    title: "Hidden Vectors Panel",
-    description: "Candidates see a live map of exactly how their underlying skills connect to a role's core problems — with specific portfolio highlights to surface.",
-  },
-  {
-    icon: Zap,
-    title: "Interview Prep Engine",
-    description: "Personalized prep guides tell you exactly which projects to talk about and which capabilities to emphasize for each specific employer.",
-  },
-];
+{
+  icon: Network,
+  title: "Capability Graph Engine",
+  description: "Your profile becomes a high-dimensional semantic vector — capturing what you can build, solve, and execute. Not just titles and bullet points."
+},
+{
+  icon: GitBranch,
+  title: "Artifact Ingestion",
+  description: "Connect your GitHub, portfolio, or past projects. Our engine analyzes architecture, code quality, testing rigor, and system-level logic."
+},
+{
+  icon: Cpu,
+  title: "Bi-Directional Matching",
+  description: "Jobs are also encoded as capability vectors. We find the intersection of problems to be solved and proven problem-solving methodologies."
+},
+{
+  icon: ShieldCheck,
+  title: "No Auto-Rejections",
+  description: "The AI never rejects a human. It produces an Adaptability & Match Report for the employer — surfacing every possible bridge between candidate and role."
+},
+{
+  icon: BarChart3,
+  title: "Hidden Vectors Panel",
+  description: "Candidates see a live map of exactly how their underlying skills connect to a role's core problems — with specific portfolio highlights to surface."
+},
+{
+  icon: Zap,
+  title: "Interview Prep Engine",
+  description: "Personalized prep guides tell you exactly which projects to talk about and which capabilities to emphasize for each specific employer."
+}];
+
 
 export default function Landing() {
   return (
@@ -112,8 +112,8 @@ export default function Landing() {
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-14">
             <h2 className="text-3xl sm:text-4xl font-bold">The hiring system is broken. We rebuilt it.</h2>
-            <p className="mt-4 text-lg text-muted-foreground max-w-xl mx-auto">
-              Current ATS platforms use AI as a rejection machine. TalentBridge uses AI as an advocate for candidates.
+            <p className="mt-4 text-lg text-muted-foreground max-w-xl mx-auto">Current ATS platforms use AI as a rejection machine. TalentBridge uses AI as an advocate for candidates.
+
             </p>
           </div>
           <div className="rounded-2xl overflow-hidden border border-border/60 shadow-xl">
@@ -124,8 +124,8 @@ export default function Landing() {
               <div className="bg-accent/10 px-5 py-3 font-semibold text-accent flex items-center gap-2 border-b border-border/60">
                <CheckCircle2 className="w-4 h-4" /> TalentBridge
               </div>
-              {oldVsNew.map((row, i) => (
-                <React.Fragment key={i}>
+              {oldVsNew.map((row, i) =>
+              <React.Fragment key={i}>
                   <div className={`px-5 py-4 text-sm text-muted-foreground border-border/40 ${i < oldVsNew.length - 1 ? "border-b" : ""} bg-background/50`}>
                     {row.old}
                   </div>
@@ -133,7 +133,7 @@ export default function Landing() {
                     {row.talentbridge}
                   </div>
                 </React.Fragment>
-              ))}
+              )}
             </div>
           </div>
         </div>
@@ -149,8 +149,8 @@ export default function Landing() {
             </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {pillars.map((p, i) => (
-              <motion.div key={p.title} {...fadeUp(i * 0.07)}>
+            {pillars.map((p, i) =>
+            <motion.div key={p.title} {...fadeUp(i * 0.07)}>
                 <Card className="p-6 h-full hover:shadow-lg hover:shadow-primary/8 transition-all duration-300 border-border/60 group">
                   <div className="w-11 h-11 bg-primary/10 rounded-xl flex items-center justify-center mb-4 group-hover:bg-primary/15 transition-colors">
                     <p.icon className="w-5 h-5 text-primary" />
@@ -159,7 +159,7 @@ export default function Landing() {
                   <p className="text-sm text-muted-foreground leading-relaxed">{p.description}</p>
                 </Card>
               </motion.div>
-            ))}
+            )}
           </div>
         </div>
       </section>
@@ -189,6 +189,6 @@ export default function Landing() {
           </div>
         </div>
       </section>
-    </div>
-  );
+    </div>);
+
 }
