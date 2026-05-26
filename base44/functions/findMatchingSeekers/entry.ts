@@ -59,7 +59,7 @@ Return only a JSON object with:
         }
       });
 
-      if (aiResult.match_score >= 60) {
+      if (aiResult.match_score >= 40) {
         seekerMatches.push({
           seeker_id: seeker.id,
           seeker_headline: seeker.headline,
