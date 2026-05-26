@@ -1,7 +1,7 @@
 import { Toaster } from "@/components/ui/toaster"
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
@@ -12,6 +12,7 @@ import PostJob from './pages/PostJob';
 import SeekerDashboard from './pages/SeekerDashboard';
 import EmployerDashboard from './pages/EmployerDashboard';
 import AppLayout from './components/layout/AppLayout';
+import Onboarding from './pages/Onboarding';
 
 // Wraps protected routes — redirects to login if not authenticated, optionally checks role
 const ProtectedRoute = ({ children, allowedRoles }) => {
@@ -34,11 +35,14 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
     return null;
   }
 
+  // New user with no role yet — send to onboarding
+  if (!user?.role || user.role === 'user') {
+    return <Navigate to="/onboarding" replace />;
+  }
+
   if (allowedRoles && !allowedRoles.includes(user?.role)) {
-    // Redirect to their appropriate dashboard
     const redirectTo = user?.role === 'employer' ? '/employer' : '/dashboard';
-    window.location.replace(redirectTo);
-    return null;
+    return <Navigate to={redirectTo} replace />;
   }
 
   return children;
@@ -58,6 +62,7 @@ const AuthenticatedApp = () => {
         <Route path="/dashboard" element={<ProtectedRoute allowedRoles={['job_seeker', 'admin']}><SeekerDashboard /></ProtectedRoute>} />
         <Route path="/employer" element={<ProtectedRoute allowedRoles={['employer', 'admin']}><EmployerDashboard /></ProtectedRoute>} />
       </Route>
+      <Route path="/onboarding" element={<Onboarding />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );
