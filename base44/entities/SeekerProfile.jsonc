@@ -81,6 +81,41 @@
     "avatar_url": {
       "type": "string"
     },
+    "github_url": {
+      "type": "string",
+      "description": "GitHub profile URL for portfolio ingestion"
+    },
+    "portfolio_url": {
+      "type": "string",
+      "description": "Personal portfolio or website URL"
+    },
+    "portfolio_analysis": {
+      "type": "object",
+      "description": "AI-generated analysis of portfolio artifacts (GitHub repos, projects, case studies)",
+      "properties": {
+        "github_analysis": {
+          "type": "string",
+          "description": "Key findings from GitHub repository analysis"
+        },
+        "project_highlights": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          },
+          "description": "Notable projects with architecture and tech analysis"
+        },
+        "technical_strengths": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "last_analyzed": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
     "open_to_opportunities": {
       "type": "boolean",
       "default": true

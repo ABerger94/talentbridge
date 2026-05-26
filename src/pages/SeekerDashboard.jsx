@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Sparkles, Loader2, Save, User, Briefcase, Network,
-  X, Plus, Zap, Brain, TrendingUp, GitBranch, Layers, FileText, Users, Eye
+  X, Plus, Zap, Brain, TrendingUp, GitBranch, Layers, FileText, Users, Eye, Globe
 } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
@@ -20,6 +20,7 @@ import JobCard from "@/components/jobs/JobCard";
 import ResumeUploader from "@/components/resume/ResumeUploader";
 import ResumeCritique from "@/components/resume/ResumeCritique";
 import ApplicationCard from "@/components/seeker/ApplicationCard";
+import PortfolioSection from "@/components/seeker/PortfolioSection";
 
 export default function SeekerDashboard() {
   const queryClient = useQueryClient();
@@ -269,6 +270,7 @@ Return the top matches with specific reasoning.`,
         <TabsList className="mb-6 flex-wrap h-auto">
           <TabsTrigger value="profile" className="gap-2"><User className="w-4 h-4" /> Profile</TabsTrigger>
           <TabsTrigger value="resume" className="gap-2"><FileText className="w-4 h-4" /> Resume</TabsTrigger>
+          <TabsTrigger value="portfolio" className="gap-2"><Globe className="w-4 h-4" /> Portfolio</TabsTrigger>
           <TabsTrigger value="capability" className="gap-2"><Network className="w-4 h-4" /> Capability Graph</TabsTrigger>
           <TabsTrigger value="matches" className="gap-2"><Brain className="w-4 h-4" /> AI Matches</TabsTrigger>
           <TabsTrigger value="applications" className="gap-2"><Briefcase className="w-4 h-4" /> Applications</TabsTrigger>
@@ -410,6 +412,14 @@ Return the top matches with specific reasoning.`,
             onSave={() => saveMutation.mutate()}
           />
           <ResumeCritique profile={profile} />
+        </TabsContent>
+
+        {/* Portfolio Tab */}
+        <TabsContent value="portfolio" className="space-y-5">
+          <PortfolioSection 
+            seeker={profile} 
+            onUpdate={() => queryClient.invalidateQueries({ queryKey: ["seekerProfile"] })}
+          />
         </TabsContent>
 
         {/* Capability Graph Tab */}
