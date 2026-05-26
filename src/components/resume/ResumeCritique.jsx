@@ -36,6 +36,8 @@ export default function ResumeCritique({ profile }) {
 
     const prompt = `You are an expert resume coach and career advisor. Conduct a thorough, honest, and constructive critique of this candidate's resume/profile.
 
+Current date: ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+
 Be specific and actionable — not vague. Reference actual content they provided.
 
 CANDIDATE PROFILE:
