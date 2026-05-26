@@ -2,9 +2,10 @@ import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Menu, Briefcase, User, Building2, Search, Layers, LogIn, LogOut } from "lucide-react";
+import { Menu, Briefcase, User, Building2, Search, LogIn, LogOut } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 import { base44 } from "@/api/base44Client";
+import TalentBridgeLogo from "@/components/TalentBridgeLogo";
 
 export default function Navbar() {
   const location = useLocation();
@@ -28,8 +29,8 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           <Link to="/" className="flex items-center gap-2.5 group">
-            <div className="w-9 h-9 bg-primary rounded-xl flex items-center justify-center group-hover:scale-105 transition-transform shadow-md shadow-primary/30">
-              <Layers className="w-5 h-5 text-primary-foreground" />
+            <div className="w-9 h-9 bg-primary rounded-xl flex items-center justify-center group-hover:scale-105 transition-transform shadow-md shadow-primary/30 text-primary-foreground">
+              <TalentBridgeLogo size={20} />
             </div>
             <span className="text-xl font-bold tracking-tight">TalentBridge</span>
           </Link>
@@ -80,8 +81,8 @@ export default function Navbar() {
             </SheetTrigger>
             <SheetContent side="right" className="w-72">
               <div className="flex items-center gap-2.5 mb-8 pt-2">
-                <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-                  <Layers className="w-4 h-4 text-primary-foreground" />
+                <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-primary-foreground">
+                  <TalentBridgeLogo size={16} />
                 </div>
                 <span className="font-bold">TalentBridge</span>
               </div>
