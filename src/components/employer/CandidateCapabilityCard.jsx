@@ -286,9 +286,12 @@ Generate a rich, evidence-based capability profile. Be specific and concrete.`,
             </div>
           ) : (
             <InterviewScheduler
-              application={application}
-              job={job}
-              onScheduled={() => queryClient.invalidateQueries({ queryKey: ["jobApplications"] })}
+             application={application}
+             job={job}
+             onScheduled={() => {
+               queryClient.invalidateQueries({ queryKey: ["allApplications"] });
+               queryClient.refetchQueries({ queryKey: ["allApplications"] });
+             }}
             />
           )}
         </div>
@@ -315,10 +318,13 @@ Generate a rich, evidence-based capability profile. Be specific and concrete.`,
             </div>
           ) : (
             <OfferDialog
-              application={application}
-              job={job}
-              onOfferSent={() => queryClient.invalidateQueries({ queryKey: ["jobApplications"] })}
-            />
+               application={application}
+               job={job}
+               onOfferSent={() => {
+                 queryClient.invalidateQueries({ queryKey: ["allApplications"] });
+                 queryClient.refetchQueries({ queryKey: ["allApplications"] });
+               }}
+             />
           )}
         </div>
       )}
