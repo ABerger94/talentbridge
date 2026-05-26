@@ -6,10 +6,9 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import {
   MessageSquareText, Loader2, AlertTriangle, CheckCircle2,
-  TrendingUp, FileText, Upload, Star
+  TrendingUp, FileText, Star
 } from "lucide-react";
 import { toast } from "sonner";
-import ReactMarkdown from "react-markdown";
 
 const scoreColor = (score) => {
   if (score >= 80) return "text-green-600";

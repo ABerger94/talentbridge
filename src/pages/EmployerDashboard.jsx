@@ -9,12 +9,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import {
-  Briefcase, Users, Plus, Eye, Brain, Clock,
-  CheckCircle2, BarChart3, Layers, Send
+  Briefcase, Users, Plus, Eye, Clock, Layers, Send
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import CandidateCapabilityCard from "@/components/employer/CandidateCapabilityCard";
-import ExploreSeekersPanel from "@/components/employer/ExploreSeekersPanel";
 
 export default function EmployerDashboard() {
   const queryClient = useQueryClient();

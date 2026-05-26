@@ -5,7 +5,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Network, Zap, TrendingUp, BookOpen, Loader2, ChevronRight, Star } from "lucide-react";
-import ReactMarkdown from "react-markdown";
 
 export default function HiddenVectorsPanel({ job, profile }) {
   const [analysis, setAnalysis] = useState(null);

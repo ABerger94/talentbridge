@@ -3,7 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Upload, FileText, Loader2, CheckCircle2, Sparkles, AlertCircle } from "lucide-react";
+import { Upload, FileText, Loader2, CheckCircle2, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
 export default function ResumeUploader({ profile, onProfileUpdate, onSave }) {

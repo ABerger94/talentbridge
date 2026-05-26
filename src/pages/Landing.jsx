@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import {
   ArrowRight, Network, GitBranch, ShieldCheck, Cpu,
-  BarChart3, Zap, Search, Building2, CheckCircle2, XCircle } from
+  BarChart3, Zap, Building2, CheckCircle2, XCircle } from
 "lucide-react";
 import { motion } from "framer-motion";
 import TalentBridgeLogo from "@/components/TalentBridgeLogo";

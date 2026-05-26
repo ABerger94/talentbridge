@@ -3,11 +3,11 @@ import { base44 } from "@/api/base44Client";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
 import {
   Brain, Loader2, ChevronDown, ChevronUp, CheckCircle2,
-  TrendingUp, Zap, Star, ShieldCheck, User, FileText, X
+  TrendingUp, Zap, Star, ShieldCheck, User, FileText
 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";

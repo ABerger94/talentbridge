@@ -2,9 +2,7 @@ import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { BookOpen, Loader2, MessageSquare, Target, Lightbulb, ChevronDown, ChevronUp } from "lucide-react";
-import ReactMarkdown from "react-markdown";
 
 export default function InterviewPrepEngine({ job, profile }) {
   const [prep, setPrep] = useState(null);

@@ -37,10 +37,7 @@ const clearStoredAuth = () => {
 export const redirectToLogin = (targetUrl = window.location.href) => {
   const base44AppUrl = getBase44AppUrl();
   const target = new URL(targetUrl, window.location.origin);
-  const callbackOrigin = window.location.hostname.endsWith('base44.app')
-    ? window.location.origin
-    : base44AppUrl;
-  const callbackUrl = new URL(target.pathname + target.search + target.hash, callbackOrigin);
+  const callbackUrl = new URL(target.pathname + target.search + target.hash, window.location.origin);
 
   window.location.href = `${base44AppUrl}/login?from_url=${encodeURIComponent(callbackUrl.toString())}`;
 };
