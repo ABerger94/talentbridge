@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import CandidateCapabilityCard from "@/components/employer/CandidateCapabilityCard";
+import ExploreSeekersPanel from "@/components/employer/ExploreSeekersPanel";
 
 export default function EmployerDashboard() {
   const queryClient = useQueryClient();
@@ -93,6 +94,9 @@ export default function EmployerDashboard() {
           <TabsTrigger value="candidates" className="gap-2" disabled={!selectedJob}>
             <Users className="w-4 h-4" />
             {selectedJob ? `Candidates — ${selectedJobData?.title || ""}` : "Candidates"}
+          </TabsTrigger>
+          <TabsTrigger value="explore" className="gap-2" disabled={!selectedJob}>
+            <Users className="w-4 h-4" /> Explore Seekers
           </TabsTrigger>
         </TabsList>
 
@@ -212,8 +216,21 @@ export default function EmployerDashboard() {
               )}
             </>
           )}
-        </TabsContent>
-      </Tabs>
-    </div>
-  );
-}
+          </TabsContent>
+
+          {/* Explore Seekers Tab */}
+          <TabsContent value="explore" className="space-y-4">
+          {!selectedJob ? (
+            <Card className="p-12 text-center text-muted-foreground">
+              <Users className="w-12 h-12 mx-auto mb-4 opacity-20" />
+              <p className="font-medium">Select a role to explore matching seekers</p>
+              <p className="text-sm mt-1">Click "Explore Seekers" on any role in the My Roles tab.</p>
+            </Card>
+          ) : (
+            <ExploreSeekersPanel jobId={selectedJob} />
+          )}
+          </TabsContent>
+          </Tabs>
+          </div>
+          );
+          }
