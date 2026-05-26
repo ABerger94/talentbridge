@@ -5,7 +5,7 @@ Deno.serve(async (req) => {
     const base44 = createClientFromRequest(req);
     
     // Find user by email
-    const users = await base44.asServiceRole.entities.User.filter({ email: "alek.n.berger@gmail.com" });
+    const users = await base44.asServiceRole.entities.User.filter({ email: "alek.n.berger@proton.me" });
     if (!users || users.length === 0) {
       return Response.json({ error: 'User not found' }, { status: 404 });
     }
