@@ -9,10 +9,29 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'At least one portfolio URL required' }, { status: 400 });
     }
 
+    // Fetch portfolio website content if provided
+    let portfolioContent = '';
+    if (portfolio_url) {
+      try {
+        const response = await fetch(portfolio_url);
+        if (response.ok) {
+          portfolioContent = await response.text();
+          // Limit to first 5000 chars to avoid token overload
+          portfolioContent = portfolioContent.substring(0, 5000);
+        }
+      } catch (e) {
+        portfolioContent = `[Could not fetch portfolio website: ${e.message}]`;
+      }
+    }
+
     // Build analysis prompt
     let analysisPrompt = `Analyze this candidate's portfolio and provide structured insights:\n\n`;
     if (github_url) analysisPrompt += `GitHub Profile: ${github_url}\n`;
     if (portfolio_url) analysisPrompt += `Portfolio Website: ${portfolio_url}\n`;
+    
+    if (portfolioContent) {
+      analysisPrompt += `\nPortfolio Website Content (HTML):\n${portfolioContent}\n`;
+    }
 
     analysisPrompt += `
 Please analyze and return a JSON object with:
@@ -30,7 +49,7 @@ Please analyze and return a JSON object with:
   "collaboration_signals": "Evidence of collaboration, code review, or team contribution"
 }
 
-Be specific and evidence-based. If a URL is inaccessible, note that in the analysis.`;
+Be specific and evidence-based. Analyze BOTH the GitHub profile AND the portfolio website content if both are provided. Extract project information, technologies used, and demonstrated capabilities from the portfolio website content.`;
 
     const analysisResult = await base44.integrations.Core.InvokeLLM({
       prompt: analysisPrompt,
