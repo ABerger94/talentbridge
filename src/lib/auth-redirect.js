@@ -45,6 +45,20 @@ export const redirectToLogin = (targetUrl = window.location.href) => {
   window.location.href = `${base44AppUrl}/login?from_url=${encodeURIComponent(callbackUrl.toString())}`;
 };
 
+export const redirectToHostedLogin = (targetUrl = window.location.href) => {
+  const base44AppUrl = getBase44AppUrl();
+  const target = new URL(targetUrl, window.location.origin);
+  const callbackUrl = window.location.hostname.endsWith('base44.app')
+    ? new URL(target.pathname + target.search + target.hash, window.location.origin)
+    : new URL('/auth-bridge', base44AppUrl);
+
+  if (!window.location.hostname.endsWith('base44.app')) {
+    callbackUrl.searchParams.set('target', target.toString());
+  }
+
+  window.location.href = `${base44AppUrl}/login?from_url=${encodeURIComponent(callbackUrl.toString())}`;
+};
+
 export const logoutLocally = (targetPath = '/') => {
   clearStoredAuth();
 
