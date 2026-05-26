@@ -27,13 +27,45 @@ export default function EmployerDashboard() {
     },
   });
 
-  const { data: applications = [], isLoading: appsLoading } = useQuery({
-    queryKey: ["jobApplications", selectedJob],
-    queryFn: () => {
-      if (!selectedJob) return [];
-      return base44.entities.JobApplication.filter({ job_id: selectedJob }, "-created_date");
+  const { data: allApplications = [], isLoading: allAppsLoading } = useQuery({
+    queryKey: ["allApplications"],
+    queryFn: async () => {
+      const allApps = await base44.entities.JobApplication.list("-created_date", 1000);
+      return allApps.map(app => {
+        const job = myJobs.find(j => j.id === app.job_id);
+        return { ...app, matched_job: job };
+      });
     },
-    enabled: !!selectedJob,
+    enabled: myJobs.length > 0,
+  });
+
+  const { data: allSeekers = [], isLoading: allSeekersLoading } = useQuery({
+    queryKey: ["allSeekers"],
+    queryFn: async () => {
+      if (myJobs.length === 0) return [];
+      const seekers = await base44.entities.SeekerProfile.list("", 1000);
+      const matchedSeekers = [];
+      
+      for (const seeker of seekers) {
+        const matchingJobs = [];
+        for (const job of myJobs) {
+          try {
+            const result = await base44.functions.invoke("findMatchingSeekers", { job_id: job.id });
+            const matches = result.data || [];
+            if (matches.some(m => m.seeker_id === seeker.id)) {
+              matchingJobs.push(job);
+            }
+          } catch {
+            // Skip on error
+          }
+        }
+        if (matchingJobs.length > 0) {
+          matchedSeekers.push({ ...seeker, matched_jobs: matchingJobs });
+        }
+      }
+      return matchedSeekers;
+    },
+    enabled: myJobs.length > 0,
   });
 
   const updateAppMutation = useMutation({
@@ -47,10 +79,10 @@ export default function EmployerDashboard() {
   const activeJobs = myJobs.filter(j => j.status === "active").length;
 
   const statusGroups = {
-    new: applications.filter(a => a.status === "applied").length,
-    shortlisted: applications.filter(a => a.status === "shortlisted").length,
-    interview: applications.filter(a => a.status === "interview").length,
-    offered: applications.filter(a => a.status === "offered").length,
+    new: allApplications.filter(a => a.status === "applied").length,
+    shortlisted: allApplications.filter(a => a.status === "shortlisted").length,
+    interview: allApplications.filter(a => a.status === "interview").length,
+    offered: allApplications.filter(a => a.status === "offered").length,
   };
 
   return (
@@ -74,7 +106,7 @@ export default function EmployerDashboard() {
           { label: "Active Roles", value: activeJobs, icon: Briefcase, color: "text-primary" },
           { label: "Total Roles", value: myJobs.length, icon: Layers, color: "text-muted-foreground" },
           { label: "Viewing Role", value: selectedJob ? "1" : "—", icon: Eye, color: "text-accent" },
-          { label: "Applicants", value: selectedJob ? applications.length : "—", icon: Users, color: "text-primary" },
+          { label: "Applicants", value: allApplications.length, icon: Users, color: "text-primary" },
         ].map((stat) => (
           <Card key={stat.label} className="p-4">
             <div className="flex items-center gap-2 mb-1">
@@ -91,12 +123,11 @@ export default function EmployerDashboard() {
           <TabsTrigger value="jobs" className="gap-2">
             <Briefcase className="w-4 h-4" /> My Roles ({myJobs.length})
           </TabsTrigger>
-          <TabsTrigger value="candidates" className="gap-2" disabled={!selectedJob}>
-            <Users className="w-4 h-4" />
-            {selectedJob ? `Candidates — ${selectedJobData?.title || ""}` : "Candidates"}
+          <TabsTrigger value="candidates" className="gap-2">
+            <Users className="w-4 h-4" /> Candidates ({allApplications.length})
           </TabsTrigger>
-          <TabsTrigger value="explore" className="gap-2" disabled={!selectedJob}>
-            <Users className="w-4 h-4" /> Explore Seekers
+          <TabsTrigger value="explore" className="gap-2">
+            <Users className="w-4 h-4" /> Explore Seekers ({allSeekers.length})
           </TabsTrigger>
         </TabsList>
 
@@ -163,72 +194,84 @@ export default function EmployerDashboard() {
 
         {/* Candidates Tab */}
         <TabsContent value="candidates" className="space-y-4">
-          {!selectedJob ? (
+          {allAppsLoading ? (
+            Array(3).fill(0).map((_, i) => <Skeleton key={i} className="h-28 rounded-xl" />)
+          ) : allApplications.length === 0 ? (
             <Card className="p-12 text-center text-muted-foreground">
-              <Brain className="w-12 h-12 mx-auto mb-4 opacity-20" />
-              <p className="font-medium">Select a role to view its candidate pool</p>
-              <p className="text-sm mt-1">Click "Candidates" on any role in the My Roles tab.</p>
+              <Users className="w-12 h-12 mx-auto mb-4 opacity-20" />
+              <p>No applications yet across your roles.</p>
             </Card>
           ) : (
-            <>
-              {/* Pipeline summary */}
-              {applications.length > 0 && (
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-2">
-                  {[
-                    { label: "New", value: statusGroups.new, color: "text-blue-600" },
-                    { label: "Shortlisted", value: statusGroups.shortlisted, color: "text-green-600" },
-                    { label: "Interview", value: statusGroups.interview, color: "text-purple-600" },
-                    { label: "Offered", value: statusGroups.offered, color: "text-emerald-600" },
-                  ].map(s => (
-                    <Card key={s.label} className="p-3 text-center">
-                      <p className={`text-xl font-bold ${s.color}`}>{s.value}</p>
-                      <p className="text-xs text-muted-foreground">{s.label}</p>
-                    </Card>
-                  ))}
+            allApplications.map(app => (
+              <div key={app.id} className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs text-muted-foreground">Matching role:</p>
+                    {app.matched_job && (
+                      <Badge className="text-xs gap-1 mt-1">
+                        {app.matched_job.title}
+                      </Badge>
+                    )}
+                  </div>
                 </div>
-              )}
-
-              <div className="flex items-center justify-between">
-                <h3 className="font-semibold text-sm">
-                  {applications.length} applicant{applications.length !== 1 ? "s" : ""} for {selectedJobData?.title}
-                </h3>
-                <Badge variant="outline" className="text-xs gap-1">
-                  <Brain className="w-3 h-3 text-primary" /> AI Assessments Available
-                </Badge>
+                <CandidateCapabilityCard
+                  application={app}
+                  job={app.matched_job}
+                  onStatusChange={(id, status) => updateAppMutation.mutate({ id, status })}
+                />
               </div>
-
-              {appsLoading ? (
-                Array(3).fill(0).map((_, i) => <Skeleton key={i} className="h-28 rounded-xl" />)
-              ) : applications.length === 0 ? (
-                <Card className="p-12 text-center text-muted-foreground">
-                  <Users className="w-12 h-12 mx-auto mb-4 opacity-20" />
-                  <p>No applications yet for this role.</p>
-                </Card>
-              ) : (
-                applications.map(app => (
-                  <CandidateCapabilityCard
-                    key={app.id}
-                    application={app}
-                    job={selectedJobData}
-                    onStatusChange={(id, status) => updateAppMutation.mutate({ id, status })}
-                  />
-                ))
-              )}
-            </>
+            ))
           )}
-          </TabsContent>
+        </TabsContent>
 
           {/* Explore Seekers Tab */}
           <TabsContent value="explore" className="space-y-4">
-          {!selectedJob ? (
-            <Card className="p-12 text-center text-muted-foreground">
-              <Users className="w-12 h-12 mx-auto mb-4 opacity-20" />
-              <p className="font-medium">Select a role to explore matching seekers</p>
-              <p className="text-sm mt-1">Click "Explore Seekers" on any role in the My Roles tab.</p>
-            </Card>
-          ) : (
-            <ExploreSeekersPanel jobId={selectedJob} />
-          )}
+            {allSeekersLoading ? (
+              Array(3).fill(0).map((_, i) => <Skeleton key={i} className="h-32 rounded-xl" />)
+            ) : allSeekers.length === 0 ? (
+              <Card className="p-12 text-center text-muted-foreground">
+                <Users className="w-12 h-12 mx-auto mb-4 opacity-20" />
+                <p>No matching seekers found for your active roles.</p>
+              </Card>
+            ) : (
+              allSeekers.map(seeker => (
+                <Card key={seeker.id} className="p-5 space-y-3">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-sm">{seeker.headline}</h3>
+                      {seeker.bio && <p className="text-xs text-muted-foreground mt-1">{seeker.bio.substring(0, 100)}</p>}
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-xs text-muted-foreground font-medium">Matches with:</p>
+                    <div className="flex flex-wrap gap-2">
+                      {seeker.matched_jobs.map(job => (
+                        <Badge key={job.id} className="text-xs">
+                          {job.title}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                  {seeker.skills && seeker.skills.length > 0 && (
+                    <div className="space-y-2">
+                      <p className="text-xs text-muted-foreground font-medium">Skills:</p>
+                      <div className="flex flex-wrap gap-1">
+                        {seeker.skills.slice(0, 5).map((skill, idx) => (
+                          <Badge key={idx} variant="secondary" className="text-xs">
+                            {skill}
+                          </Badge>
+                        ))}
+                        {seeker.skills.length > 5 && (
+                          <Badge variant="secondary" className="text-xs">
+                            +{seeker.skills.length - 5}
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </Card>
+              ))
+            )}
           </TabsContent>
           </Tabs>
           </div>
