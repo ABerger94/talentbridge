@@ -113,7 +113,7 @@ export default function Landing() {
           <div className="text-center mb-14">
             <h2 className="text-3xl sm:text-4xl font-bold">The hiring system is broken. We rebuilt it.</h2>
             <p className="mt-4 text-lg text-muted-foreground max-w-xl mx-auto">Current ATS platforms use AI as a rejection machine.</p>
-            <p className="mt-2 text-lg text-muted-foreground max-w-xl mx-auto">TalentBridge uses AI as an advocate for candidates.</p>
+            <p className="mt-2 text-lg text-muted-foreground max-w-xl mx-auto">TalentBridge uses AI as an <span className="text-primary font-semibold">advocate</span> for candidates.</p>
           </div>
           <div className="rounded-2xl overflow-hidden border border-border/60 shadow-xl">
             <div className="grid grid-cols-2 text-sm">
