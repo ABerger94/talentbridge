@@ -83,7 +83,7 @@ export default function JobCard({ job, matchScore, index = 0 }) {
               )}
               <div className="flex items-center gap-1 mt-3 text-xs text-muted-foreground">
                <Clock className="w-3 h-3" />
-               Posted {job.created_date ? formatDistanceToNow(new Date(job.created_date), { addSuffix: true }) : "recently"}
+               Posted {job.created_date ? formatDistanceToNow(new Date(job.created_date)) + " ago" : "recently"}
               </div>
             </div>
           </div>
