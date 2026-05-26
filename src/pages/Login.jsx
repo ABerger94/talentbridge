@@ -6,7 +6,7 @@ import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/lib/AuthContext';
-import { redirectToHostedLogin } from '@/lib/auth-redirect';
+import { redirectToGoogleLogin } from '@/lib/auth-redirect';
 
 const getSafeNextPath = (next) => {
   try {
@@ -45,7 +45,7 @@ export default function Login() {
   };
 
   const handleHostedLogin = () => {
-    redirectToHostedLogin(new URL(nextPath, window.location.origin).toString());
+    redirectToGoogleLogin(new URL(nextPath, window.location.origin).toString());
   };
 
   return (

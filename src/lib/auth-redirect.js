@@ -59,6 +59,17 @@ export const redirectToHostedLogin = (targetUrl = window.location.href) => {
   window.location.href = `${base44AppUrl}/login?from_url=${encodeURIComponent(callbackUrl.toString())}`;
 };
 
+export const redirectToGoogleLogin = (targetUrl = window.location.href) => {
+  const base44AppUrl = getBase44AppUrl();
+  const target = new URL(targetUrl, window.location.origin);
+  const loginUrl = new URL('/api/apps/auth/login', base44AppUrl);
+
+  loginUrl.searchParams.set('app_id', appParams.appId);
+  loginUrl.searchParams.set('from_url', target.toString());
+
+  window.location.href = loginUrl.toString();
+};
+
 export const logoutLocally = (targetPath = '/') => {
   clearStoredAuth();
 
