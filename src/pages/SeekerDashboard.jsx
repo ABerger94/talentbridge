@@ -264,42 +264,42 @@ Return the top matches with specific reasoning.`,
   })();
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">My Capability Profile</h1>
-        <p className="text-muted-foreground">Build your Capability Graph. Let AI surface your full potential to the right employers.</p>
+    <div className="max-w-4xl mx-auto px-3 sm:px-4 lg:px-8 py-6 sm:py-10">
+      <div className="mb-6 sm:mb-8">
+        <h1 className="text-2xl sm:text-3xl font-bold mb-1 sm:mb-2">My Capability Profile</h1>
+        <p className="text-xs sm:text-sm text-muted-foreground">Build your Capability Graph. Let AI surface your full potential to the right employers.</p>
       </div>
 
       <Tabs defaultValue="profile">
-        <TabsList className="mb-6 flex-wrap h-auto">
-          <TabsTrigger value="profile" className="gap-2"><User className="w-4 h-4" /> Profile</TabsTrigger>
-          <TabsTrigger value="resume" className="gap-2"><FileText className="w-4 h-4" /> Resume</TabsTrigger>
-          <TabsTrigger value="portfolio" className="gap-2"><Globe className="w-4 h-4" /> Portfolio</TabsTrigger>
-          <TabsTrigger value="capability" className="gap-2"><Network className="w-4 h-4" /> Capability Graph</TabsTrigger>
-          <TabsTrigger value="matches" className="gap-2"><Brain className="w-4 h-4" /> AI Matches</TabsTrigger>
-          <TabsTrigger value="applications" className="gap-2"><Briefcase className="w-4 h-4" /> Applications</TabsTrigger>
-          <TabsTrigger value="invitations" className="gap-2"><Users className="w-4 h-4" /> Invitations ({invitations.length})</TabsTrigger>
+        <TabsList className="mb-6 flex-wrap h-auto gap-1">
+          <TabsTrigger value="profile" className="gap-1 text-xs sm:text-sm"><User className="w-3 h-3 sm:w-4 sm:h-4" /> <span className="hidden sm:inline">Profile</span></TabsTrigger>
+          <TabsTrigger value="resume" className="gap-1 text-xs sm:text-sm"><FileText className="w-3 h-3 sm:w-4 sm:h-4" /> <span className="hidden sm:inline">Resume</span></TabsTrigger>
+          <TabsTrigger value="portfolio" className="gap-1 text-xs sm:text-sm"><Globe className="w-3 h-3 sm:w-4 sm:h-4" /> <span className="hidden sm:inline">Portfolio</span></TabsTrigger>
+          <TabsTrigger value="capability" className="gap-1 text-xs sm:text-sm"><Network className="w-3 h-3 sm:w-4 sm:h-4" /> <span className="hidden sm:inline">Graph</span></TabsTrigger>
+          <TabsTrigger value="matches" className="gap-1 text-xs sm:text-sm"><Brain className="w-3 h-3 sm:w-4 sm:h-4" /> <span className="hidden sm:inline">Matches</span></TabsTrigger>
+          <TabsTrigger value="applications" className="gap-1 text-xs sm:text-sm"><Briefcase className="w-3 h-3 sm:w-4 sm:h-4" /> <span className="hidden sm:inline">Apps</span></TabsTrigger>
+          <TabsTrigger value="invitations" className="gap-1 text-xs sm:text-sm"><Users className="w-3 h-3 sm:w-4 sm:h-4" /> ({invitations.length})</TabsTrigger>
         </TabsList>
 
         {/* Profile Tab */}
         <TabsContent value="profile" className="space-y-6">
           {/* Completion score */}
-          <Card className="p-5 bg-primary/5 border-primary/15">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium flex items-center gap-2">
-                <Layers className="w-4 h-4 text-primary" /> Capability Profile Strength
+          <Card className="p-4 sm:p-5 bg-primary/5 border-primary/15">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
+              <span className="text-xs sm:text-sm font-medium flex items-center gap-2">
+                <Layers className="w-3 h-3 sm:w-4 sm:h-4 text-primary" /> Capability Profile Strength
               </span>
-              <span className="text-sm font-bold text-primary">{profileScore}%</span>
+              <span className="text-xs sm:text-sm font-bold text-primary">{profileScore}%</span>
             </div>
             <Progress value={profileScore} className="h-2" />
-            <p className="text-xs text-muted-foreground mt-2">
+            <p className="text-xs text-muted-foreground mt-2 line-clamp-2">
               {profileScore < 60 ? "Complete your profile to improve match quality." : profileScore < 90 ? "Strong profile — add more context to maximize AI matching." : "Excellent profile — your Capability Graph is rich with signal."}
             </p>
           </Card>
 
-          <Card className="p-6 space-y-5">
-            <h2 className="font-semibold">About You</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <Card className="p-4 sm:p-6 space-y-5">
+            <h2 className="text-sm sm:text-base font-semibold">About You</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div className="space-y-2 sm:col-span-2">
                 <Label>Professional Headline</Label>
                 <Input placeholder="e.g. Systems builder who ships at velocity — React, Node, Supabase" value={profile.headline || ""} onChange={(e) => update("headline", e.target.value)} />
@@ -328,8 +328,8 @@ Return the top matches with specific reasoning.`,
             </div>
           </Card>
 
-          <Card className="p-6 space-y-5">
-            <h2 className="font-semibold">Execution Capabilities</h2>
+          <Card className="p-4 sm:p-6 space-y-4 sm:space-y-5">
+            <h2 className="text-sm sm:text-base font-semibold">Execution Capabilities</h2>
             <div className="space-y-2">
               <Label>Skills & Technologies</Label>
               <div className="flex gap-2">
@@ -357,9 +357,9 @@ Return the top matches with specific reasoning.`,
             </div>
           </Card>
 
-          <Card className="p-6 space-y-5">
-            <h2 className="font-semibold">What You're Looking For</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <Card className="p-4 sm:p-6 space-y-4 sm:space-y-5">
+            <h2 className="text-sm sm:text-base font-semibold">What You're Looking For</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div className="space-y-2">
                 <Label>Work Preference</Label>
                 <Select value={profile.preferred_work_type || "any"} onValueChange={(v) => update("preferred_work_type", v)}>
@@ -401,7 +401,7 @@ Return the top matches with specific reasoning.`,
           </Card>
 
           <div className="flex justify-end">
-            <Button className="gap-2 px-8" onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending}>
+            <Button size="sm" className="gap-2 sm:px-8" onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending}>
               {saveMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
               Save Profile
             </Button>
@@ -427,67 +427,67 @@ Return the top matches with specific reasoning.`,
         </TabsContent>
 
         {/* Capability Graph Tab */}
-        <TabsContent value="capability" className="space-y-5">
-          <Card className="p-6">
-            <div className="flex items-center justify-between mb-4">
+         <TabsContent value="capability" className="space-y-4 sm:space-y-5">
+          <Card className="p-4 sm:p-6">
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4 mb-4">
               <div>
-                <h2 className="font-semibold flex items-center gap-2">
-                  <Network className="w-5 h-5 text-primary" /> Your Capability Graph
+                <h2 className="text-sm sm:text-base font-semibold flex items-center gap-2">
+                  <Network className="w-4 h-4 sm:w-5 sm:h-5 text-primary" /> Your Capability Graph
                 </h2>
-                <p className="text-sm text-muted-foreground mt-1">
+                <p className="text-xs sm:text-sm text-muted-foreground mt-1">
                   AI maps your actual execution capabilities — not just titles — into a semantic profile employers can understand at a glance.
                 </p>
               </div>
-              <Button className="gap-2" onClick={buildCapabilityGraph} disabled={graphLoading}>
+              <Button size="sm" className="gap-2 w-full sm:w-auto" onClick={buildCapabilityGraph} disabled={graphLoading}>
                 {graphLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <GitBranch className="w-4 h-4" />}
                 Build Graph
               </Button>
             </div>
 
             {!capabilityGraph && !graphLoading && (
-              <div className="text-center py-14 text-muted-foreground border-2 border-dashed border-border rounded-xl">
-                <Network className="w-10 h-10 mx-auto mb-3 opacity-20" />
+              <div className="text-center py-8 sm:py-14 text-muted-foreground border-2 border-dashed border-border rounded-xl">
+                <Network className="w-8 h-8 sm:w-10 sm:h-10 mx-auto mb-3 opacity-20" />
                 <p className="font-medium text-sm">No Capability Graph yet</p>
                 <p className="text-xs mt-1 opacity-60">Fill in your profile and click "Build Graph" to generate your semantic capability map</p>
               </div>
             )}
 
             {capabilityGraph && (
-              <div className="space-y-5">
+              <div className="space-y-4 sm:space-y-5">
                 {capabilityGraph.capability_headline && (
-                  <div className="rounded-xl bg-primary/8 border border-primary/15 p-4">
-                    <p className="text-sm font-semibold text-primary mb-1">Capability Headline</p>
-                    <p className="text-base font-medium text-foreground">{capabilityGraph.capability_headline}</p>
+                  <div className="rounded-xl bg-primary/8 border border-primary/15 p-3 sm:p-4">
+                    <p className="text-xs sm:text-sm font-semibold text-primary mb-1">Capability Headline</p>
+                    <p className="text-sm sm:text-base font-medium text-foreground">{capabilityGraph.capability_headline}</p>
                   </div>
                 )}
 
                 {capabilityGraph.core_execution_vectors?.length > 0 && (
-                  <div className="space-y-3">
-                    <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Core Execution Vectors</h3>
+                  <div className="space-y-2 sm:space-y-3">
+                    <h3 className="text-xs sm:text-sm font-semibold uppercase tracking-wider text-muted-foreground">Core Execution Vectors</h3>
                     {capabilityGraph.core_execution_vectors.map((v, i) => (
-                      <div key={i} className="space-y-1.5">
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm font-medium">{v.vector}</span>
+                      <div key={i} className="space-y-1">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+                          <span className="text-xs sm:text-sm font-medium truncate">{v.vector}</span>
                           <span className="text-xs text-muted-foreground">{v.strength}%</span>
                         </div>
                         <Progress value={v.strength} className="h-1.5" />
-                        <p className="text-xs text-muted-foreground">{v.evidence}</p>
+                        <p className="text-xs text-muted-foreground line-clamp-2">{v.evidence}</p>
                       </div>
                     ))}
                   </div>
                 )}
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   {capabilityGraph.architectural_pattern && (
-                    <div className="rounded-lg bg-secondary p-4">
+                    <div className="rounded-lg bg-secondary p-3 sm:p-4">
                       <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">Architectural Pattern</p>
-                      <p className="text-sm">{capabilityGraph.architectural_pattern}</p>
+                      <p className="text-xs sm:text-sm line-clamp-3">{capabilityGraph.architectural_pattern}</p>
                     </div>
                   )}
                   {capabilityGraph.unique_methodology && (
-                    <div className="rounded-lg bg-secondary p-4">
+                    <div className="rounded-lg bg-secondary p-3 sm:p-4">
                       <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">Unique Methodology</p>
-                      <p className="text-sm">{capabilityGraph.unique_methodology}</p>
+                      <p className="text-xs sm:text-sm line-clamp-3">{capabilityGraph.unique_methodology}</p>
                     </div>
                   )}
                 </div>
@@ -495,9 +495,9 @@ Return the top matches with specific reasoning.`,
                 {capabilityGraph.adjacent_zones?.length > 0 && (
                   <div>
                     <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Adjacent Adaptability Zones</h3>
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-wrap gap-1.5 sm:gap-2">
                       {capabilityGraph.adjacent_zones.map((z, i) => (
-                        <Badge key={i} variant="outline" className="text-xs bg-accent/8 border-accent/20 text-accent">{z}</Badge>
+                        <Badge key={i} variant="outline" className="text-xs bg-accent/8 border-accent/20 text-accent line-clamp-1">{z}</Badge>
                       ))}
                     </div>
                   </div>
@@ -506,9 +506,9 @@ Return the top matches with specific reasoning.`,
                 {capabilityGraph.suggested_role_types?.length > 0 && (
                   <div>
                     <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Roles You're Built For</h3>
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-wrap gap-1.5 sm:gap-2">
                       {capabilityGraph.suggested_role_types.map((r, i) => (
-                        <Badge key={i} variant="secondary" className="text-xs">{r}</Badge>
+                        <Badge key={i} variant="secondary" className="text-xs line-clamp-1">{r}</Badge>
                       ))}
                     </div>
                   </div>
@@ -519,18 +519,18 @@ Return the top matches with specific reasoning.`,
         </TabsContent>
 
         {/* Matches Tab */}
-        <TabsContent value="matches" className="space-y-5">
-          <Card className="p-6">
-            <div className="flex items-center justify-between mb-4">
+         <TabsContent value="matches" className="space-y-4 sm:space-y-5">
+          <Card className="p-4 sm:p-6">
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4 mb-4">
               <div>
-                <h2 className="font-semibold flex items-center gap-2">
-                  <Brain className="w-5 h-5 text-primary" /> Semantic Role Matches
+                <h2 className="text-sm sm:text-base font-semibold flex items-center gap-2">
+                  <Brain className="w-4 h-4 sm:w-5 sm:h-5 text-primary" /> Semantic Role Matches
                 </h2>
-                <p className="text-sm text-muted-foreground mt-1">
+                <p className="text-xs sm:text-sm text-muted-foreground mt-1">
                   Matched on capability alignment and problem-solving overlap — not keyword counting.
                 </p>
               </div>
-              <Button className="gap-2" onClick={getAiMatches} disabled={matchLoading}>
+              <Button size="sm" className="gap-2 sm:gap-2 w-full sm:w-auto" onClick={getAiMatches} disabled={matchLoading}>
                 {matchLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
                 Find Matches
               </Button>
@@ -538,7 +538,7 @@ Return the top matches with specific reasoning.`,
 
             {aiMatches?.search_insight && (
               <div className="p-3 bg-primary/5 rounded-lg border border-primary/10 mb-4">
-                <p className="text-sm flex items-start gap-2 text-muted-foreground">
+                <p className="text-xs sm:text-sm flex items-start gap-2 text-muted-foreground">
                   <Sparkles className="w-4 h-4 text-primary shrink-0 mt-0.5" />
                   {aiMatches.search_insight}
                 </p>
@@ -578,8 +578,8 @@ Return the top matches with specific reasoning.`,
             )}
 
             {!aiMatches && !matchLoading && (
-              <div className="text-center py-14 border-2 border-dashed border-border rounded-xl text-muted-foreground">
-                <Brain className="w-10 h-10 mx-auto mb-3 opacity-20" />
+              <div className="text-center py-8 sm:py-14 border-2 border-dashed border-border rounded-xl text-muted-foreground">
+                <Brain className="w-8 h-8 sm:w-10 sm:h-10 mx-auto mb-3 opacity-20" />
                 <p className="text-sm font-medium">Ready to find your matches</p>
                 <p className="text-xs mt-1 opacity-60">A complete profile produces significantly better matches</p>
               </div>
@@ -611,44 +611,44 @@ Return the top matches with specific reasoning.`,
         </TabsContent>
 
           {/* Invitations Tab */}
-          <TabsContent value="invitations" className="space-y-3">
+          <TabsContent value="invitations" className="space-y-2 sm:space-y-3">
           {invitations.length === 0 ? (
-           <Card className="p-12 text-center text-muted-foreground">
-             <Users className="w-12 h-12 mx-auto mb-4 opacity-20" />
-             <p className="font-medium">No invitations yet</p>
-             <p className="text-sm mt-1">Employers will invite you to roles they think you're a great fit for</p>
+           <Card className="p-8 sm:p-12 text-center text-muted-foreground">
+             <Users className="w-8 h-8 sm:w-12 sm:h-12 mx-auto mb-3 sm:mb-4 opacity-20" />
+             <p className="text-sm sm:text-base font-medium">No invitations yet</p>
+             <p className="text-xs sm:text-sm mt-1">Employers will invite you to roles they think you're a great fit for</p>
            </Card>
           ) : (
            invitations.map(invitation => {
            const job = jobs.find(j => j.id === invitation.job_id);
            return (
-             <Card key={invitation.id} className="p-5">
-               <div className="flex items-start justify-between">
-                 <div className="flex-1">
-                   <h3 className="font-semibold text-sm">{job?.title || "Unknown Role"}</h3>
-                   <p className="text-xs text-muted-foreground mt-0.5">{job?.company || ""}</p>
+             <Card key={invitation.id} className="p-4 sm:p-5">
+               <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
+                 <div className="flex-1 min-w-0">
+                   <h3 className="font-semibold text-xs sm:text-sm truncate">{job?.title || "Unknown Role"}</h3>
+                   <p className="text-xs text-muted-foreground mt-0.5 truncate">{job?.company || ""}</p>
                    {job?.location && (
-                     <p className="text-xs text-muted-foreground mt-1">{job.location}</p>
+                     <p className="text-xs text-muted-foreground mt-1 truncate">{job.location}</p>
                    )}
                  </div>
-                 <Badge className={`text-xs ${invitationStatusColor[invitation.status] || "bg-gray-100 text-gray-700"}`}>
+                 <Badge className={`text-xs whitespace-nowrap ${invitationStatusColor[invitation.status] || "bg-gray-100 text-gray-700"}`}>
                    {invitationStatusLabel[invitation.status] || invitation.status}
                  </Badge>
                </div>
-               <div className="flex gap-2 mt-4">
+               <div className="flex flex-col sm:flex-row gap-2 mt-3 sm:mt-4">
                  {job && (
-                   <Link to={`/jobs/${job.id}`}>
-                     <Button size="sm" variant="ghost" className="gap-1">
+                   <Link to={`/jobs/${job.id}`} className="w-full sm:w-auto">
+                     <Button size="sm" variant="ghost" className="gap-1 w-full sm:w-auto">
                        <Eye className="w-3.5 h-3.5" /> View Job
                      </Button>
                    </Link>
                  )}
                  {invitation.status === "pending" && (
                    <>
-                     <Button size="sm" onClick={() => updateInvitationMutation.mutate({ id: invitation.id, status: "accepted", job_id: invitation.job_id, seeker_profile_id: invitation.seeker_profile_id })} disabled={updateInvitationMutation.isPending}>
+                     <Button size="sm" className="flex-1 sm:flex-none" onClick={() => updateInvitationMutation.mutate({ id: invitation.id, status: "accepted", job_id: invitation.job_id, seeker_profile_id: invitation.seeker_profile_id })} disabled={updateInvitationMutation.isPending}>
                        Accept & Apply
                      </Button>
-                     <Button size="sm" variant="outline" onClick={() => updateInvitationMutation.mutate({ id: invitation.id, status: "declined" })} disabled={updateInvitationMutation.isPending}>
+                     <Button size="sm" variant="outline" className="flex-1 sm:flex-none" onClick={() => updateInvitationMutation.mutate({ id: invitation.id, status: "declined" })} disabled={updateInvitationMutation.isPending}>
                        Decline
                      </Button>
                    </>
