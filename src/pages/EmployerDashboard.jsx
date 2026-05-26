@@ -51,7 +51,7 @@ export default function EmployerDashboard() {
         for (const job of myJobs) {
           try {
             const result = await base44.functions.invoke("findMatchingSeekers", { job_id: job.id });
-            const matches = result.data || [];
+            const matches = result.data?.matches || [];
             if (matches.some(m => m.seeker_id === seeker.id)) {
               matchingJobs.push(job);
             }
