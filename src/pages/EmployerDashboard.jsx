@@ -28,7 +28,7 @@ export default function EmployerDashboard() {
   });
 
   const { data: allApplications = [], isLoading: allAppsLoading } = useQuery({
-    queryKey: ["allApplications"],
+    queryKey: ["allApplications", myJobs],
     queryFn: async () => {
       const allApps = await base44.entities.JobApplication.list("-created_date", 1000);
       return allApps.map(app => {
@@ -36,11 +36,10 @@ export default function EmployerDashboard() {
         return { ...app, matched_job: job };
       });
     },
-    enabled: myJobs.length > 0,
   });
 
   const { data: allSeekers = [], isLoading: allSeekersLoading } = useQuery({
-    queryKey: ["allSeekers"],
+    queryKey: ["allSeekers", myJobs],
     queryFn: async () => {
       if (myJobs.length === 0) return [];
       const seekers = await base44.entities.SeekerProfile.list("", 1000);
@@ -65,7 +64,6 @@ export default function EmployerDashboard() {
       }
       return matchedSeekers;
     },
-    enabled: myJobs.length > 0,
   });
 
   const updateAppMutation = useMutation({
