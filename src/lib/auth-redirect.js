@@ -20,7 +20,21 @@ export const redirectToLogin = (targetUrl = window.location.href) => {
 };
 
 export const logoutLocally = (targetPath = '/') => {
-  window.localStorage.removeItem('base44_access_token');
-  window.localStorage.removeItem('token');
-  window.location.href = new URL(targetPath, window.location.origin).toString();
+  const tokenKeys = [
+    'base44_access_token',
+    'token',
+    'access_token',
+    'base44_token',
+    'base44_app_id',
+    'base44_app_base_url',
+  ];
+
+  tokenKeys.forEach((key) => {
+    window.localStorage.removeItem(key);
+    window.sessionStorage.removeItem(key);
+  });
+
+  const logoutUrl = new URL(targetPath, window.location.origin);
+  logoutUrl.searchParams.set('clear_access_token', 'true');
+  window.location.replace(logoutUrl.toString());
 };
