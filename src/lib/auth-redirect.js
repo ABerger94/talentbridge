@@ -31,15 +31,16 @@ const clearStoredAuth = () => {
 };
 
 export const redirectToLogin = (targetUrl = window.location.href) => {
+  if (!window.location.hostname.endsWith('base44.app')) {
+    const loginUrl = new URL('/login', window.location.origin);
+    loginUrl.searchParams.set('next', new URL(targetUrl, window.location.origin).toString());
+    window.location.href = loginUrl.toString();
+    return;
+  }
+
   const base44AppUrl = getBase44AppUrl();
   const target = new URL(targetUrl, window.location.origin);
-  const callbackUrl = window.location.hostname.endsWith('base44.app')
-    ? new URL(target.pathname + target.search + target.hash, window.location.origin)
-    : new URL('/auth-bridge', base44AppUrl);
-
-  if (!window.location.hostname.endsWith('base44.app')) {
-    callbackUrl.searchParams.set('target', target.toString());
-  }
+  const callbackUrl = new URL(target.pathname + target.search + target.hash, window.location.origin);
 
   window.location.href = `${base44AppUrl}/login?from_url=${encodeURIComponent(callbackUrl.toString())}`;
 };
@@ -50,18 +51,15 @@ export const logoutLocally = (targetPath = '/') => {
   const logoutUrl = new URL(targetPath, window.location.origin);
   logoutUrl.searchParams.set('clear_access_token', 'true');
 
+  if (!window.location.hostname.endsWith('base44.app')) {
+    window.location.replace(logoutUrl.toString());
+    return;
+  }
+
   try {
     const base44AppUrl = getBase44AppUrl();
     const serverLogoutUrl = new URL('/api/apps/auth/logout', base44AppUrl);
-    const callbackUrl = window.location.hostname.endsWith('base44.app')
-      ? logoutUrl
-      : new URL('/logout-bridge', base44AppUrl);
-
-    if (!window.location.hostname.endsWith('base44.app')) {
-      callbackUrl.searchParams.set('target', logoutUrl.toString());
-    }
-
-    serverLogoutUrl.searchParams.set('from_url', callbackUrl.toString());
+    serverLogoutUrl.searchParams.set('from_url', logoutUrl.toString());
     window.location.replace(serverLogoutUrl.toString());
   } catch {
     window.location.replace(logoutUrl.toString());

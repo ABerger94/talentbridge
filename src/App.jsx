@@ -15,6 +15,7 @@ import AppLayout from './components/layout/AppLayout';
 import Onboarding from './pages/Onboarding';
 import AuthBridge from './pages/AuthBridge';
 import LogoutBridge from './pages/LogoutBridge';
+import Login from './pages/Login';
 
 // Wraps protected routes — redirects to login if not authenticated, optionally checks role
 const ProtectedRoute = ({ children, allowedRoles }) => {
@@ -66,6 +67,7 @@ const AuthenticatedApp = () => {
       </Route>
       <Route path="/auth-bridge" element={<AuthBridge />} />
       <Route path="/logout-bridge" element={<LogoutBridge />} />
+      <Route path="/login" element={<Login />} />
       <Route path="/onboarding" element={<Onboarding />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
