@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Progress } from "@/components/ui/progress";
 import {
   Brain, Loader2, ChevronDown, ChevronUp, CheckCircle2,
-  TrendingUp, Zap, Star, ShieldCheck, User
+  TrendingUp, Zap, Star, ShieldCheck, User, FileText
 } from "lucide-react";
 
 export default function CandidateCapabilityCard({ application, job, onStatusChange }) {
@@ -145,6 +145,15 @@ Generate a rich, evidence-based capability profile. Be specific and concrete.`,
           </div>
           <Progress value={assessment.match_score} className="h-1.5" />
         </div>
+      )}
+
+      {/* Resume Link */}
+      {application.resume_url && (
+        <a href={application.resume_url} target="_blank" rel="noreferrer">
+          <Button variant="outline" size="sm" className="gap-1.5 text-xs w-full">
+            <FileText className="w-3.5 h-3.5" /> View Resume
+          </Button>
+        </a>
       )}
 
       {/* Cover Letter */}

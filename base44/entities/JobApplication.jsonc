@@ -44,6 +44,10 @@
     },
     "applicant_email": {
       "type": "string"
+    },
+    "resume_url": {
+      "type": "string",
+      "description": "URL to the applicant's uploaded resume file"
     }
   },
   "required": [
