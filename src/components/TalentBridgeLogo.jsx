@@ -7,66 +7,24 @@ export default function TalentBridgeLogo({ size = 32 }) {
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
     >
-      {/* Outer arc - top left to center */}
+      {/* Curved line from top-left to bottom-right */}
       <path
-        d="M 4 16 Q 16 4, 16 16"
+        d="M 4 4 Q 16 16, 28 28"
         stroke="currentColor"
         strokeWidth="2.5"
         strokeLinecap="round"
       />
-      {/* Middle arc - left to center */}
+      {/* Curved line from bottom-left to top-right */}
       <path
-        d="M 8 16 Q 16 10, 16 16"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        opacity="0.75"
-      />
-      {/* Outer arc - bottom left to center */}
-      <path
-        d="M 4 16 Q 16 28, 16 16"
+        d="M 4 28 Q 16 16, 28 4"
         stroke="currentColor"
         strokeWidth="2.5"
         strokeLinecap="round"
       />
-      {/* Middle arc - left bottom to center */}
-      <path
-        d="M 8 16 Q 16 22, 16 16"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        opacity="0.75"
-      />
-      {/* Outer arc - top right to center */}
-      <path
-        d="M 28 16 Q 16 4, 16 16"
-        stroke="currentColor"
-        strokeWidth="2.5"
-        strokeLinecap="round"
-      />
-      {/* Middle arc - right to center */}
-      <path
-        d="M 24 16 Q 16 10, 16 16"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        opacity="0.75"
-      />
-      {/* Outer arc - bottom right to center */}
-      <path
-        d="M 28 16 Q 16 28, 16 16"
-        stroke="currentColor"
-        strokeWidth="2.5"
-        strokeLinecap="round"
-      />
-      {/* Middle arc - right bottom to center */}
-      <path
-        d="M 24 16 Q 16 22, 16 16"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        opacity="0.75"
-      />
+      {/* Left accent dot */}
+      <circle cx="12" cy="16" r="1.5" fill="currentColor" />
+      {/* Right accent dot */}
+      <circle cx="20" cy="16" r="1.5" fill="currentColor" />
     </svg>
   );
 }
