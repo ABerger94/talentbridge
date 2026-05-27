@@ -86,10 +86,6 @@ export const AuthProvider = ({ children }) => {
     redirectToLogin(window.location.href);
   };
 
-  const loginWithGoogle = (targetUrl = window.location.href) => {
-    base44.auth.loginWithProvider('google', targetUrl);
-  };
-
   const loginWithEmailPassword = async (email, password) => {
     setIsLoadingAuth(true);
     setAuthError(null);
@@ -149,6 +145,10 @@ export const AuthProvider = ({ children }) => {
     await base44.auth.resendOtp(email);
   };
 
+  const requestPasswordReset = async (email) => {
+    await base44.auth.resetPasswordRequest(email);
+  };
+
   return (
     <AuthContext.Provider value={{ 
       user, 
@@ -160,11 +160,11 @@ export const AuthProvider = ({ children }) => {
       authChecked,
       logout,
       navigateToLogin,
-      loginWithGoogle,
       loginWithEmailPassword,
       registerWithEmailPassword,
       verifyEmailOtpAndLogin,
       resendVerificationCode,
+      requestPasswordReset,
       checkUserAuth,
       checkAppState
     }}>

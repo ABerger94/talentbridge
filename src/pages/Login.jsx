@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { Chrome, LogIn } from 'lucide-react';
+import { KeyRound, LogIn } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -21,22 +21,21 @@ const getSafeNextPath = (next) => {
 export default function Login() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { loginWithEmailPassword, loginWithGoogle } = useAuth();
+  const { loginWithEmailPassword, requestPasswordReset } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSendingReset, setIsSendingReset] = useState(false);
 
   const nextPath = useMemo(() => getSafeNextPath(searchParams.get('next')), [searchParams]);
   const nextUrl = useMemo(() => new URL(nextPath, window.location.origin).toString(), [nextPath]);
 
-  const handleGoogleSignIn = () => {
-    loginWithGoogle(nextUrl);
-  };
-
   const handleSubmit = async (event) => {
     event.preventDefault();
     setError('');
+    setNotice('');
     setIsSubmitting(true);
 
     try {
@@ -46,6 +45,27 @@ export default function Login() {
       setError(err.message || 'Sign in failed. Check your email and password.');
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handlePasswordReset = async () => {
+    setError('');
+    setNotice('');
+
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail) {
+      setError('Enter your email first so we can send the password setup link.');
+      return;
+    }
+
+    setIsSendingReset(true);
+    try {
+      await requestPasswordReset(trimmedEmail);
+      setNotice('Check your email for a password setup link, then return here to sign in.');
+    } catch (err) {
+      setError(err.message || 'Unable to send a password setup link.');
+    } finally {
+      setIsSendingReset(false);
     }
   };
 
@@ -62,22 +82,8 @@ export default function Login() {
         <div className="mb-6">
           <h1 className="text-2xl font-bold">Sign in</h1>
           <p className="text-sm text-muted-foreground mt-2">
-            Use Google or your TalentBridge email and password.
+            Use your TalentBridge email and password.
           </p>
-        </div>
-
-        <Button type="button" variant="outline" className="w-full gap-2 mb-6" onClick={handleGoogleSignIn}>
-          <Chrome className="w-4 h-4" />
-          Sign in with Google
-        </Button>
-
-        <div className="relative mb-6">
-          <div className="absolute inset-0 flex items-center">
-            <span className="w-full border-t" />
-          </div>
-          <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-background px-2 text-muted-foreground">Or continue with email</span>
-          </div>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -111,11 +117,34 @@ export default function Login() {
             </div>
           )}
 
+          {notice && (
+            <div className="rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-sm text-primary">
+              {notice}
+            </div>
+          )}
+
           <Button type="submit" className="w-full gap-2" disabled={isSubmitting}>
             <LogIn className="w-4 h-4" />
             {isSubmitting ? 'Signing in...' : 'Sign In'}
           </Button>
         </form>
+
+        <div className="mt-5 rounded-lg border bg-muted/30 p-4">
+          <p className="text-sm font-medium">Used Google before?</p>
+          <p className="text-sm text-muted-foreground mt-1">
+            Enter the same Gmail address above and set a password for this login page.
+          </p>
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full gap-2 mt-3"
+            onClick={handlePasswordReset}
+            disabled={isSendingReset}
+          >
+            <KeyRound className="w-4 h-4" />
+            {isSendingReset ? 'Sending link...' : 'Email me a password setup link'}
+          </Button>
+        </div>
 
         <p className="text-sm text-muted-foreground text-center mt-6">
           New to TalentBridge?{' '}
