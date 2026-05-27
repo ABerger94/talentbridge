@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { LogIn } from 'lucide-react';
+import { Chrome, LogIn } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -21,13 +21,18 @@ const getSafeNextPath = (next) => {
 export default function Login() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { loginWithEmailPassword } = useAuth();
+  const { loginWithEmailPassword, loginWithGoogle } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const nextPath = useMemo(() => getSafeNextPath(searchParams.get('next')), [searchParams]);
+  const nextUrl = useMemo(() => new URL(nextPath, window.location.origin).toString(), [nextPath]);
+
+  const handleGoogleSignIn = () => {
+    loginWithGoogle(nextUrl);
+  };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -57,8 +62,22 @@ export default function Login() {
         <div className="mb-6">
           <h1 className="text-2xl font-bold">Sign in</h1>
           <p className="text-sm text-muted-foreground mt-2">
-            Use your TalentBridge email and password.
+            Use Google or your TalentBridge email and password.
           </p>
+        </div>
+
+        <Button type="button" variant="outline" className="w-full gap-2 mb-6" onClick={handleGoogleSignIn}>
+          <Chrome className="w-4 h-4" />
+          Sign in with Google
+        </Button>
+
+        <div className="relative mb-6">
+          <div className="absolute inset-0 flex items-center">
+            <span className="w-full border-t" />
+          </div>
+          <div className="relative flex justify-center text-xs uppercase">
+            <span className="bg-background px-2 text-muted-foreground">Or continue with email</span>
+          </div>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -101,7 +120,7 @@ export default function Login() {
         <p className="text-sm text-muted-foreground text-center mt-6">
           New to TalentBridge?{' '}
           <Link
-            to={`/signup?next=${encodeURIComponent(new URL(nextPath, window.location.origin).toString())}`}
+            to={`/signup?next=${encodeURIComponent(nextUrl)}`}
             className="font-medium text-primary hover:underline"
           >
             Create an account

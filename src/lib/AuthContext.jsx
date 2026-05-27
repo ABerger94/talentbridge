@@ -86,6 +86,10 @@ export const AuthProvider = ({ children }) => {
     redirectToLogin(window.location.href);
   };
 
+  const loginWithGoogle = (targetUrl = window.location.href) => {
+    base44.auth.loginWithProvider('google', targetUrl);
+  };
+
   const loginWithEmailPassword = async (email, password) => {
     setIsLoadingAuth(true);
     setAuthError(null);
@@ -156,6 +160,7 @@ export const AuthProvider = ({ children }) => {
       authChecked,
       logout,
       navigateToLogin,
+      loginWithGoogle,
       loginWithEmailPassword,
       registerWithEmailPassword,
       verifyEmailOtpAndLogin,
