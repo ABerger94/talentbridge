@@ -6,6 +6,7 @@ import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/lib/AuthContext';
+import TalentBridgeLogo from '@/components/TalentBridgeLogo';
 
 const getSafeNextPath = (next) => {
   try {
@@ -91,7 +92,7 @@ export default function Signup() {
       <Card className="w-full max-w-md p-6 sm:p-8">
         <Link to="/" className="flex items-center gap-2.5 mb-8">
           <div className="w-9 h-9 bg-primary rounded-xl flex items-center justify-center text-primary-foreground">
-            <UserPlus className="w-4 h-4" />
+            <TalentBridgeLogo size={28} />
           </div>
           <span className="text-xl font-bold tracking-tight">TalentBridge</span>
         </Link>

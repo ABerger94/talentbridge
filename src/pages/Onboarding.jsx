@@ -2,10 +2,11 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Layers, Building2, User, ArrowRight, Loader2 } from "lucide-react";
+import { Building2, User, ArrowRight, Loader2 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
 import { motion } from "framer-motion";
+import TalentBridgeLogo from "@/components/TalentBridgeLogo";
 
 export default function Onboarding() {
   const [selected, setSelected] = useState(null);
@@ -59,7 +60,7 @@ export default function Onboarding() {
         {/* Logo */}
         <div className="flex items-center justify-center gap-2.5 mb-10">
           <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center shadow-lg shadow-primary/25">
-            <Layers className="w-5 h-5 text-primary-foreground" />
+            <TalentBridgeLogo size={32} />
           </div>
           <span className="text-2xl font-bold tracking-tight">TalentBridge</span>
         </div>
