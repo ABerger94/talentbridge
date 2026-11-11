@@ -8,30 +8,49 @@ const { authRequired } = require('./auth');
 const { invokeLLM } = require('./llm');
 
 const UPLOAD_DIR = path.join(DATA_DIR, 'uploads');
+const SERVERLESS = !!process.env.TURSO_DATABASE_URL;
+
+// Uploads are held in memory so the same code works on serverless hosts
+// (Vercel), where the disk is not writable/persistent. On standalone hosts
+// (ASUS) they are ALSO written to disk and served statically as before.
+// Caveat: on serverless, the in-memory copy lives as long as the function
+// instance — the upload → extract flow happens back-to-back, so this holds.
+const stash = new Map(); // name -> { buffer, originalname }
 const upload = multer({
-  storage: multer.diskStorage({
-    destination: UPLOAD_DIR,
-    filename: (req, file, cb) => {
-      const ext = path.extname(file.originalname || '').slice(0, 10);
-      cb(null, `${Date.now()}-${crypto.randomUUID()}${ext}`);
-    },
-  }),
+  storage: multer.memoryStorage(),
   limits: { fileSize: 15 * 1024 * 1024 },
 });
 
-async function extractText(filePath) {
-  if (filePath.toLowerCase().endsWith('.pdf')) {
+async function extractTextFromBuffer(buffer, name) {
+  if (name.toLowerCase().endsWith('.pdf')) {
     const pdfParse = require('pdf-parse');
-    const parsed = await pdfParse(fs.readFileSync(filePath));
+    const parsed = await pdfParse(buffer);
     return parsed.text || '';
   }
-  return fs.readFileSync(filePath, 'utf8');
+  return buffer.toString('utf8');
+}
+
+async function extractText(filePath) {
+  return extractTextFromBuffer(fs.readFileSync(filePath), path.basename(filePath));
 }
 
 function registerFileRoutes(app) {
   app.post('/api/files/upload', authRequired, upload.single('file'), (req, res) => {
     if (!req.file) return res.status(400).json({ error: 'No file received' });
-    res.json({ data: { file_url: `/uploads/${req.file.filename}` } });
+    const ext = path.extname(req.file.originalname || '').slice(0, 10);
+    const name = `${Date.now()}-${crypto.randomUUID()}${ext}`;
+    stash.set(name, { buffer: req.file.buffer, originalname: req.file.originalname });
+    if (!SERVERLESS) {
+      try { fs.writeFileSync(path.join(UPLOAD_DIR, name), req.file.buffer); } catch { /* memory copy still serves */ }
+    }
+    res.json({ data: { file_url: `/uploads/${name}` } });
+  });
+
+  // Serves the in-memory copy when static disk serving can't (serverless).
+  app.get('/uploads/:name', (req, res) => {
+    const hit = stash.get(path.basename(req.params.name));
+    if (!hit) return res.status(404).json({ error: 'File not found' });
+    res.type(path.extname(hit.originalname || '') || 'application/octet-stream').send(hit.buffer);
   });
 
   // Replaces Base44 ExtractDataFromUploadedFile: read the file's text and
@@ -41,9 +60,16 @@ function registerFileRoutes(app) {
       const { file_url, json_schema } = req.body || {};
       if (!file_url) return res.status(400).json({ error: 'file_url required' });
       const name = path.basename(file_url);
-      const filePath = path.join(UPLOAD_DIR, name);
-      if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'File not found' });
-      const text = (await extractText(filePath)).slice(0, 24000);
+      let text;
+      const hit = stash.get(name);
+      if (hit) {
+        text = await extractTextFromBuffer(hit.buffer, name);
+      } else {
+        const filePath = path.join(UPLOAD_DIR, name);
+        if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'File not found' });
+        text = await extractText(filePath);
+      }
+      text = text.slice(0, 24000);
       const result = await invokeLLM({
         prompt: `Extract the requested fields from this document. Use only information present in the document; leave fields empty when the information is absent.\n\nDOCUMENT:\n${text}`,
         response_json_schema: json_schema,

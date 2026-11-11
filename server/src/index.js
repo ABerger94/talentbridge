@@ -22,6 +22,7 @@ const { registerFileRoutes } = require('./files');
 const { registerFunctionRoutes } = require('./functions');
 
 const app = express();
+app.set('trust proxy', true); // correct https host behind Vercel's proxy (OAuth redirects)
 app.use(express.json({ limit: '2mb' }));
 
 // CORS for the separately-hosted frontend (Vercel) during transition.
@@ -69,9 +70,15 @@ app.use((err, req, res, next) => {
   res.status(err.status || 500).json({ error: err.message || 'Server error' });
 });
 
-const PORT = parseInt(process.env.TB_PORT || '8787', 10);
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`TalentBridge server listening on http://0.0.0.0:${PORT}`);
-  if (!process.env.GEMINI_API_KEY) console.log('NOTE: GEMINI_API_KEY not set — AI features will return 503 until it is.');
-  if (!process.env.TB_JWT_SECRET) console.log('NOTE: TB_JWT_SECRET not set — using a dev secret. Set it before real deployment.');
-});
+module.exports = app;
+
+// Standalone mode (ASUS / local): listen. On Vercel the app is exported to
+// the serverless entry (api/index.js) and never listens.
+if (require.main === module) {
+  const PORT = parseInt(process.env.TB_PORT || '8787', 10);
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`TalentBridge server listening on http://0.0.0.0:${PORT}`);
+    if (!process.env.GEMINI_API_KEY) console.log('NOTE: GEMINI_API_KEY not set — AI features will return 503 until it is.');
+    if (!process.env.TB_JWT_SECRET) console.log('NOTE: TB_JWT_SECRET not set — using a dev secret. Set it before real deployment.');
+  });
+}

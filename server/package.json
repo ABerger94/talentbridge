@@ -1,1 +1,20 @@
-{"dependencies":{"bcryptjs":"^2.4.3","express":"^4.21.2","jsonwebtoken":"^9.0.2","multer":"^1.4.5-lts.1","pdf-parse":"^1.1.1"},"description":"TalentBridge self-hosted backend — replaces Base44 (auth, entities, functions, LLM).","main":"src/index.js","name":"talentbridge-server","private":true,"scripts":{"dev":"node --watch src/index.js","start":"node src/index.js"},"type":"commonjs","version":"1.0.0"}
+{
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "express": "^4.21.2",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^1.4.5-lts.1",
+    "pdf-parse": "^1.1.1",
+    "libsql": "^0.5.22"
+  },
+  "description": "TalentBridge self-hosted backend \u2014 replaces Base44 (auth, entities, functions, LLM).",
+  "main": "src/index.js",
+  "name": "talentbridge-server",
+  "private": true,
+  "scripts": {
+    "dev": "node --watch src/index.js",
+    "start": "node src/index.js"
+  },
+  "type": "commonjs",
+  "version": "1.0.0"
+}

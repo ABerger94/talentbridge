@@ -1,16 +1,25 @@
 'use strict';
-// SQLite via Node's built-in node:sqlite — zero native dependencies, so the
-// same code runs on this VM, the ASUS (Windows), or any Node 22+ host.
-const { DatabaseSync } = require('node:sqlite');
+// SQLite via the libsql driver. Locally (ASUS, this VM) it opens a file;
+// when TURSO_DATABASE_URL is set (Vercel) it connects to the hosted Turso
+// database instead. The sync prepare/run/get/all call shapes are the same
+// in both modes, so no other module changes.
+const Database = require('libsql');
 const fs = require('fs');
 const path = require('path');
 
 const DATA_DIR = process.env.TB_DATA_DIR || path.join(__dirname, '..', 'data');
-fs.mkdirSync(DATA_DIR, { recursive: true });
-fs.mkdirSync(path.join(DATA_DIR, 'uploads'), { recursive: true });
 
-const db = new DatabaseSync(path.join(DATA_DIR, 'talentbridge.sqlite'));
-db.exec('PRAGMA journal_mode = WAL;');
+let db;
+if (process.env.TURSO_DATABASE_URL) {
+  db = new Database(process.env.TURSO_DATABASE_URL, {
+    authToken: process.env.TURSO_AUTH_TOKEN || '',
+  });
+} else {
+  fs.mkdirSync(DATA_DIR, { recursive: true });
+  fs.mkdirSync(path.join(DATA_DIR, 'uploads'), { recursive: true });
+  db = new Database(path.join(DATA_DIR, 'talentbridge.sqlite'));
+  db.exec('PRAGMA journal_mode = WAL;');
+}
 
 db.exec(`
 CREATE TABLE IF NOT EXISTS users (
