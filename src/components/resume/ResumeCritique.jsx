@@ -32,8 +32,9 @@ export default function ResumeCritique({ profile }) {
       return;
     }
     setLoading(true);
+    try {
 
-    const prompt = `You are an expert resume coach and career advisor. Conduct a thorough, honest, and constructive critique of this candidate's resume/profile.
+      const prompt = `You are an expert resume coach and career advisor. Conduct a thorough, honest, and constructive critique of this candidate's resume/profile.
 
 Current date: ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
 
@@ -59,47 +60,52 @@ Evaluate across these dimensions:
 
 Give an overall score 0-100 and specific dimension scores.`;
 
-    const result = await base44.integrations.Core.InvokeLLM({
-      prompt,
-      file_urls: profile.resume_url ? [profile.resume_url] : undefined,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          overall_score: { type: "number" },
-          overall_verdict: { type: "string" },
-          dimension_scores: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                dimension: { type: "string" },
-                score: { type: "number" },
-                feedback: { type: "string" }
+      const result = await base44.integrations.Core.InvokeLLM({
+        prompt,
+        file_urls: profile.resume_url ? [profile.resume_url] : undefined,
+        response_json_schema: {
+          type: "object",
+          properties: {
+            overall_score: { type: "number" },
+            overall_verdict: { type: "string" },
+            dimension_scores: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  dimension: { type: "string" },
+                  score: { type: "number" },
+                  feedback: { type: "string" }
+                }
               }
-            }
-          },
-          critical_issues: { type: "array", items: { type: "string" } },
-          quick_wins: { type: "array", items: { type: "string" } },
-          strengths: { type: "array", items: { type: "string" } },
-          rewrite_suggestions: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                section: { type: "string" },
-                current: { type: "string" },
-                improved: { type: "string" },
-                why: { type: "string" }
+            },
+            critical_issues: { type: "array", items: { type: "string" } },
+            quick_wins: { type: "array", items: { type: "string" } },
+            strengths: { type: "array", items: { type: "string" } },
+            rewrite_suggestions: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  section: { type: "string" },
+                  current: { type: "string" },
+                  improved: { type: "string" },
+                  why: { type: "string" }
+                }
               }
-            }
-          },
-          ats_tips: { type: "array", items: { type: "string" } }
+            },
+            ats_tips: { type: "array", items: { type: "string" } }
+          }
         }
-      }
-    });
+      });
 
-    setCritique(result);
-    setLoading(false);
+      setCritique(result);
+    } catch (err) {
+      console.error("runCritique failed", err);
+      toast.error(`Couldn't critique your resume: ${err?.message || "please try again."}`);
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (!critique && !loading) {

@@ -31,7 +31,7 @@ export default function ExploreSeekersPanel({ jobId }) {
     setInviting(prev => ({ ...prev, [seekerId]: true }));
     try {
       await base44.functions.invoke('inviteSeekerToJob', { 
-        seeker_id: seekerId, 
+        seeker_profile_id: seekerId, 
         job_id: jobId 
       });
       toast.success('Invite sent!');

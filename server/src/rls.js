@@ -78,7 +78,14 @@ const RULES = {
 };
 
 function branchPassesSafe(branch, user, record) {
-  if (!user) return false;
+  // Anonymous callers can only satisfy pure literal-value branches
+  // (e.g. Job read: status === 'active').
+  if (!user) {
+    const keys = Object.keys(branch);
+    const literalOnly = keys.every((k) => k === 'dataField' || k === 'eqValue') && 'eqValue' in branch;
+    if (!literalOnly) return false;
+    return !!record && record[branch.dataField] === branch.eqValue;
+  }
   const keys = Object.keys(branch);
   for (const key of keys) {
     if (key === 'eq' || key === 'eqValue') continue; // handled with dataField

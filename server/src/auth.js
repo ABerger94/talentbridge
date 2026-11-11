@@ -17,9 +17,47 @@ function publicUser(row) {
     email: row.email,
     role: effectiveRole(row),
     email_verified: !!row.email_verified,
-    data: JSON.parse(row.data || '{}'),
+    full_name: userData(row).full_name || null,
+    data: userData(row),
     created_date: row.created_date,
   };
+}
+
+function userData(row) {
+  try {
+    return JSON.parse(row.data || '{}') || {};
+  } catch {
+    return {};
+  }
+}
+
+// OAuth return targets: only same-origin paths or an allowlisted app origin.
+// Anything else (another host, protocol-relative //evil, javascript:, ...)
+// falls back to '/', so the session JWT can never be appended to a foreign URL.
+function allowedOrigins(req) {
+  const list = [`${req.protocol}://${req.get('host')}`];
+  for (const v of [process.env.TB_APP_ORIGINS, process.env.TB_CORS_ORIGIN]) {
+    for (const o of String(v || '').split(',')) {
+      const t = o.trim().replace(/\/$/, '');
+      if (t && t !== '*') list.push(t);
+    }
+  }
+  return list;
+}
+
+function safeReturnTo(req, raw) {
+  const value = typeof raw === 'string' ? raw.trim() : '';
+  if (!value) return '/';
+  if (value.startsWith('/') && !value.startsWith('//') && !value.startsWith('/\\')) {
+    return value;
+  }
+  try {
+    const url = new URL(value);
+    if ((url.protocol === 'https:' || url.protocol === 'http:') && allowedOrigins(req).includes(url.origin)) {
+      return url.href;
+    }
+  } catch { /* not an absolute URL */ }
+  return '/';
 }
 
 function effectiveRole(row) {
@@ -53,6 +91,17 @@ function authRequired(req, res, next) {
   } catch {
     return res.status(401).json({ error: 'Invalid or expired token' });
   }
+}
+
+// Like authRequired, but lets anonymous requests through with req.user = null.
+// A token that is present but invalid is still rejected.
+function optionalAuth(req, res, next) {
+  const header = req.headers.authorization || '';
+  if (!header.startsWith('Bearer ')) {
+    req.user = null;
+    return next();
+  }
+  return authRequired(req, res, next);
 }
 
 // --- OTP -----------------------------------------------------------------
@@ -94,7 +143,7 @@ function registerAuthRoutes(app) {
     const hash = await bcrypt.hash(password, 10);
     db.prepare(
       'INSERT INTO users (id, email, password_hash, role, email_verified, created_date) VALUES (?, ?, ?, ?, 0, ?)'
-    ).run(id, email.toLowerCase(), hash, 'job_seeker', new Date().toISOString());
+    ).run(id, email.toLowerCase(), hash, 'user', new Date().toISOString());
     issueOtp(email, 'verify');
     res.json({ success: true, requires_verification: true });
   });
@@ -156,7 +205,7 @@ function registerAuthRoutes(app) {
     const cid = process.env.TB_GOOGLE_CLIENT_ID;
     if (!cid) return res.status(501).json({ error: 'Google sign-in is not configured on this server yet' });
     const redirectUri = `${req.protocol}://${req.get('host')}/api/auth/google/callback`;
-    const state = encodeURIComponent(req.query.return_to || '/');
+    const state = encodeURIComponent(safeReturnTo(req, req.query.return_to));
     const url = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${cid}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=openid%20email%20profile&state=${state}`;
     res.redirect(url);
   });
@@ -184,13 +233,21 @@ function registerAuthRoutes(app) {
       let row = getUserByEmail(info.email);
       if (!row) {
         const id = crypto.randomUUID();
+        const data = info.name ? { full_name: String(info.name) } : {};
         db.prepare(
-          'INSERT INTO users (id, email, google_id, role, email_verified, created_date) VALUES (?, ?, ?, ?, 1, ?)'
-        ).run(id, info.email.toLowerCase(), info.id, 'job_seeker', new Date().toISOString());
+          'INSERT INTO users (id, email, google_id, role, email_verified, created_date, data) VALUES (?, ?, ?, ?, 1, ?, ?)'
+        ).run(id, info.email.toLowerCase(), info.id, 'user', new Date().toISOString(), JSON.stringify(data));
         row = getUserById(id);
+      } else if (info.name && !userData(row).full_name) {
+        // Backfill the display name for accounts created before it was captured.
+        const data = { ...userData(row), full_name: String(info.name) };
+        db.prepare('UPDATE users SET data = ? WHERE id = ?').run(JSON.stringify(data), row.id);
+        row = getUserById(row.id);
       }
       const token = signToken(row);
-      const returnTo = decodeURIComponent(req.query.state || '/');
+      let rawState = '/';
+      try { rawState = decodeURIComponent(req.query.state || '/'); } catch { /* malformed */ }
+      const returnTo = safeReturnTo(req, rawState);
       const sep = returnTo.includes('#') ? '&' : '#';
       res.redirect(`${returnTo}${sep}tb_token=${token}`);
     } catch (e) {
@@ -199,4 +256,4 @@ function registerAuthRoutes(app) {
   });
 }
 
-module.exports = { registerAuthRoutes, authRequired, publicUser, getUserById, getUserByEmail };
+module.exports = { registerAuthRoutes, authRequired, optionalAuth, safeReturnTo, publicUser, getUserById, getUserByEmail };

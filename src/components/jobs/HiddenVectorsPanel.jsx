@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
+import { toast } from "sonner";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -13,8 +14,9 @@ export default function HiddenVectorsPanel({ job, profile }) {
 
   const runAnalysis = async () => {
     setLoading(true);
-    const result = await base44.integrations.Core.InvokeLLM({
-      prompt: `You are Symbiot's Capability Alignment Engine. Analyze how this candidate's actual capabilities map to this job's core problems.
+    try {
+      const result = await base44.integrations.Core.InvokeLLM({
+        prompt: `You are Symbiot's Capability Alignment Engine. Analyze how this candidate's actual capabilities map to this job's core problems.
 
 CRITICAL RULES:
 - NEVER reject. Always find the bridge.
@@ -41,43 +43,48 @@ Culture Values: ${job.culture_values?.join(", ") || "Not specified"}
 Return a highly specific, encouraging analysis.
 
 IMPORTANT: Express "alignment_score" and every capability match "strength" as integers from 0 to 100. Never return them as decimals or fractions.`,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          alignment_score: { type: "number", description: "Integer from 0 to 100" },
-          capability_matches: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                job_problem: { type: "string" },
-                candidate_proof: { type: "string" },
-                strength: { type: "number", description: "Integer from 0 to 100" }
+        response_json_schema: {
+          type: "object",
+          properties: {
+            alignment_score: { type: "number", description: "Integer from 0 to 100" },
+            capability_matches: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  job_problem: { type: "string" },
+                  candidate_proof: { type: "string" },
+                  strength: { type: "number", description: "Integer from 0 to 100" }
+                }
               }
-            }
-          },
-          adaptability_bridge: { type: "string" },
-          portfolio_highlight: { type: "string" },
-          interview_edge: { type: "string" },
-          missing_links: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                gap: { type: "string" },
-                bridge_path: { type: "string" }
+            },
+            adaptability_bridge: { type: "string" },
+            portfolio_highlight: { type: "string" },
+            interview_edge: { type: "string" },
+            missing_links: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  gap: { type: "string" },
+                  bridge_path: { type: "string" }
+                }
               }
             }
           }
         }
-      }
-    });
-    setAnalysis({
-      ...result,
-      alignment_score: normalizePercent(result?.alignment_score),
-      capability_matches: result?.capability_matches?.map((m) => ({ ...m, strength: normalizePercent(m?.strength) })),
-    });
-    setLoading(false);
+      });
+      setAnalysis({
+        ...result,
+        alignment_score: normalizePercent(result?.alignment_score),
+        capability_matches: result?.capability_matches?.map((m) => ({ ...m, strength: normalizePercent(m?.strength) })),
+      });
+    } catch (err) {
+      console.error("runAnalysis failed", err);
+      toast.error(`Couldn't run the capability analysis: ${err?.message || "please try again."}`);
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (!analysis && !loading) {

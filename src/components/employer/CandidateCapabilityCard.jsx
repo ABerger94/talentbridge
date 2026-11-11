@@ -57,8 +57,9 @@ export default function CandidateCapabilityCard({ application, job, onStatusChan
 
   const runCapabilityAssessment = async () => {
     setLoading(true);
-    const result = await base44.integrations.Core.InvokeLLM({
-      prompt: `You are Symbiot's Employer Capability Assessment Engine. You are NOT a rejection filter. You are an ADVOCATE ENGINE for the employer — helping them see the full potential of this candidate for their role.
+    try {
+      const result = await base44.integrations.Core.InvokeLLM({
+        prompt: `You are Symbiot's Employer Capability Assessment Engine. You are NOT a rejection filter. You are an ADVOCATE ENGINE for the employer — helping them see the full potential of this candidate for their role.
 
 Current date: ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
 
@@ -79,47 +80,52 @@ Cover Letter / Statement: ${application.cover_letter || "Not provided"}
 Generate a rich, evidence-based capability profile. Be specific and concrete.
 
 IMPORTANT: Express "match_score" as an integer from 0 to 100. Never return it as a decimal or fraction.`,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          match_score: { type: "number", description: "Integer from 0 to 100" },
-          executive_summary: { type: "string" },
-          capability_proof_points: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                capability: { type: "string" },
-                evidence: { type: "string" },
-                relevance_to_role: { type: "string" }
+        response_json_schema: {
+          type: "object",
+          properties: {
+            match_score: { type: "number", description: "Integer from 0 to 100" },
+            executive_summary: { type: "string" },
+            capability_proof_points: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  capability: { type: "string" },
+                  evidence: { type: "string" },
+                  relevance_to_role: { type: "string" }
+                }
               }
-            }
-          },
-          adaptability_verdict: { type: "string" },
-          growth_trajectory: { type: "string" },
-          suggested_interview_angles: { type: "array", items: { type: "string" } },
-          culture_alignment_note: { type: "string" }
+            },
+            adaptability_verdict: { type: "string" },
+            growth_trajectory: { type: "string" },
+            suggested_interview_angles: { type: "array", items: { type: "string" } },
+            culture_alignment_note: { type: "string" }
+          }
         }
-      }
-    });
+      });
 
-    const normalizedScore = normalizePercent(result?.match_score);
-    setFullAssessment({ ...result, match_score: normalizedScore });
-    setAssessment({
-      match_score: normalizedScore,
-      summary: result.executive_summary,
-      growth_potential: result.growth_trajectory,
-    });
+      const normalizedScore = normalizePercent(result?.match_score);
+      setFullAssessment({ ...result, match_score: normalizedScore });
+      setAssessment({
+        match_score: normalizedScore,
+        summary: result.executive_summary,
+        growth_potential: result.growth_trajectory,
+      });
 
-    // Persist to the application record
-    base44.entities.JobApplication.update(application.id, {
-      ai_match_score: normalizedScore,
-      ai_match_summary: result.executive_summary,
-      ai_growth_potential: result.growth_trajectory,
-    });
+      // Persist to the application record
+      base44.entities.JobApplication.update(application.id, {
+        ai_match_score: normalizedScore,
+        ai_match_summary: result.executive_summary,
+        ai_growth_potential: result.growth_trajectory,
+      });
 
-    setLoading(false);
-    setExpanded(true);
+      setExpanded(true);
+    } catch (err) {
+      console.error("runCapabilityAssessment failed", err);
+      toast.error(`Couldn't run the capability assessment: ${err?.message || "please try again."}`);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const statusConfig = {

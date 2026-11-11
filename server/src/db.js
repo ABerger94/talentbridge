@@ -30,7 +30,7 @@ CREATE TABLE IF NOT EXISTS users (
   email TEXT UNIQUE NOT NULL,
   password_hash TEXT,
   google_id TEXT,
-  role TEXT NOT NULL DEFAULT 'job_seeker',
+  role TEXT NOT NULL DEFAULT 'user',
   email_verified INTEGER NOT NULL DEFAULT 0,
   data TEXT NOT NULL DEFAULT '{}',
   created_date TEXT NOT NULL

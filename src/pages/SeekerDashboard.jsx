@@ -113,8 +113,9 @@ export default function SeekerDashboard() {
       return;
     }
     setGraphLoading(true);
-    const result = await base44.integrations.Core.InvokeLLM({
-      prompt: `You are TalentBridge's Capability Graph Engine. Analyze this candidate's holistic profile and build a structured map of their true execution capabilities — not just their job titles.
+    try {
+      const result = await base44.integrations.Core.InvokeLLM({
+        prompt: `You are TalentBridge's Capability Graph Engine. Analyze this candidate's holistic profile and build a structured map of their true execution capabilities — not just their job titles.
 
 Current date: ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
 
@@ -136,38 +137,43 @@ Values: ${profile.values?.join(", ")}
 Generate a deep capability analysis.
 
 IMPORTANT: Rate each core execution vector's "strength" as an integer from 0 to 100 (100 = deepest, most proven expertise). Never return strength as a decimal or fraction.`,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          core_execution_vectors: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                vector: { type: "string" },
-                strength: { type: "number", description: "Integer from 0 to 100" },
-                evidence: { type: "string" }
+        response_json_schema: {
+          type: "object",
+          properties: {
+            core_execution_vectors: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  vector: { type: "string" },
+                  strength: { type: "number", description: "Integer from 0 to 100" },
+                  evidence: { type: "string" }
+                }
               }
-            }
-          },
-          adjacent_zones: { type: "array", items: { type: "string" } },
-          architectural_pattern: { type: "string" },
-          unique_methodology: { type: "string" },
-          suggested_role_types: { type: "array", items: { type: "string" } },
-          capability_headline: { type: "string" }
+            },
+            adjacent_zones: { type: "array", items: { type: "string" } },
+            architectural_pattern: { type: "string" },
+            unique_methodology: { type: "string" },
+            suggested_role_types: { type: "array", items: { type: "string" } },
+            capability_headline: { type: "string" }
+          }
         }
+      });
+      const normalizedResult = normalizeCapabilityGraph(result);
+      setCapabilityGraph(normalizedResult);
+      // Persist to the profile so employers can see it
+      const profileId = profiles[0]?.id;
+      if (profileId) {
+        await base44.entities.SeekerProfile.update(profileId, { capability_graph: normalizedResult });
+        queryClient.invalidateQueries({ queryKey: ["seekerProfile"] });
       }
-    });
-    const normalizedResult = normalizeCapabilityGraph(result);
-    setCapabilityGraph(normalizedResult);
-    // Persist to the profile so employers can see it
-    const profileId = profiles[0]?.id;
-    if (profileId) {
-      await base44.entities.SeekerProfile.update(profileId, { capability_graph: normalizedResult });
-      queryClient.invalidateQueries({ queryKey: ["seekerProfile"] });
+      toast.success("Capability Graph saved to your profile!");
+    } catch (err) {
+      console.error("buildCapabilityGraph failed", err);
+      toast.error(`Couldn't build your Capability Graph: ${err?.message || "please try again."}`);
+    } finally {
+      setGraphLoading(false);
     }
-    toast.success("Capability Graph saved to your profile!");
-    setGraphLoading(false);
   };
 
   const getAiMatches = async () => {
@@ -176,15 +182,16 @@ IMPORTANT: Rate each core execution vector's "strength" as an integer from 0 to 
       return;
     }
     setMatchLoading(true);
-    const jobSummaries = jobs.slice(0, 25).map(j => ({
-      id: j.id, title: j.title, company: j.company, skills: j.skills,
-      work_type: j.work_type, experience_level: j.experience_level,
-      culture_values: j.culture_values, description: j.description?.slice(0, 200),
-      qualifications: j.qualifications?.slice(0, 200),
-    }));
+    try {
+      const jobSummaries = jobs.slice(0, 25).map(j => ({
+        id: j.id, title: j.title, company: j.company, skills: j.skills,
+        work_type: j.work_type, experience_level: j.experience_level,
+        culture_values: j.culture_values, description: j.description?.slice(0, 200),
+        qualifications: j.qualifications?.slice(0, 200),
+      }));
 
-    const result = await base44.integrations.Core.InvokeLLM({
-      prompt: `You are TalentBridge's Bi-Directional Semantic Matcher. Match this candidate with roles using capability alignment, not keyword matching.
+      const result = await base44.integrations.Core.InvokeLLM({
+        prompt: `You are TalentBridge's Bi-Directional Semantic Matcher. Match this candidate with roles using capability alignment, not keyword matching.
 
 Current date: ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
 
@@ -201,31 +208,36 @@ AVAILABLE ROLES:
 ${JSON.stringify(jobSummaries)}
 
 Return the top matches with specific reasoning.`,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          matches: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                job_id: { type: "string" },
-                score: { type: "number", description: "Integer from 0 to 100" },
-                capability_reason: { type: "string" },
-                adaptability_note: { type: "string" },
-                growth_signal: { type: "string" }
+        response_json_schema: {
+          type: "object",
+          properties: {
+            matches: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  job_id: { type: "string" },
+                  score: { type: "number", description: "Integer from 0 to 100" },
+                  capability_reason: { type: "string" },
+                  adaptability_note: { type: "string" },
+                  growth_signal: { type: "string" }
+                }
               }
-            }
-          },
-          search_insight: { type: "string" }
+            },
+            search_insight: { type: "string" }
+          }
         }
-      }
-    });
-    setAiMatches({
-      ...result,
-      matches: result?.matches?.map((m) => ({ ...m, score: normalizePercent(m?.score) })),
-    });
-    setMatchLoading(false);
+      });
+      setAiMatches({
+        ...result,
+        matches: result?.matches?.map((m) => ({ ...m, score: normalizePercent(m?.score) })),
+      });
+    } catch (err) {
+      console.error("getAiMatches failed", err);
+      toast.error(`Couldn't get AI matches: ${err?.message || "please try again."}`);
+    } finally {
+      setMatchLoading(false);
+    }
   };
 
   const updateInvitationMutation = useMutation({

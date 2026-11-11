@@ -25,6 +25,29 @@ function queueNotification(kind, payload) {
   return id;
 }
 
+// Same guard inviteSeekerToJob applies: only the employer who owns the job
+// (or an admin) may act on it. The job is resolved from the application when
+// one is given, so a caller cannot pair someone else's application with a job
+// they own.
+function requireOwnedApplication(user, payload, action) {
+  if (user.role !== 'employer' && user.role !== 'admin') {
+    throw fail(403, `Forbidden: Only employers can ${action}`);
+  }
+  const { application_id, job_id } = payload || {};
+  if (!application_id && !job_id) throw fail(400, 'application_id or job_id is required');
+  const application = application_id ? store.get('JobApplication', application_id) : null;
+  if (application_id && !application) throw fail(404, 'Application not found');
+  if (application && job_id && application.job_id !== job_id) {
+    throw fail(400, 'Application does not belong to this job');
+  }
+  const job = store.get('Job', application ? application.job_id : job_id);
+  if (!job) throw fail(404, 'Job not found');
+  if (job.created_by_id !== user.id && user.role !== 'admin') {
+    throw fail(403, `Forbidden: You can only ${action} for your own jobs`);
+  }
+  return { application, job };
+}
+
 const FUNCTIONS = {
   async setUserRole(user, { role }) {
     if (!['employer', 'job_seeker'].includes(role)) throw fail(400, 'Invalid role');
@@ -135,36 +158,41 @@ const FUNCTIONS = {
   },
 
   async sendInterviewInvitation(user, payload) {
-    queueNotification('interview_invitation', { ...payload, from_user_id: user.id });
+    const { application, job } = requireOwnedApplication(user, payload, 'schedule interviews');
+    queueNotification('interview_invitation', {
+      ...payload,
+      application_id: application?.id || payload?.application_id,
+      job_id: job.id,
+      from_user_id: user.id,
+    });
     return { success: true, queued: true };
   },
 
-  async sendOfferEmail(user, { application_id, job_id, offer_details }) {
-    const application = application_id ? store.get('JobApplication', application_id) : null;
-    const job = job_id ? store.get('Job', job_id) : null;
-    if (job && job.created_by_id !== user.id && user.role !== 'admin') {
-      throw fail(403, 'Forbidden: You can only send offers for your own jobs');
-    }
+  async sendOfferEmail(user, payload) {
+    const { application_id, offer_details } = payload || {};
+    const { application, job } = requireOwnedApplication(user, payload, 'send offers');
     if (application) {
-      store.update('JobApplication', application_id, { status: 'offer_extended', offer_details });
+      store.update('JobApplication', application.id, { status: 'offer_extended', offer_details });
     }
-    queueNotification('offer', { application_id, job_id, offer_details });
+    queueNotification('offer', { application_id, job_id: job.id, offer_details });
     return { success: true, queued: true };
   },
 
   async sendRejectionEmail(user, payload) {
-    if (payload?.application_id) {
-      store.update('JobApplication', payload.application_id, { status: 'rejected' });
+    const { application, job } = requireOwnedApplication(user, payload, 'reject applicants');
+    if (application) {
+      store.update('JobApplication', application.id, { status: 'rejected' });
     }
-    queueNotification('rejection', { ...payload, from_user_id: user.id });
+    queueNotification('rejection', { ...payload, job_id: job.id, from_user_id: user.id });
     return { success: true, queued: true };
   },
 
   async sendShortlistNotification(user, payload) {
-    if (payload?.application_id) {
-      store.update('JobApplication', payload.application_id, { status: 'shortlisted' });
+    const { application, job } = requireOwnedApplication(user, payload, 'shortlist applicants');
+    if (application) {
+      store.update('JobApplication', application.id, { status: 'shortlisted' });
     }
-    queueNotification('shortlist', { ...payload, from_user_id: user.id });
+    queueNotification('shortlist', { ...payload, job_id: job.id, from_user_id: user.id });
     return { success: true, queued: true };
   },
 };

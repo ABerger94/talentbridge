@@ -67,7 +67,26 @@ async function invokeLLM({ prompt, response_json_schema }) {
 function registerLlmRoutes(app) {
   app.post('/api/integrations/llm', authRequired, async (req, res) => {
     try {
-      const result = await invokeLLM(req.body || {});
+      const { prompt, response_json_schema, file_urls } = req.body || {};
+      let fullPrompt = prompt || '';
+      // Base44's InvokeLLM accepted file_urls; inline the files' text so the
+      // model actually sees them. Required lazily: files.js requires this module.
+      if (Array.isArray(file_urls) && file_urls.length) {
+        const { readUploadText } = require('./files');
+        const parts = [];
+        for (const url of file_urls.slice(0, 5)) {
+          const text = await readUploadText(url);
+          if (text == null) {
+            // Uploads can be missing on another serverless instance; tell the
+            // model instead of failing the whole call.
+            parts.push(`--- FILE: ${require('path').basename(String(url))} ---\n[file unavailable]`);
+            continue;
+          }
+          parts.push(`--- FILE: ${require('path').basename(String(url))} ---\n${text.slice(0, 24000)}`);
+        }
+        fullPrompt += `\n\nATTACHED FILES:\n${parts.join('\n\n')}`;
+      }
+      const result = await invokeLLM({ prompt: fullPrompt, response_json_schema });
       res.json({ data: result });
     } catch (e) {
       res.status(e.status || 500).json({ error: e.message });
