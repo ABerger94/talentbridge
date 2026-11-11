@@ -60,10 +60,11 @@ export default function ResumeUploader({ profile, onProfileUpdate, onSave }) {
       const data = await parseResume(file_url);
       setParsedData(data);
       if (!data) {
-        toast.error("Resume saved. AI parsing isn't available right now — you can fill in your profile details manually.");
+        toast.error("Resume saved, but the AI couldn't read any profile details from it — you can fill them in manually.");
       }
     } catch (err) {
-      toast.error("Resume saved. AI parsing isn't available right now — you can fill in your profile details manually.");
+      console.error("Resume parse failed", err);
+      toast.error(`Resume saved, but AI parsing failed: ${err?.message || "please try again later."}`);
     }
     setParsing(false);
   };
@@ -77,15 +78,13 @@ export default function ResumeUploader({ profile, onProfileUpdate, onSave }) {
     });
 
   const parseResume = async (file_url) => {
-    let extracted = null;
-    try {
-      extracted = await base44.integrations.Core.ExtractDataFromUploadedFile({
-        file_url,
-        json_schema: profileSchema
-      });
-    } catch {
-      extracted = null; // fall through to the InvokeLLM fallback
-    }
+    // Provider/quota failures surface to the caller; the server already
+    // fails over across every configured AI key, so retrying here only
+    // doubles the wait.
+    const extracted = await base44.integrations.Core.ExtractDataFromUploadedFile({
+      file_url,
+      json_schema: profileSchema
+    });
 
     // The self-hosted server returns the fields directly; keep accepting the
     // legacy Base44 { status, output } envelope too.
