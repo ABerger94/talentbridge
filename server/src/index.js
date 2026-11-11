@@ -78,7 +78,7 @@ if (require.main === module) {
   const PORT = parseInt(process.env.TB_PORT || '8787', 10);
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`TalentBridge server listening on http://0.0.0.0:${PORT}`);
-    if (!providerStatus().gemini_keys && !providerStatus().anthropic_configured) console.log('NOTE: no AI keys set (GEMINI_API_KEYS / ANTHROPIC_API_KEY) — AI features will return 503 until they are.');
+    if (!providerStatus().configured) console.log('NOTE: no AI provider keys set — AI features will return 503 until at least one is (see server/src/llm.js).');
     if (!process.env.TB_JWT_SECRET) console.log('NOTE: TB_JWT_SECRET not set — using a dev secret. Set it before real deployment.');
   });
 }

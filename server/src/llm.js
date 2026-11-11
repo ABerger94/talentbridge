@@ -4,16 +4,22 @@
 const { authRequired } = require('./auth');
 
 // --- Provider pool ------------------------------------------------------
-// Every AI call walks an ordered list of attempts and returns the first
-// success:
-//   1. Gemini: every key x every model. Keys come from GEMINI_API_KEYS
-//      (comma-separated) plus GEMINI_API_KEY; models from TB_GEMINI_MODELS
-//      (comma-separated) or TB_GEMINI_MODEL. The starting key rotates per
-//      call to spread load across keys.
-//   2. Claude (Anthropic) when ANTHROPIC_API_KEY is set — a different
-//      provider, so it still works when every Gemini key is rate limited.
-// A key that returns 429 / quota / auth errors is benched for a while on
-// this instance so later calls skip straight to a healthy one.
+// Every AI call walks an ordered list of attempts (provider x key x model)
+// and returns the first success. Providers, in TB_LLM_ORDER order (default
+// below), each enabled only when its key env var is set:
+//   gemini      GEMINI_API_KEYS / GEMINI_API_KEY, models TB_GEMINI_MODELS
+//   groq        GROQ_API_KEYS / GROQ_API_KEY, models TB_GROQ_MODELS
+//   cerebras    CEREBRAS_API_KEYS / CEREBRAS_API_KEY, models TB_CEREBRAS_MODELS
+//   mistral     MISTRAL_API_KEYS / MISTRAL_API_KEY, models TB_MISTRAL_MODELS
+//   openrouter  OPENROUTER_API_KEYS / OPENROUTER_API_KEY, models TB_OPENROUTER_MODELS
+//   custom      any OpenAI-compatible endpoint: TB_CUSTOM_LLM_URL (full
+//               .../chat/completions URL), TB_CUSTOM_LLM_API_KEYS / _API_KEY,
+//               TB_CUSTOM_LLM_MODELS, optional TB_CUSTOM_LLM_NAME
+//   anthropic   ANTHROPIC_API_KEY, model TB_ANTHROPIC_MODEL (paid; last)
+// *_API_KEYS and *_MODELS are comma-separated. Within a provider the starting
+// key rotates per call. A key that returns 429 is benched for that model for
+// a minute, a rejected key for 10 minutes, a missing model for 30 minutes —
+// on this instance — so later calls go straight to a healthy option.
 
 const Anthropic = require('@anthropic-ai/sdk');
 
@@ -22,15 +28,66 @@ const ANTHROPIC_MODEL = process.env.TB_ANTHROPIC_MODEL || 'claude-opus-5-5';
 // Effort for Claude: structured extraction/scoring doesn't need deep
 // reasoning, and Vercel caps a request at 60s. Override with TB_ANTHROPIC_EFFORT.
 const ANTHROPIC_EFFORT = process.env.TB_ANTHROPIC_EFFORT || 'low';
-const ATTEMPT_TIMEOUT_MS = parseInt(process.env.TB_LLM_ATTEMPT_TIMEOUT_MS || '25000', 10);
+const ATTEMPT_TIMEOUT_MS = parseInt(process.env.TB_LLM_ATTEMPT_TIMEOUT_MS || '20000', 10);
 const TOTAL_BUDGET_MS = parseInt(process.env.TB_LLM_TOTAL_BUDGET_MS || '50000', 10);
 
 function splitList(v) {
   return String(v || '').split(',').map((x) => x.trim()).filter(Boolean);
 }
 
+function keysFrom(base) {
+  return [...new Set([...splitList(process.env[`${base}S`]), ...splitList(process.env[base])])];
+}
 function geminiKeys() {
-  return [...new Set([...splitList(process.env.GEMINI_API_KEYS), ...splitList(process.env.GEMINI_API_KEY)])];
+  return keysFrom('GEMINI_API_KEY');
+}
+
+// OpenAI-compatible chat-completions providers. `json` is how structured
+// output is requested: json_schema (schema-constrained) or json_object (valid
+// JSON only; the schema is also spelled out in the prompt).
+const OPENAI_COMPAT = [
+  {
+    id: 'groq', name: 'Groq', url: 'https://api.groq.com/openai/v1/chat/completions',
+    keyEnv: 'GROQ_API_KEY', modelsEnv: 'TB_GROQ_MODELS',
+    defaultModels: ['openai/gpt-oss-120b', 'openai/gpt-oss-20b'], json: 'json_schema',
+  },
+  {
+    id: 'cerebras', name: 'Cerebras', url: 'https://api.cerebras.ai/v1/chat/completions',
+    keyEnv: 'CEREBRAS_API_KEY', modelsEnv: 'TB_CEREBRAS_MODELS',
+    defaultModels: ['gpt-oss-120b'], json: 'json_schema',
+  },
+  {
+    id: 'mistral', name: 'Mistral', url: 'https://api.mistral.ai/v1/chat/completions',
+    keyEnv: 'MISTRAL_API_KEY', modelsEnv: 'TB_MISTRAL_MODELS',
+    defaultModels: ['mistral-small-latest'], json: 'json_schema',
+  },
+  {
+    // openrouter/free routes to a currently free model that supports the
+    // request's features; individual :free IDs come and go without notice.
+    id: 'openrouter', name: 'OpenRouter', url: 'https://openrouter.ai/api/v1/chat/completions',
+    keyEnv: 'OPENROUTER_API_KEY', modelsEnv: 'TB_OPENROUTER_MODELS',
+    defaultModels: ['openrouter/free'], json: 'json_schema',
+  },
+  {
+    id: 'custom', name: process.env.TB_CUSTOM_LLM_NAME || 'Custom', url: process.env.TB_CUSTOM_LLM_URL,
+    keyEnv: 'TB_CUSTOM_LLM_API_KEY', modelsEnv: 'TB_CUSTOM_LLM_MODELS',
+    defaultModels: [], json: process.env.TB_CUSTOM_LLM_JSON_MODE === 'json_schema' ? 'json_schema' : 'json_object',
+  },
+];
+
+function compatModels(p) {
+  const list = splitList(process.env[p.modelsEnv]);
+  return list.length ? list : p.defaultModels;
+}
+function compatEnabled(p) {
+  return !!p.url && keysFrom(p.keyEnv).length > 0 && compatModels(p).length > 0;
+}
+
+const DEFAULT_ORDER = ['gemini', 'groq', 'cerebras', 'mistral', 'openrouter', 'custom', 'anthropic'];
+function providerOrder() {
+  const custom = splitList(process.env.TB_LLM_ORDER).map((x) => x.toLowerCase()).filter((x) => DEFAULT_ORDER.includes(x));
+  // Anything left out of TB_LLM_ORDER keeps its default relative position at the end.
+  return [...new Set([...custom, ...DEFAULT_ORDER])];
 }
 
 let anthropicClient = null;
@@ -44,17 +101,30 @@ function anthropic() {
 }
 
 function providerStatus() {
-  return {
-    gemini_keys: geminiKeys().length,
-    gemini_models: GEMINI_MODELS,
-    anthropic_configured: !!process.env.ANTHROPIC_API_KEY,
-    anthropic_model: process.env.ANTHROPIC_API_KEY ? ANTHROPIC_MODEL : null,
-  };
+  const status = { order: [] };
+  for (const id of providerOrder()) {
+    if (id === 'gemini') {
+      if (geminiKeys().length) status.order.push({ provider: 'gemini', keys: geminiKeys().length, models: GEMINI_MODELS });
+    } else if (id === 'anthropic') {
+      if (process.env.ANTHROPIC_API_KEY) status.order.push({ provider: 'anthropic', keys: 1, models: [ANTHROPIC_MODEL] });
+    } else {
+      const p = OPENAI_COMPAT.find((x) => x.id === id);
+      if (compatEnabled(p)) status.order.push({ provider: p.id, name: p.name, keys: keysFrom(p.keyEnv).length, models: compatModels(p) });
+    }
+  }
+  status.configured = status.order.length > 0;
+  return status;
 }
 
 // key id -> timestamp until which it is skipped
 const benchedUntil = new Map();
-let rotation = 0;
+const rotation = new Map(); // provider -> next starting key index
+function rotated(provider, keys) {
+  const n = rotation.get(provider) || 0;
+  rotation.set(provider, n + 1);
+  const start = n % keys.length;
+  return keys.slice(start).concat(keys.slice(0, start));
+}
 
 function bench(id, ms) {
   benchedUntil.set(id, Date.now() + ms);
@@ -149,7 +219,7 @@ async function callGemini(key, model, { prompt, response_json_schema }, timeoutM
     const text = (await res.text()).slice(0, 200).replace(/\s+/g, ' ');
     if (res.status === 429) throw new AttemptError(`rate limited/quota (429): ${text}`, { status: 429, benchMs: 60_000 });
     if (res.status === 401 || res.status === 403) throw new AttemptError(`key rejected (${res.status}): ${text}`, { status: res.status, benchMs: 10 * 60_000, benchScope: 'key' });
-    if (res.status === 404) throw new AttemptError(`model "${model}" not found (404)`, { status: 404 });
+    if (res.status === 404) throw new AttemptError(`model "${model}" not found (404)`, { status: 404, benchMs: 30 * 60_000 });
     // 400 is usually the request/schema itself; still try the next model/provider.
     throw new AttemptError(`HTTP ${res.status}: ${text}`, { status: res.status });
   }
@@ -159,6 +229,69 @@ async function callGemini(key, model, { prompt, response_json_schema }, timeoutM
   if (!text) throw new AttemptError(`empty response${cand?.finishReason ? ` (${cand.finishReason})` : ''}`);
   if (!response_json_schema) return { response: text };
   return parseJson(text, `Gemini ${model}`);
+}
+
+function messageText(content) {
+  if (typeof content === 'string') return content;
+  if (Array.isArray(content)) return content.map((c) => (typeof c === 'string' ? c : c?.text || '')).join('');
+  return '';
+}
+
+async function callCompat(p, key, model, { prompt, response_json_schema }, timeoutMs, jsonMode = p.json) {
+  let content = prompt;
+  const body = { model, messages: [] };
+  if (response_json_schema) {
+    if (jsonMode === 'json_schema') {
+      body.response_format = {
+        type: 'json_schema',
+        // strict:false — the app's schemas don't mark every field required.
+        json_schema: { name: 'response', strict: false, schema: claudeSchema(response_json_schema) },
+      };
+    } else {
+      body.response_format = { type: 'json_object' };
+      content += `\n\nRespond with only a JSON object matching this JSON Schema:\n${JSON.stringify(response_json_schema)}`;
+    }
+  }
+  body.messages.push({ role: 'user', content });
+  let res;
+  try {
+    res = await fetch(p.url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(timeoutMs),
+    });
+  } catch (e) {
+    throw new AttemptError(`network/timeout: ${e.name === 'TimeoutError' ? 'timed out' : e.message}`);
+  }
+  if (!res.ok) {
+    const text = (await res.text()).slice(0, 200).replace(/\s+/g, ' ');
+    // Some models reject json_schema; retry once in plain JSON mode.
+    if (res.status === 400 && jsonMode === 'json_schema' && /response_format|json_schema|schema/i.test(text)) {
+      return callCompat(p, key, model, { prompt, response_json_schema }, timeoutMs, 'json_object');
+    }
+    if (res.status === 429) throw new AttemptError(`rate limited/quota (429): ${text}`, { status: 429, benchMs: 60_000 });
+    if (res.status === 401 || res.status === 403) throw new AttemptError(`key rejected (${res.status}): ${text}`, { status: res.status, benchMs: 10 * 60_000, benchScope: 'key' });
+    if (res.status === 402) throw new AttemptError(`out of credits (402): ${text}`, { status: 402, benchMs: 10 * 60_000, benchScope: 'key' });
+    if (res.status === 404) throw new AttemptError(`model "${model}" not found (404): ${text}`, { status: 404, benchMs: 30 * 60_000 });
+    throw new AttemptError(`HTTP ${res.status}: ${text}`, { status: res.status });
+  }
+  let json;
+  try {
+    json = await res.json();
+  } catch {
+    throw new AttemptError('returned a non-JSON HTTP body');
+  }
+  // OpenRouter can report upstream failures inside a 200.
+  if (json?.error) throw new AttemptError(`upstream error: ${String(json.error.message || json.error.code || 'unknown').slice(0, 200)}`);
+  const choice = json?.choices?.[0];
+  const text = messageText(choice?.message?.content);
+  if (choice?.finish_reason === 'length') throw new AttemptError('response was cut off (length)');
+  if (!text) throw new AttemptError(`empty response${choice?.finish_reason ? ` (${choice.finish_reason})` : ''}`);
+  if (!response_json_schema) return { response: text };
+  const parsed = parseJson(text, `${p.name} ${model}`);
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) throw new AttemptError('returned JSON that was not an object');
+  return parsed;
 }
 
 async function callClaude(client, { prompt, response_json_schema }, timeoutMs) {
@@ -198,30 +331,46 @@ async function callClaude(client, { prompt, response_json_schema }, timeoutMs) {
 
 function buildAttempts() {
   const attempts = [];
-  const keys = geminiKeys();
-  if (keys.length) {
-    const start = rotation++ % keys.length;
-    const ordered = keys.slice(start).concat(keys.slice(0, start));
-    for (const model of GEMINI_MODELS) {
-      ordered.forEach((key) => {
-        const n = keys.indexOf(key) + 1;
-        attempts.push({
-          keyId: `gemini:${key}`,
-          id: `gemini:${key}:${model}`,
-          label: `Gemini key #${n} / ${model}`,
-          run: (args, t) => callGemini(key, model, args, t),
-        });
+  for (const id of providerOrder()) {
+    if (id === 'gemini') {
+      const keys = geminiKeys();
+      if (!keys.length) continue;
+      const ordered = rotated('gemini', keys);
+      for (const model of GEMINI_MODELS) {
+        for (const key of ordered) {
+          attempts.push({
+            keyId: `gemini:${key}`,
+            id: `gemini:${key}:${model}`,
+            label: `Gemini key #${keys.indexOf(key) + 1} / ${model}`,
+            run: (args, t) => callGemini(key, model, args, t),
+          });
+        }
+      }
+    } else if (id === 'anthropic') {
+      const client = anthropic();
+      if (!client) continue;
+      attempts.push({
+        keyId: 'anthropic',
+        id: 'anthropic',
+        label: `Claude ${ANTHROPIC_MODEL}`,
+        run: (args, t) => callClaude(client, args, t),
       });
+    } else {
+      const p = OPENAI_COMPAT.find((x) => x.id === id);
+      if (!compatEnabled(p)) continue;
+      const keys = keysFrom(p.keyEnv);
+      const ordered = rotated(p.id, keys);
+      for (const model of compatModels(p)) {
+        for (const key of ordered) {
+          attempts.push({
+            keyId: `${p.id}:${key}`,
+            id: `${p.id}:${key}:${model}`,
+            label: `${p.name}${keys.length > 1 ? ` key #${keys.indexOf(key) + 1}` : ''} / ${model}`,
+            run: (args, t) => callCompat(p, key, model, args, t),
+          });
+        }
+      }
     }
-  }
-  const client = anthropic();
-  if (client) {
-    attempts.push({
-      keyId: 'anthropic',
-      id: 'anthropic',
-      label: `Claude ${ANTHROPIC_MODEL}`,
-      run: (args, t) => callClaude(client, args, t),
-    });
   }
   return attempts;
 }
@@ -229,7 +378,7 @@ function buildAttempts() {
 async function invokeLLM({ prompt, response_json_schema }) {
   const attempts = buildAttempts();
   if (!attempts.length) {
-    const err = new Error('AI is not configured on this server (set GEMINI_API_KEYS or ANTHROPIC_API_KEY)');
+    const err = new Error('AI is not configured on this server (set at least one AI provider key, e.g. GEMINI_API_KEYS or GROQ_API_KEY)');
     err.status = 503;
     throw err;
   }
