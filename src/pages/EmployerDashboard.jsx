@@ -14,6 +14,9 @@ import {
 import { formatDistanceToNow } from "date-fns";
 import CandidateCapabilityCard from "@/components/employer/CandidateCapabilityCard";
 
+// Minimum AI match score (0-100) for a seeker to appear under Explore Seekers.
+const MATCH_THRESHOLD = 60;
+
 export default function EmployerDashboard() {
   const queryClient = useQueryClient();
   const [selectedJob, setSelectedJob] = useState(null);
@@ -38,31 +41,27 @@ export default function EmployerDashboard() {
     },
   });
 
+  // One matching call per job (the server scores every seeker in a batch and
+  // caches the result), then group strong matches by seeker.
   const { data: allSeekers = [], isLoading: allSeekersLoading } = useQuery({
-    queryKey: ["allSeekers", myJobs],
+    queryKey: ["allSeekers", myJobs.map((j) => `${j.id}:${j.updated_date}`).join(",")],
+    enabled: myJobs.length > 0,
+    staleTime: 10 * 60 * 1000,
     queryFn: async () => {
-      if (myJobs.length === 0) return [];
-      const seekers = await base44.entities.SeekerProfile.list("", 1000);
-      const matchedSeekers = [];
-      
-      for (const seeker of seekers) {
-        const matchingJobs = [];
-        for (const job of myJobs) {
-          try {
-            const result = await base44.functions.invoke("findMatchingSeekers", { job_id: job.id });
-            const matches = result.data?.matches || [];
-            if (matches.some(m => m.seeker_id === seeker.id)) {
-              matchingJobs.push(job);
-            }
-          } catch {
-            // Skip on error
-          }
+      const results = await Promise.allSettled(
+        myJobs.map((job) => base44.functions.invoke("findMatchingSeekers", { job_id: job.id }))
+      );
+      const bySeeker = new Map();
+      results.forEach((r, i) => {
+        if (r.status !== "fulfilled") return; // that job's matching failed; others still show
+        for (const m of r.value.data?.matches || []) {
+          if ((m.match_score ?? 0) < MATCH_THRESHOLD || !m.seeker) continue;
+          const entry = bySeeker.get(m.seeker_id) || { ...m.seeker, matched_jobs: [] };
+          entry.matched_jobs.push(myJobs[i]);
+          bySeeker.set(m.seeker_id, entry);
         }
-        if (matchingJobs.length > 0) {
-          matchedSeekers.push({ ...seeker, matched_jobs: matchingJobs });
-        }
-      }
-      return matchedSeekers;
+      });
+      return [...bySeeker.values()];
     },
   });
 

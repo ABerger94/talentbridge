@@ -48,6 +48,68 @@ function requireOwnedApplication(user, payload, action) {
   return { application, job };
 }
 
+const MATCH_BATCH_SIZE = 25; // seekers scored per AI call
+const MATCH_MAX_SEEKERS = 100; // per request: at most 4 parallel AI calls
+const MATCH_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+
+const clip = (v, n) => (v == null ? undefined : String(v).slice(0, n));
+
+// One AI call scores a whole batch of seekers against the job. Returns a
+// Map seeker_id -> { match_score, match_summary } (ids the model invented
+// are ignored).
+async function scoreSeekerBatch(job, seekers) {
+  const roster = seekers.map((sp) => ({
+    seeker_id: sp.id,
+    headline: clip(sp.headline, 160),
+    skills: (sp.skills || []).slice(0, 30),
+    experience_level: sp.experience_level,
+    experience_years: sp.experience_years,
+    bio: clip(sp.bio, 400),
+    industries_of_interest: (sp.industries_of_interest || []).slice(0, 10),
+  }));
+  const prompt = `You are an expert recruiter. Score how well EACH job seeker below matches this job, on a scale of 0-100.
+
+Current date: ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+
+JOB
+Title: ${job.title}
+Description: ${clip(job.description, 1500) || 'N/A'}
+Required Skills: ${job.skills?.join(', ') || 'N/A'}
+Experience Level: ${job.experience_level || 'N/A'}
+
+SEEKERS (JSON):
+${JSON.stringify(roster)}
+
+Score every seeker independently. Return exactly one entry per seeker in "matches", using the seeker_id given above, with match_score as an integer 0-100 and match_summary as one or two sentences explaining the score.`;
+  const result = await invokeLLM({
+    prompt,
+    response_json_schema: {
+      type: 'object',
+      properties: {
+        matches: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              seeker_id: { type: 'string' },
+              match_score: { type: 'number', description: 'Integer from 0 to 100' },
+              match_summary: { type: 'string' },
+            },
+            required: ['seeker_id', 'match_score', 'match_summary'],
+          },
+        },
+      },
+      required: ['matches'],
+    },
+  });
+  const valid = new Set(seekers.map((sp) => sp.id));
+  const byId = new Map();
+  for (const m of Array.isArray(result?.matches) ? result.matches : []) {
+    if (m && valid.has(m.seeker_id) && !byId.has(m.seeker_id)) byId.set(m.seeker_id, m);
+  }
+  return byId;
+}
+
 const FUNCTIONS = {
   async setUserRole(user, { role }) {
     if (!['employer', 'job_seeker'].includes(role)) throw fail(400, 'Invalid role');
@@ -107,35 +169,87 @@ const FUNCTIONS = {
     return { success: true, analysis: portfolioAnalysis };
   },
 
-  async findMatchingSeekers(user, { job_id }) {
+  async findMatchingSeekers(user, { job_id, force }) {
     if (user.role !== 'employer' && user.role !== 'admin') throw fail(403, 'Unauthorized');
+    if (!job_id) throw fail(400, 'job_id is required');
     const jobData = store.get('Job', job_id);
     if (!jobData) throw fail(404, 'Job not found');
-    const seekers = store.all('SeekerProfile');
-    if (!seekers.length) return { matches: [] };
-    const matches = [];
-    for (const seeker of seekers) {
-      const prompt = `You are an expert recruiter. Score how well this job seeker matches the job role on a scale of 0-100.\n\nCurrent date: ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}\n\nJob Title: ${jobData.title}\nJob Description: ${jobData.description}\nRequired Skills: ${jobData.skills?.join(', ') || 'N/A'}\nExperience Level: ${jobData.experience_level}\n\nSeeker Profile:\n- Headline: ${seeker.headline}\n- Skills: ${seeker.skills?.join(', ') || 'N/A'}\n- Experience Level: ${seeker.experience_level}\n- Experience Years: ${seeker.experience_years || 'N/A'}\n- Bio: ${seeker.bio || 'N/A'}\n- Industries of Interest: ${seeker.industries_of_interest?.join(', ') || 'N/A'}\n\nReturn only a JSON object with a match_score (number 0-100) and a match_summary (brief explanation).`;
-      const aiResult = await invokeLLM({
-        prompt,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            match_score: { type: 'number', description: 'Integer from 0 to 100' },
-            match_summary: { type: 'string' },
-          },
-        },
-      });
-      const { normalizePercent } = require('./scales-server');
-      matches.push({
-        seeker_id: seeker.id,
-        seeker,
-        match_score: normalizePercent(aiResult.match_score),
-        match_summary: aiResult.match_summary,
-      });
+    if (jobData.created_by_id !== user.id && user.role !== 'admin') {
+      throw fail(403, 'Forbidden: You can only find matches for your own jobs');
     }
+    const allSeekers = store.all('SeekerProfile');
+    if (!allSeekers.length) return { matches: [], total_seekers: 0 };
+
+    // Cache: same job content + same seeker profiles => same answer. Any job
+    // edit or profile change (or 24h) recomputes.
+    const fingerprint = crypto.createHash('sha256').update(JSON.stringify([
+      jobData.updated_date, jobData.title, jobData.description, jobData.skills, jobData.experience_level,
+      allSeekers.map((sp) => `${sp.id}:${sp.updated_date}`).sort(),
+    ])).digest('hex');
+    if (!force) {
+      const hit = db.prepare('SELECT fingerprint, result, created_date FROM match_cache WHERE job_id = ?').get(job_id);
+      if (hit && hit.fingerprint === fingerprint && Date.now() - Date.parse(hit.created_date) < MATCH_CACHE_TTL_MS) {
+        return { ...JSON.parse(hit.result), cached: true };
+      }
+    }
+
+    // Past MATCH_MAX_SEEKERS, shortlist by skill overlap so the AI calls stay
+    // within the request time limit.
+    let candidates = allSeekers;
+    if (allSeekers.length > MATCH_MAX_SEEKERS) {
+      const jobSkills = new Set((jobData.skills || []).map((x) => String(x).toLowerCase()));
+      candidates = allSeekers
+        .map((sp) => ({ sp, overlap: (sp.skills || []).filter((x) => jobSkills.has(String(x).toLowerCase())).length }))
+        .sort((x, y) => y.overlap - x.overlap)
+        .slice(0, MATCH_MAX_SEEKERS)
+        .map((x) => x.sp);
+    }
+
+    const chunks = [];
+    for (let i = 0; i < candidates.length; i += MATCH_BATCH_SIZE) chunks.push(candidates.slice(i, i + MATCH_BATCH_SIZE));
+    const settled = await Promise.allSettled(chunks.map((chunk) => scoreSeekerBatch(jobData, chunk)));
+    const failed = settled.filter((r) => r.status === 'rejected');
+    if (failed.length === settled.length) {
+      const e = failed[0].reason;
+      throw fail(e?.status || 502, e?.message || 'AI matching failed');
+    }
+
+    const { normalizePercent } = require('./scales-server');
+    const matches = [];
+    let unscored = 0;
+    settled.forEach((r, i) => {
+      if (r.status !== 'fulfilled') {
+        unscored += chunks[i].length;
+        return;
+      }
+      for (const seeker of chunks[i]) {
+        const scored = r.value.get(seeker.id);
+        if (!scored) {
+          unscored += 1;
+          continue;
+        }
+        matches.push({
+          seeker_id: seeker.id,
+          seeker,
+          seeker_headline: seeker.headline || 'Candidate',
+          match_score: normalizePercent(scored.match_score, 0),
+          match_summary: scored.match_summary || '',
+        });
+      }
+    });
     matches.sort((a, b) => (b.match_score || 0) - (a.match_score || 0));
-    return { matches };
+    const result = {
+      matches,
+      total_seekers: allSeekers.length,
+      considered: candidates.length,
+      unscored,
+    };
+    // Cache only complete results so a partial failure is retried next time.
+    if (!unscored) {
+      db.prepare('INSERT OR REPLACE INTO match_cache (job_id, fingerprint, result, created_date) VALUES (?, ?, ?, ?)')
+        .run(job_id, fingerprint, JSON.stringify(result), new Date().toISOString());
+    }
+    return result;
   },
 
   async inviteSeekerToJob(user, { seeker_profile_id, job_id }) {
