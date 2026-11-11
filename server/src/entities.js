@@ -76,6 +76,57 @@ function matches(record, criteria) {
   return true;
 }
 
+// --- Applicant identity -------------------------------------------------
+// Applications show the applicant's name to the employer. The name comes
+// from the seeker's profile (falling back to the account name), stamped
+// server-side so every way of applying gets it, and refreshed on read so a
+// name added later also shows on older applications.
+
+function userFullName(userId) {
+  const row = userId ? getUserById(userId) : null;
+  if (!row) return '';
+  try {
+    return String(JSON.parse(row.data || '{}').full_name || '').trim();
+  } catch {
+    return '';
+  }
+}
+
+function ownSeekerProfile(userId, requestedId) {
+  if (requestedId) {
+    const p = getRecord('SeekerProfile', requestedId);
+    if (p && p.created_by_id === userId) return p;
+  }
+  return allRecords('SeekerProfile').find((p) => p.created_by_id === userId) || null;
+}
+
+function applicantName(profile, userId) {
+  return String(profile?.full_name || '').trim() || userFullName(userId);
+}
+
+function withApplicantName(record, cache) {
+  if (!record) return record;
+  const key = record.seeker_profile_id || `user:${record.created_by_id}`;
+  if (!cache.has(key)) {
+    const profile = record.seeker_profile_id ? getRecord('SeekerProfile', record.seeker_profile_id) : null;
+    cache.set(key, applicantName(profile, record.created_by_id));
+  }
+  const name = cache.get(key);
+  return name ? { ...record, applicant_name: name } : record;
+}
+
+// Keep the account's display name in step with the seeker profile name.
+function syncUserFullName(userId, fullName) {
+  const name = String(fullName || '').trim();
+  if (!name) return;
+  const row = getUserById(userId);
+  if (!row) return;
+  const data = JSON.parse(row.data || '{}');
+  if (data.full_name === name) return;
+  data.full_name = name;
+  db.prepare('UPDATE users SET data = ? WHERE id = ?').run(JSON.stringify(data), userId);
+}
+
 function registerEntityRoutes(app) {
   // Anonymous GETs are allowed for PUBLIC_READ entities only; everything else
   // (and every write) requires a valid session.
@@ -100,6 +151,15 @@ function registerEntityRoutes(app) {
       const job = body.job_id ? getRecord('Job', body.job_id) : null;
       if (!job) return res.status(400).json({ error: 'job_id must reference an existing job' });
       body.employer_user_id = job.created_by_id || null;
+      // Identity comes from the applicant's own account and profile, never
+      // from another seeker's profile id.
+      const profile = ownSeekerProfile(req.user.id, body.seeker_profile_id);
+      body.seeker_profile_id = profile ? profile.id : null;
+      body.applicant_name = applicantName(profile, req.user.id) || String(body.applicant_name || '').trim() || 'Anonymous';
+      body.applicant_email = req.user.email;
+    }
+    if (entity === 'SeekerProfile' && typeof body.full_name === 'string') {
+      body.full_name = body.full_name.trim().slice(0, 120);
     }
     const record = store.create(entity, body, req.user.id);
     // Keep user.data.seeker_profile_id current so Invitation read rules can
@@ -109,6 +169,7 @@ function registerEntityRoutes(app) {
       const data = JSON.parse(userRow.data || '{}');
       data.seeker_profile_id = record.id;
       db.prepare('UPDATE users SET data = ? WHERE id = ?').run(JSON.stringify(data), req.user.id);
+      syncUserFullName(req.user.id, record.full_name);
     }
     res.json({ data: record });
   });
@@ -123,10 +184,14 @@ function registerEntityRoutes(app) {
       return res.status(400).json({ error: 'Invalid filter' });
     }
     const limit = Math.min(parseInt(req.query.limit || '1000', 10) || 1000, 5000);
-    const visible = store
+    let visible = store
       .filter(entity, criteria)
       .filter((r) => can(entity, 'read', req.user, r))
       .slice(0, limit);
+    if (entity === 'JobApplication') {
+      const cache = new Map();
+      visible = visible.map((r) => withApplicantName(r, cache));
+    }
     res.json({ data: visible });
   });
 
@@ -137,7 +202,7 @@ function registerEntityRoutes(app) {
     if (!record || !can(entity, 'read', req.user, record)) {
       return res.status(404).json({ error: 'Not found' });
     }
-    res.json({ data: record });
+    res.json({ data: entity === 'JobApplication' ? withApplicantName(record, new Map()) : record });
   });
 
   app.put('/api/entities/:entity/:id', (req, res) => {
@@ -148,7 +213,15 @@ function registerEntityRoutes(app) {
     if (!can(entity, 'update', req.user, record)) {
       return res.status(403).json({ error: `Permission denied for update operation on ${entity} entity` });
     }
-    res.json({ data: store.update(entity, id, req.body || {}) });
+    const changes = { ...(req.body || {}) };
+    if (entity === 'SeekerProfile' && typeof changes.full_name === 'string') {
+      changes.full_name = changes.full_name.trim().slice(0, 120);
+    }
+    const updated = store.update(entity, id, changes);
+    if (entity === 'SeekerProfile' && updated.created_by_id === req.user.id) {
+      syncUserFullName(req.user.id, updated.full_name);
+    }
+    res.json({ data: entity === 'JobApplication' ? withApplicantName(updated, new Map()) : updated });
   });
 
   app.delete('/api/entities/:entity/:id', (req, res) => {

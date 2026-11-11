@@ -2,6 +2,10 @@
   "name": "SeekerProfile",
   "type": "object",
   "properties": {
+    "full_name": {
+      "type": "string",
+      "description": "Seeker's full name, shown to employers on applications"
+    },
     "headline": {
       "type": "string",
       "description": "Professional headline"
