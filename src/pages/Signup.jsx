@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/lib/AuthContext';
 import TalentBridgeLogo from '@/components/TalentBridgeLogo';
+import GoogleButton from '@/components/auth/GoogleButton';
 
 const getSafeNextPath = (next) => {
   try {
@@ -21,7 +22,12 @@ const getSafeNextPath = (next) => {
 export default function Signup() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { registerWithEmailPassword, verifyEmailOtpAndLogin, resendVerificationCode } = useAuth();
+  const {
+    registerWithEmailPassword,
+    verifyEmailOtpAndLogin,
+    resendVerificationCode,
+    loginWithGoogle,
+  } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -33,6 +39,15 @@ export default function Signup() {
   const [isResending, setIsResending] = useState(false);
 
   const nextPath = useMemo(() => getSafeNextPath(searchParams.get('next')), [searchParams]);
+
+  const handleGoogle = () => loginWithGoogle('/onboarding');
+
+  const handleChangeEmail = () => {
+    setError('');
+    setNotice('');
+    setOtpCode('');
+    setIsVerificationStep(false);
+  };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -147,6 +162,15 @@ export default function Signup() {
             >
               {isResending ? 'Sending...' : 'Send a new code'}
             </Button>
+
+            <Button
+              type="button"
+              variant="ghost"
+              className="w-full mt-2 text-muted-foreground"
+              onClick={handleChangeEmail}
+            >
+              Use a different email
+            </Button>
           </>
         ) : (
           <>
@@ -155,6 +179,17 @@ export default function Signup() {
               <p className="text-sm text-muted-foreground mt-2">
                 Create a TalentBridge account with your email and password.
               </p>
+            </div>
+
+            <GoogleButton onClick={handleGoogle} label="Sign up with Google" />
+
+            <div className="relative my-6">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase tracking-wide">
+                <span className="bg-card px-2 text-muted-foreground">or use email</span>
+              </div>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">

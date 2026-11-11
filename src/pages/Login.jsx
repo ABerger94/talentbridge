@@ -1,12 +1,13 @@
 import React, { useMemo, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { KeyRound, LogIn } from 'lucide-react';
+import { LogIn } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/lib/AuthContext';
 import TalentBridgeLogo from '@/components/TalentBridgeLogo';
+import GoogleButton from '@/components/auth/GoogleButton';
 
 const getSafeNextPath = (next) => {
   try {
@@ -21,7 +22,7 @@ const getSafeNextPath = (next) => {
 export default function Login() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { loginWithEmailPassword, requestPasswordReset } = useAuth();
+  const { loginWithEmailPassword, requestPasswordReset, loginWithGoogle } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -31,6 +32,8 @@ export default function Login() {
 
   const nextPath = useMemo(() => getSafeNextPath(searchParams.get('next')), [searchParams]);
   const nextUrl = useMemo(() => new URL(nextPath, window.location.origin).toString(), [nextPath]);
+
+  const handleGoogle = () => loginWithGoogle(nextUrl);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -86,6 +89,17 @@ export default function Login() {
           </p>
         </div>
 
+        <GoogleButton onClick={handleGoogle} label="Sign in with Google" />
+
+        <div className="relative my-6">
+          <div className="absolute inset-0 flex items-center">
+            <span className="w-full border-t" />
+          </div>
+          <div className="relative flex justify-center text-xs uppercase tracking-wide">
+            <span className="bg-card px-2 text-muted-foreground">or use email</span>
+          </div>
+        </div>
+
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
@@ -100,7 +114,17 @@ export default function Login() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="password">Password</Label>
+              <button
+                type="button"
+                onClick={handlePasswordReset}
+                disabled={isSendingReset}
+                className="text-xs font-medium text-primary hover:underline disabled:opacity-60"
+              >
+                {isSendingReset ? 'Sending link...' : 'Forgot password?'}
+              </button>
+            </div>
             <Input
               id="password"
               type="password"
@@ -129,22 +153,10 @@ export default function Login() {
           </Button>
         </form>
 
-        <div className="mt-5 rounded-lg border bg-muted/30 p-4">
-          <p className="text-sm font-medium">Used Google before?</p>
-          <p className="text-sm text-muted-foreground mt-1">
-            Enter the same Gmail address above and set a password for this login page.
-          </p>
-          <Button
-            type="button"
-            variant="outline"
-            className="w-full gap-2 mt-3"
-            onClick={handlePasswordReset}
-            disabled={isSendingReset}
-          >
-            <KeyRound className="w-4 h-4" />
-            {isSendingReset ? 'Sending link...' : 'Email me a password setup link'}
-          </Button>
-        </div>
+        <p className="text-xs text-muted-foreground text-center mt-5">
+          Signed up with Google before? Sign in with Google above, or enter the same address and use
+          “Forgot password?” to set a password for this page.
+        </p>
 
         <p className="text-sm text-muted-foreground text-center mt-6">
           New to TalentBridge?{' '}

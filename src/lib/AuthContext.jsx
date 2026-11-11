@@ -149,6 +149,10 @@ export const AuthProvider = ({ children }) => {
     await base44.auth.resetPasswordRequest(email);
   };
 
+  const loginWithGoogle = (fromUrl = '/') => {
+    base44.auth.loginWithProvider('google', fromUrl);
+  };
+
   return (
     <AuthContext.Provider value={{ 
       user, 
@@ -165,6 +169,7 @@ export const AuthProvider = ({ children }) => {
       verifyEmailOtpAndLogin,
       resendVerificationCode,
       requestPasswordReset,
+      loginWithGoogle,
       checkUserAuth,
       checkAppState
     }}>

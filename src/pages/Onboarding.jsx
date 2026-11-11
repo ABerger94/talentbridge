@@ -39,13 +39,13 @@ export default function Onboarding() {
       key: "job_seeker",
       icon: User,
       title: "Job Seeker",
-      description: "I'm looking for new opportunities. Build my Capability Profile and find roles that match my true potential.",
+      description: "I'm looking for work. Build your Capability Profile, get matched to roles, apply, and respond to interview and offer invitations.",
     },
     {
       key: "employer",
       icon: Building2,
       title: "Employer / Recruiter",
-      description: "I'm hiring. I want to post roles and find candidates based on capability, not just keywords.",
+      description: "I'm hiring. Post roles, review candidates on capability rather than keywords, and invite strong matches to apply.",
     },
   ];
 
@@ -66,7 +66,10 @@ export default function Onboarding() {
         </div>
 
         <h1 className="text-3xl font-bold text-center mb-2">Welcome! How are you using TalentBridge?</h1>
-        <p className="text-muted-foreground text-center mb-8">Choose your account type to get started. You can't change this later.</p>
+        <p className="text-muted-foreground text-center mb-8">
+          Pick the account type that matches how you'll use TalentBridge. It sets up your workspace and
+          can't be changed after this step, so choose carefully.
+        </p>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
           {roles.map((role) => (
