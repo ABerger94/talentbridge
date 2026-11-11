@@ -75,4 +75,9 @@ CREATE TABLE IF NOT EXISTS notifications (
 );
 `);
 
+// Columns added after the first release; ALTER fails harmlessly once present.
+for (const col of ['recipient TEXT', 'error TEXT', 'sent_date TEXT']) {
+  try { db.exec(`ALTER TABLE notifications ADD COLUMN ${col}`); } catch { /* already exists */ }
+}
+
 module.exports = { db, DATA_DIR };

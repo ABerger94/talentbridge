@@ -24,6 +24,7 @@ export default function Signup() {
   const navigate = useNavigate();
   const {
     registerWithEmailPassword,
+    loginWithEmailPassword,
     verifyEmailOtpAndLogin,
     resendVerificationCode,
     loginWithGoogle,
@@ -61,9 +62,19 @@ export default function Signup() {
     setIsSubmitting(true);
 
     try {
-      await registerWithEmailPassword(email.trim(), password);
+      const result = await registerWithEmailPassword(email.trim(), password);
+      if (result && result.requires_verification === false) {
+        // Email verification is off (no mail provider yet): sign straight in.
+        await loginWithEmailPassword(email.trim(), password);
+        navigate('/onboarding', { replace: true });
+        return;
+      }
       setIsVerificationStep(true);
-      setNotice('Check your email for the 6-digit verification code.');
+      setNotice(
+        result?.email_sent === false
+          ? "We couldn't send the code just now. Wait a minute, then tap “Resend code”."
+          : 'Check your email (and spam folder) for the 6-digit verification code.'
+      );
     } catch (err) {
       setError(err.message || 'Unable to create account.');
     } finally {

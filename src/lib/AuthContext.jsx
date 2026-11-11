@@ -115,8 +115,9 @@ export const AuthProvider = ({ children }) => {
     setAuthError(null);
 
     try {
-      await base44.auth.register({ email, password });
+      const result = await base44.auth.register({ email, password });
       setIsLoadingAuth(false);
+      return result;
     } catch (error) {
       setIsLoadingAuth(false);
       setIsAuthenticated(false);
@@ -155,6 +156,11 @@ export const AuthProvider = ({ children }) => {
     await base44.auth.resetPasswordRequest(email);
   };
 
+  const resetPasswordAndLogin = async (email, otpCode, newPassword) => {
+    await base44.auth.resetPassword({ email, otpCode, newPassword });
+    await loginWithEmailPassword(email, newPassword);
+  };
+
   const loginWithGoogle = (fromUrl = '/') => {
     base44.auth.loginWithProvider('google', fromUrl);
   };
@@ -175,6 +181,7 @@ export const AuthProvider = ({ children }) => {
       verifyEmailOtpAndLogin,
       resendVerificationCode,
       requestPasswordReset,
+      resetPasswordAndLogin,
       loginWithGoogle,
       checkUserAuth,
       checkAppState

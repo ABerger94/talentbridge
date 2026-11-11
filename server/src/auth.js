@@ -3,6 +3,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const { db } = require('./db');
+const { sendMail, mailConfigured, codeEmail } = require('./mailer');
 
 const JWT_SECRET = process.env.TB_JWT_SECRET || 'dev-secret-change-me';
 const ADMIN_EMAILS = (process.env.TB_ADMIN_EMAILS || '')
@@ -105,17 +106,40 @@ function optionalAuth(req, res, next) {
 }
 
 // --- OTP -----------------------------------------------------------------
-// Codes are generated for real and validated for real. Delivery: when SMTP
-// is configured (phase 2) they go by email; until then the code is printed
-// to the server console so the owner can complete sign-up while testing.
-function issueOtp(email, purpose) {
+// Codes are emailed when a mail provider is configured (see mailer.js).
+// Without one, the code is printed to the server log so the owner can still
+// help someone through, and email verification is not required (otherwise no
+// one could finish signing up). TB_REQUIRE_EMAIL_VERIFICATION=true/false
+// overrides that automatic choice.
+const OTP_TTL_MS = 10 * 60 * 1000;
+const OTP_RESEND_GAP_MS = 60 * 1000;
+
+function verificationRequired() {
+  const v = (process.env.TB_REQUIRE_EMAIL_VERIFICATION || '').trim().toLowerCase();
+  if (v === 'true') return true;
+  if (v === 'false') return false;
+  return mailConfigured();
+}
+
+// Creates a code and emails it. Returns { sent, throttled }.
+async function deliverOtp(email, purpose) {
+  const key = email.toLowerCase();
+  const prev = db.prepare('SELECT expires_at FROM otps WHERE email = ? AND purpose = ?').get(key, purpose);
+  if (prev && prev.expires_at - OTP_TTL_MS > Date.now() - OTP_RESEND_GAP_MS) {
+    return { sent: false, throttled: true }; // one code per minute per address
+  }
   const code = String(crypto.randomInt(0, 1000000)).padStart(6, '0');
   const codeHash = crypto.createHash('sha256').update(code).digest('hex');
   db.prepare(
     'INSERT OR REPLACE INTO otps (email, purpose, code_hash, expires_at) VALUES (?, ?, ?, ?)'
-  ).run(email.toLowerCase(), purpose, codeHash, Date.now() + 10 * 60 * 1000);
-  console.log(`[otp] ${purpose} code for ${email}: ${code} (valid 10 min)`);
-  return code;
+  ).run(key, purpose, codeHash, Date.now() + OTP_TTL_MS);
+  if (!mailConfigured()) {
+    console.log(`[otp] ${purpose} code for ${email}: ${code} (valid 10 min; no mail provider configured)`);
+    return { sent: false, throttled: false };
+  }
+  const result = await sendMail({ to: key, ...codeEmail(code, purpose) });
+  if (!result.ok) console.warn(`[otp] could not email ${purpose} code to ${email}: ${result.error}`);
+  return { sent: result.ok, throttled: false };
 }
 
 function checkOtp(email, purpose, code) {
@@ -141,11 +165,13 @@ function registerAuthRoutes(app) {
     if (getUserByEmail(email)) return res.status(409).json({ error: 'An account with this email already exists' });
     const id = crypto.randomUUID();
     const hash = await bcrypt.hash(password, 10);
+    const required = verificationRequired();
     db.prepare(
-      'INSERT INTO users (id, email, password_hash, role, email_verified, created_date) VALUES (?, ?, ?, ?, 0, ?)'
-    ).run(id, email.toLowerCase(), hash, 'user', new Date().toISOString());
-    issueOtp(email, 'verify');
-    res.json({ success: true, requires_verification: true });
+      'INSERT INTO users (id, email, password_hash, role, email_verified, created_date) VALUES (?, ?, ?, ?, ?, ?)'
+    ).run(id, email.toLowerCase(), hash, 'user', required ? 0 : 1, new Date().toISOString());
+    if (!required) return res.json({ success: true, requires_verification: false });
+    const { sent } = await deliverOtp(email, 'verify');
+    res.json({ success: true, requires_verification: true, email_sent: sent });
   });
 
   app.post('/api/auth/verify-otp', (req, res) => {
@@ -156,9 +182,11 @@ function registerAuthRoutes(app) {
     res.json({ success: true });
   });
 
-  app.post('/api/auth/resend-otp', (req, res) => {
+  app.post('/api/auth/resend-otp', async (req, res) => {
     const { email } = req.body || {};
-    if (email && getUserByEmail(email)) issueOtp(email, 'verify');
+    // Same answer whether or not the account exists (no account probing).
+    const result = email && getUserByEmail(email) ? await deliverOtp(email, 'verify') : { throttled: false };
+    if (result.throttled) return res.status(429).json({ error: 'Please wait a minute before requesting another code.' });
     res.json({ success: true });
   });
 
@@ -168,7 +196,9 @@ function registerAuthRoutes(app) {
     if (!row || !row.password_hash) return res.status(401).json({ error: 'Invalid email or password' });
     const ok = await bcrypt.compare(password || '', row.password_hash);
     if (!ok) return res.status(401).json({ error: 'Invalid email or password' });
-    if (!row.email_verified) return res.status(403).json({ error: 'Email not verified', code: 'email_not_verified' });
+    if (!row.email_verified && verificationRequired()) {
+      return res.status(403).json({ error: 'Email not verified', code: 'email_not_verified' });
+    }
     res.json({ access_token: signToken(row), user: publicUser(row) });
   });
 
@@ -176,9 +206,10 @@ function registerAuthRoutes(app) {
     res.json({ user: req.user });
   });
 
-  app.post('/api/auth/reset-password-request', (req, res) => {
+  app.post('/api/auth/reset-password-request', async (req, res) => {
     const { email } = req.body || {};
-    if (email && getUserByEmail(email)) issueOtp(email, 'reset');
+    const result = email && getUserByEmail(email) ? await deliverOtp(email, 'reset') : { throttled: false };
+    if (result.throttled) return res.status(429).json({ error: 'Please wait a minute before requesting another code.' });
     res.json({ success: true });
   });
 

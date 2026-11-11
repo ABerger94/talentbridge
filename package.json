@@ -88,7 +88,8 @@
     "pdf-parse": "^1.1.1",
     "libsql": "^0.5.22",
     "@anthropic-ai/sdk": "^1.8.0",
-    "mammoth": "^1.13.0"
+    "mammoth": "^1.13.0",
+    "nodemailer": "^10.5.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.19.0",
