@@ -17,6 +17,7 @@ import {
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import JobCard from "@/components/jobs/JobCard";
+import { normalizePercent, normalizeCapabilityGraph } from "@/lib/scales";
 import ResumeUploader from "@/components/resume/ResumeUploader";
 import ResumeCritique from "@/components/resume/ResumeCritique";
 import ApplicationCard from "@/components/seeker/ApplicationCard";
@@ -67,7 +68,7 @@ export default function SeekerDashboard() {
     if (profiles.length > 0) {
       setProfile(profiles[0]);
       if (profiles[0].capability_graph) {
-        setCapabilityGraph(profiles[0].capability_graph);
+        setCapabilityGraph(normalizeCapabilityGraph(profiles[0].capability_graph));
       }
     } else if (!profileLoading) {
       setProfile({
@@ -132,7 +133,9 @@ Education: ${profile.education}
 Career Goals: ${profile.career_goals}
 Values: ${profile.values?.join(", ")}
 
-Generate a deep capability analysis.`,
+Generate a deep capability analysis.
+
+IMPORTANT: Rate each core execution vector's "strength" as an integer from 0 to 100 (100 = deepest, most proven expertise). Never return strength as a decimal or fraction.`,
       response_json_schema: {
         type: "object",
         properties: {
@@ -142,7 +145,7 @@ Generate a deep capability analysis.`,
               type: "object",
               properties: {
                 vector: { type: "string" },
-                strength: { type: "number" },
+                strength: { type: "number", description: "Integer from 0 to 100" },
                 evidence: { type: "string" }
               }
             }
@@ -155,11 +158,12 @@ Generate a deep capability analysis.`,
         }
       }
     });
-    setCapabilityGraph(result);
+    const normalizedResult = normalizeCapabilityGraph(result);
+    setCapabilityGraph(normalizedResult);
     // Persist to the profile so employers can see it
     const profileId = profiles[0]?.id;
     if (profileId) {
-      await base44.entities.SeekerProfile.update(profileId, { capability_graph: result });
+      await base44.entities.SeekerProfile.update(profileId, { capability_graph: normalizedResult });
       queryClient.invalidateQueries({ queryKey: ["seekerProfile"] });
     }
     toast.success("Capability Graph saved to your profile!");
@@ -206,7 +210,7 @@ Return the top matches with specific reasoning.`,
               type: "object",
               properties: {
                 job_id: { type: "string" },
-                score: { type: "number" },
+                score: { type: "number", description: "Integer from 0 to 100" },
                 capability_reason: { type: "string" },
                 adaptability_note: { type: "string" },
                 growth_signal: { type: "string" }
@@ -217,7 +221,10 @@ Return the top matches with specific reasoning.`,
         }
       }
     });
-    setAiMatches(result);
+    setAiMatches({
+      ...result,
+      matches: result?.matches?.map((m) => ({ ...m, score: normalizePercent(m?.score) })),
+    });
     setMatchLoading(false);
   };
 

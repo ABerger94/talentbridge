@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Network, Zap, TrendingUp, BookOpen, Loader2, ChevronRight, Star } from "lucide-react";
+import { normalizePercent } from "@/lib/scales";
 
 export default function HiddenVectorsPanel({ job, profile }) {
   const [analysis, setAnalysis] = useState(null);
@@ -37,11 +38,13 @@ Skills Needed: ${job.skills?.join(", ") || "Not specified"}
 Qualifications: ${job.qualifications?.slice(0, 300) || "Not specified"}
 Culture Values: ${job.culture_values?.join(", ") || "Not specified"}
 
-Return a highly specific, encouraging analysis.`,
+Return a highly specific, encouraging analysis.
+
+IMPORTANT: Express "alignment_score" and every capability match "strength" as integers from 0 to 100. Never return them as decimals or fractions.`,
       response_json_schema: {
         type: "object",
         properties: {
-          alignment_score: { type: "number" },
+          alignment_score: { type: "number", description: "Integer from 0 to 100" },
           capability_matches: {
             type: "array",
             items: {
@@ -49,7 +52,7 @@ Return a highly specific, encouraging analysis.`,
               properties: {
                 job_problem: { type: "string" },
                 candidate_proof: { type: "string" },
-                strength: { type: "number" }
+                strength: { type: "number", description: "Integer from 0 to 100" }
               }
             }
           },
@@ -69,7 +72,11 @@ Return a highly specific, encouraging analysis.`,
         }
       }
     });
-    setAnalysis(result);
+    setAnalysis({
+      ...result,
+      alignment_score: normalizePercent(result?.alignment_score),
+      capability_matches: result?.capability_matches?.map((m) => ({ ...m, strength: normalizePercent(m?.strength) })),
+    });
     setLoading(false);
   };
 

@@ -12,6 +12,7 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import InterviewScheduler from "./InterviewScheduler";
+import { normalizePercent } from "@/lib/scales";
 import OfferDialog from "./OfferDialog";
 
 export default function CandidateCapabilityCard({ application, job, onStatusChange }) {
@@ -19,7 +20,7 @@ export default function CandidateCapabilityCard({ application, job, onStatusChan
   const [assessment, setAssessment] = useState(
     application.ai_match_score
       ? {
-          match_score: application.ai_match_score,
+          match_score: normalizePercent(application.ai_match_score),
           summary: application.ai_match_summary,
           growth_potential: application.ai_growth_potential,
         }
@@ -75,11 +76,13 @@ APPLICANT:
 Name: ${application.applicant_name || "Candidate"}
 Cover Letter / Statement: ${application.cover_letter || "Not provided"}
 
-Generate a rich, evidence-based capability profile. Be specific and concrete.`,
+Generate a rich, evidence-based capability profile. Be specific and concrete.
+
+IMPORTANT: Express "match_score" as an integer from 0 to 100. Never return it as a decimal or fraction.`,
       response_json_schema: {
         type: "object",
         properties: {
-          match_score: { type: "number" },
+          match_score: { type: "number", description: "Integer from 0 to 100" },
           executive_summary: { type: "string" },
           capability_proof_points: {
             type: "array",
@@ -100,16 +103,17 @@ Generate a rich, evidence-based capability profile. Be specific and concrete.`,
       }
     });
 
-    setFullAssessment(result);
+    const normalizedScore = normalizePercent(result?.match_score);
+    setFullAssessment({ ...result, match_score: normalizedScore });
     setAssessment({
-      match_score: result.match_score,
+      match_score: normalizedScore,
       summary: result.executive_summary,
       growth_potential: result.growth_trajectory,
     });
 
     // Persist to the application record
     base44.entities.JobApplication.update(application.id, {
-      ai_match_score: result.match_score,
+      ai_match_score: normalizedScore,
       ai_match_summary: result.executive_summary,
       ai_growth_potential: result.growth_trajectory,
     });
