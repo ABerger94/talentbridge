@@ -12,9 +12,25 @@ export default function ResumeUploader({ profile, onProfileUpdate, onSave }) {
   const [parsedData, setParsedData] = useState(null);
   const fileRef = useRef();
 
+  const profileSchema = {
+    type: "object",
+    properties: {
+      headline: { type: "string" },
+      bio: { type: "string" },
+      skills: { type: "array", items: { type: "string" } },
+      experience_years: { type: "number" },
+      experience_level: { type: "string", enum: ["entry", "mid", "senior", "lead", "executive"] },
+      work_history: { type: "string" },
+      education: { type: "string" },
+      career_goals: { type: "string" },
+      preferred_location: { type: "string" },
+    }
+  };
+
   const handleFileChange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
+    e.target.value = "";
 
     const allowed = ["application/pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "text/plain"];
     if (!allowed.includes(file.type)) {
@@ -22,60 +38,52 @@ export default function ResumeUploader({ profile, onProfileUpdate, onSave }) {
       return;
     }
 
+    // Step 1 — store the file. This always works, even when AI credits are used up.
     setUploading(true);
-    const { file_url } = await base44.integrations.Core.UploadFile({ file });
+    let file_url;
+    try {
+      const upload = await base44.integrations.Core.UploadFile({ file });
+      file_url = upload.file_url;
+    } catch (err) {
+      setUploading(false);
+      toast.error("Could not upload your resume. Please try again.");
+      return;
+    }
     setUploading(false);
 
     // Update resume_url on profile immediately
     onProfileUpdate("resume_url", file_url);
 
-    // Now parse it with AI
+    // Step 2 — AI parsing. If it can't run, the resume is still saved.
     setParsing(true);
+    try {
+      const data = await parseResume(file_url);
+      setParsedData(data);
+      if (!data) {
+        toast.error("Resume saved. AI parsing isn't available right now — you can fill in your profile details manually.");
+      }
+    } catch (err) {
+      toast.error("Resume saved. AI parsing isn't available right now — you can fill in your profile details manually.");
+    }
+    setParsing(false);
+  };
+
+  const parseResume = async (file_url) => {
     const extracted = await base44.integrations.Core.ExtractDataFromUploadedFile({
       file_url,
-      json_schema: {
-        type: "object",
-        properties: {
-          headline: { type: "string" },
-          bio: { type: "string" },
-          skills: { type: "array", items: { type: "string" } },
-          experience_years: { type: "number" },
-          experience_level: { type: "string", enum: ["entry", "mid", "senior", "lead", "executive"] },
-          work_history: { type: "string" },
-          education: { type: "string" },
-          career_goals: { type: "string" },
-          preferred_location: { type: "string" },
-        }
-      }
+      json_schema: profileSchema
     });
 
     if (extracted.status === "success" && extracted.output) {
-      const data = extracted.output;
-      setParsedData(data);
-      setParsing(false);
-    } else {
-      // Fallback: use InvokeLLM to parse the file text
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Parse this resume and extract structured profile information. Be thorough — extract every skill, technology, and detail you can find.`,
-        file_urls: [file_url],
-        response_json_schema: {
-          type: "object",
-          properties: {
-            headline: { type: "string" },
-            bio: { type: "string" },
-            skills: { type: "array", items: { type: "string" } },
-            experience_years: { type: "number" },
-            experience_level: { type: "string" },
-            work_history: { type: "string" },
-            education: { type: "string" },
-            career_goals: { type: "string" },
-            preferred_location: { type: "string" },
-          }
-        }
-      });
-      setParsedData(result);
-      setParsing(false);
+      return extracted.output;
     }
+
+    // Fallback: use InvokeLLM to parse the file text
+    return await base44.integrations.Core.InvokeLLM({
+      prompt: `Parse this resume and extract structured profile information. Be thorough — extract every skill, technology, and detail you can find.`,
+      file_urls: [file_url],
+      response_json_schema: profileSchema
+    });
   };
 
   const applyParsed = () => {
