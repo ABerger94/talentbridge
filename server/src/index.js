@@ -17,7 +17,7 @@ const express = require('express');
 const { DATA_DIR } = require('./db');
 const { registerAuthRoutes } = require('./auth');
 const { registerEntityRoutes } = require('./entities');
-const { registerLlmRoutes } = require('./llm');
+const { registerLlmRoutes, providerStatus } = require('./llm');
 const { registerFileRoutes } = require('./files');
 const { registerFunctionRoutes } = require('./functions');
 
@@ -40,7 +40,7 @@ app.get('/api/health', (req, res) => {
   res.json({
     ok: true,
     service: 'talentbridge-server',
-    gemini_configured: !!process.env.GEMINI_API_KEY,
+    ai: providerStatus(),
     google_auth_configured: !!process.env.TB_GOOGLE_CLIENT_ID,
   });
 });
@@ -78,7 +78,7 @@ if (require.main === module) {
   const PORT = parseInt(process.env.TB_PORT || '8787', 10);
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`TalentBridge server listening on http://0.0.0.0:${PORT}`);
-    if (!process.env.GEMINI_API_KEY) console.log('NOTE: GEMINI_API_KEY not set — AI features will return 503 until it is.');
+    if (!providerStatus().configured) console.log('NOTE: no AI provider keys set — AI features will return 503 until at least one is (see server/src/llm.js).');
     if (!process.env.TB_JWT_SECRET) console.log('NOTE: TB_JWT_SECRET not set — using a dev secret. Set it before real deployment.');
   });
 }

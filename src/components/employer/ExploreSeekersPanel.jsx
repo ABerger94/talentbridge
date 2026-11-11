@@ -18,9 +18,11 @@ export default function ExploreSeekersPanel({ jobId }) {
       setMatches(res.data.matches || []);
       if (!res.data.matches?.length) {
         toast.info('No matching seekers found for this role');
+      } else if (res.data.unscored) {
+        toast.warning(`${res.data.unscored} seeker(s) couldn't be scored right now — try again later to include them.`);
       }
     } catch (error) {
-      toast.error('Failed to find matching seekers');
+      toast.error(`Failed to find matching seekers: ${error?.message || 'please try again.'}`);
       console.error(error);
     } finally {
       setLoading(false);
@@ -69,7 +71,7 @@ export default function ExploreSeekersPanel({ jobId }) {
           <Card key={match.seeker_id} className="p-4">
             <div className="flex justify-between items-start mb-2">
               <div>
-                <h4 className="font-semibold text-sm">{match.seeker_headline}</h4>
+                <h4 className="font-semibold text-sm">{match.seeker_headline || match.seeker?.headline || 'Candidate'}</h4>
                 <p className="text-xs text-muted-foreground mt-1">{match.match_summary}</p>
               </div>
               <Badge className="ml-2" variant="secondary">

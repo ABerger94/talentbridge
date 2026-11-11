@@ -54,10 +54,21 @@ function loadFile(name) {
 }
 
 async function extractTextFromBuffer(buffer, name) {
-  if (name.toLowerCase().endsWith('.pdf')) {
+  const lower = name.toLowerCase();
+  if (lower.endsWith('.pdf')) {
     const pdfParse = require('pdf-parse');
     const parsed = await pdfParse(buffer);
     return parsed.text || '';
+  }
+  if (lower.endsWith('.docx')) {
+    const mammoth = require('mammoth');
+    const { value } = await mammoth.extractRawText({ buffer });
+    return value || '';
+  }
+  if (lower.endsWith('.doc')) {
+    const err = new Error('Old Word (.doc) files can\'t be read — please save it as .docx or PDF and upload again.');
+    err.status = 415;
+    throw err;
   }
   return buffer.toString('utf8');
 }
@@ -117,6 +128,9 @@ function registerFileRoutes(app) {
       if (!file_url) return res.status(400).json({ error: 'file_url required' });
       let text = await readUploadText(file_url);
       if (text == null) return res.status(404).json({ error: 'File not found' });
+      if (!text.trim()) {
+        return res.status(422).json({ error: 'No text could be read from this file (a scanned/image-only PDF?). Upload a text-based PDF, DOCX or TXT.' });
+      }
       text = text.slice(0, 24000);
       const result = await invokeLLM({
         prompt: `Extract the requested fields from this document. Use only information present in the document; leave fields empty when the information is absent.\n\nDOCUMENT:\n${text}`,

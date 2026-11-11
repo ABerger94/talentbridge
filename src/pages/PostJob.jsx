@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Sparkles, Loader2, X, Plus, Briefcase } from "lucide-react";
 import { toast } from "sonner";
+import JobDocUploader from "@/components/jobs/JobDocUploader";
 
 export default function PostJob() {
   const navigate = useNavigate();
@@ -122,6 +123,8 @@ Return ONLY a JSON object.`,
       </div>
 
       <div className="space-y-6">
+        <JobDocUploader form={form} setForm={setForm} />
+
         <Card className="p-6 space-y-5">
           <h2 className="font-semibold text-lg">Basic Information</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

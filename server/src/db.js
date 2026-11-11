@@ -60,6 +60,12 @@ CREATE TABLE IF NOT EXISTS files (
   created_by_id TEXT,
   created_date TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS match_cache (
+  job_id TEXT PRIMARY KEY,
+  fingerprint TEXT NOT NULL,
+  result TEXT NOT NULL,
+  created_date TEXT NOT NULL
+);
 CREATE TABLE IF NOT EXISTS notifications (
   id TEXT PRIMARY KEY,
   kind TEXT NOT NULL,
