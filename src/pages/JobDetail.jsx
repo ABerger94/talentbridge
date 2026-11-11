@@ -55,7 +55,7 @@ export default function JobDetail() {
       await base44.entities.JobApplication.create({
         job_id: id,
         cover_letter: coverLetter,
-        applicant_name: user?.full_name || user?.data?.full_name || "Anonymous",
+        applicant_name: profile?.full_name || user?.full_name || user?.data?.full_name || "Anonymous",
         applicant_email: user?.email || "",
         status: "applied",
         seeker_profile_id: profile?.id || null,
@@ -66,6 +66,9 @@ export default function JobDetail() {
       setApplied(true);
       setApplyOpen(false);
       toast.success("Application submitted. The employer will receive your Capability Profile.");
+      if (!profile?.full_name) {
+        toast.info("Add your full name to your profile (My Profile) so the employer sees who applied.");
+      }
     },
   });
 

@@ -22,8 +22,10 @@ import ResumeUploader from "@/components/resume/ResumeUploader";
 import ResumeCritique from "@/components/resume/ResumeCritique";
 import ApplicationCard from "@/components/seeker/ApplicationCard";
 import PortfolioSection from "@/components/seeker/PortfolioSection";
+import { useAuth } from "@/lib/AuthContext";
 
 export default function SeekerDashboard() {
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const [profile, setProfile] = useState(null);
   const [skillInput, setSkillInput] = useState("");
@@ -72,6 +74,7 @@ export default function SeekerDashboard() {
       }
     } else if (!profileLoading) {
       setProfile({
+        full_name: user?.full_name || user?.data?.full_name || "",
         headline: "", bio: "", skills: [], experience_years: 0, experience_level: "entry",
         preferred_work_type: "any", preferred_location: "", salary_expectation_min: 0,
         salary_expectation_max: 0, industries_of_interest: [], values: [],
@@ -82,6 +85,12 @@ export default function SeekerDashboard() {
 
   const saveMutation = useMutation({
     mutationFn: async () => {
+      if (!profile.full_name?.trim()) {
+        const field = document.getElementById("full_name");
+        field?.scrollIntoView({ behavior: "smooth", block: "center" });
+        field?.focus({ preventScroll: true });
+        throw new Error("Please add your full name — employers see it on your applications.");
+      }
       if (profiles.length > 0) {
         return base44.entities.SeekerProfile.update(profiles[0].id, profile);
       }
@@ -90,6 +99,9 @@ export default function SeekerDashboard() {
     onSuccess: () => {
       toast.success("Profile saved!");
       queryClient.invalidateQueries({ queryKey: ["seekerProfile"] });
+    },
+    onError: (err) => {
+      toast.error(err?.message || "Couldn't save your profile. Please try again.");
     },
   });
 
@@ -319,6 +331,11 @@ Return the top matches with specific reasoning.`,
           <Card className="p-4 sm:p-6 space-y-5">
             <h2 className="text-sm sm:text-base font-semibold">About You</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+              <div className="space-y-2 sm:col-span-2">
+                <Label htmlFor="full_name">Full Name *</Label>
+                <Input id="full_name" autoComplete="name" placeholder="e.g. Jordan Rivera" value={profile.full_name || ""} onChange={(e) => update("full_name", e.target.value)} />
+                <p className="text-xs text-muted-foreground">Shown to employers on your applications.</p>
+              </div>
               <div className="space-y-2 sm:col-span-2">
                 <Label>Professional Headline</Label>
                 <Input placeholder="e.g. Systems builder who ships at velocity — React, Node, Supabase" value={profile.headline || ""} onChange={(e) => update("headline", e.target.value)} />
