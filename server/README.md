@@ -60,14 +60,35 @@ Gemini, create each key in a separate Google Cloud project).
 - Free model catalogs change often; if a provider keeps reporting
   "model not found", set its `TB_*_MODELS` to a current model ID.
 
+## Email
+
+Used for sign-up verification codes, password-reset codes, and candidate
+notifications (invited to apply, shortlisted, interview, offer, not
+selected). Set **one** provider (more = automatic fallback, in
+`TB_MAIL_ORDER` order, default `resend,brevo,smtp`):
+
+| Provider | Variables | Free tier | Needs a domain? |
+|---|---|---|---|
+| Gmail (SMTP) | `TB_SMTP_HOST=smtp.gmail.com`, `TB_SMTP_USER=you@gmail.com`, `TB_SMTP_PASS=<16-char App Password>` (`TB_SMTP_PORT` defaults to 465) | ~500/day | No |
+| Brevo | `BREVO_API_KEY`, `TB_MAIL_FROM` = a sender address verified in Brevo | 300/day | No |
+| Resend | `RESEND_API_KEY`, `TB_MAIL_FROM` on your verified domain | 3,000/month | Yes |
+
+- `TB_MAIL_FROM`: sender, e.g. `TalentBridge <hello@yourdomain.com>`
+  (SMTP defaults to `TB_SMTP_USER`). `TB_MAIL_REPLY_TO` is optional.
+- `TB_APP_URL`: site address used in email buttons (default
+  `https://talentbridge-jobboard.vercel.app`).
+- **Verification:** required only while a provider is configured (otherwise
+  no one could sign up); force it with `TB_REQUIRE_EMAIL_VERIFICATION=true`
+  or `false`. One code per address per minute; codes last 10 minutes.
+- Every notification is recorded in the `notifications` table with
+  `status` (`sent`, `failed` + `error`, or `queued_no_mailer`). A failed
+  email never blocks the hiring action.
+- `GET /api/health` → `mail.configured` / `mail.providers`.
+
 ## Notes
 
-- **Verification codes (OTP):** sign-up and password-reset codes are real
-  and validated. Until email delivery is configured, codes are printed to
-  the server console (`[otp] ...`) so the owner can complete testing.
-- **Email functions** (offers, rejections, interview invites, shortlist):
-  actions and status changes happen for real; the email itself is recorded
-  in the `notifications` table as `queued_no_mailer` until SMTP is wired.
+- **Verification codes (OTP):** without an email provider, codes are
+  printed to the server log (`[otp] ...`) and verification isn't required.
 - **Data:** one SQLite file (`talentbridge.sqlite`, WAL mode) via Node's
   built-in `node:sqlite` — no database server to run, trivial to back up
   (copy the file). Uploads live beside it in `data/uploads/`.

@@ -20,6 +20,7 @@ const { registerEntityRoutes } = require('./entities');
 const { registerLlmRoutes, providerStatus } = require('./llm');
 const { registerFileRoutes } = require('./files');
 const { registerFunctionRoutes } = require('./functions');
+const { mailStatus } = require('./mailer');
 
 const app = express();
 app.set('trust proxy', true); // correct https host behind Vercel's proxy (OAuth redirects)
@@ -41,6 +42,7 @@ app.get('/api/health', (req, res) => {
     ok: true,
     service: 'talentbridge-server',
     ai: providerStatus(),
+    mail: mailStatus(),
     google_auth_configured: !!process.env.TB_GOOGLE_CLIENT_ID,
   });
 });

@@ -54,6 +54,7 @@ async function request(path, { method = 'GET', body, headers = {} } = {}) {
   if (!res.ok) {
     const err = new Error(payload?.error || `Request failed (${res.status})`);
     err.status = res.status;
+    if (payload?.code) err.code = payload.code;
     throw err;
   }
   return payload;
@@ -89,6 +90,9 @@ const auth = {
   },
   async resetPasswordRequest(email) {
     return request('/api/auth/reset-password-request', { method: 'POST', body: { email } });
+  },
+  async resetPassword({ email, otpCode, newPassword }) {
+    return request('/api/auth/reset-password', { method: 'POST', body: { email, otpCode, newPassword } });
   },
   loginWithProvider(provider, fromUrl) {
     if (provider !== 'google') throw new Error(`Provider ${provider} is not supported`);
