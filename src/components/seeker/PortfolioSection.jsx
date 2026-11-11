@@ -13,6 +13,7 @@ export default function PortfolioSection({ seeker, onUpdate }) {
   const [portfolioUrl, setPortfolioUrl] = useState(seeker?.portfolio_url || "");
   const [loading, setLoading] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
   const handleSaveUrls = async () => {
     setLoading(true);
@@ -31,14 +32,26 @@ export default function PortfolioSection({ seeker, onUpdate }) {
 
   const handleAnalyze = async () => {
     if (!githubUrl && !portfolioUrl) {
-      toast.error("Please add at least one portfolio URL");
+      setErrorMessage("Please add at least one portfolio URL.");
       return;
     }
 
+    setErrorMessage("");
     setAnalyzing(true);
     try {
+      // A brand-new seeker has no saved profile yet — create it so there is something to analyze into
+      let profileId = seeker?.id;
+      if (!profileId) {
+        const created = await base44.entities.SeekerProfile.create({
+          headline: "",
+          github_url: githubUrl || undefined,
+          portfolio_url: portfolioUrl || undefined
+        });
+        profileId = created.id;
+      }
+
       await base44.functions.invoke("analyzePortfolio", {
-        seeker_profile_id: seeker.id,
+        seeker_profile_id: profileId,
         github_url: githubUrl,
         portfolio_url: portfolioUrl
       });
@@ -46,7 +59,11 @@ export default function PortfolioSection({ seeker, onUpdate }) {
       onUpdate?.();
     } catch (error) {
       const message =
-        error?.response?.data?.error || error?.message || "Failed to analyze portfolio";
+        error?.response?.data?.error ||
+        error?.data?.error ||
+        error?.message ||
+        "Failed to analyze portfolio";
+      setErrorMessage(message);
       toast.error(message);
     }
     setAnalyzing(false);
@@ -124,6 +141,13 @@ export default function PortfolioSection({ seeker, onUpdate }) {
             )}
           </Button>
         </div>
+
+        {errorMessage && (
+          <div className="rounded-lg bg-destructive/5 border border-destructive/20 p-3 flex gap-2">
+            <AlertCircle className="w-4 h-4 text-destructive flex-shrink-0 mt-0.5" />
+            <p className="text-xs text-destructive leading-relaxed">{errorMessage}</p>
+          </div>
+        )}
 
         {/* Analysis Results */}
         {analysis && (

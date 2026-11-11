@@ -74,8 +74,8 @@ Be specific and evidence-based. Analyze BOTH the GitHub profile AND the portfoli
 
     const analysisResult = await base44.integrations.Core.InvokeLLM({
       prompt: analysisPrompt,
-      // Web search is only supported by the Gemini models
-      model: 'gemini_3_flash',
+      // Web search (add_context_from_internet) is only supported by this model
+      model: 'gemini_3_8_flash',
       add_context_from_internet: true,
       response_json_schema: {
         type: 'object',
