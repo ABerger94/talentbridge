@@ -1,1 +1,22 @@
-{"buildCommand":"npm run vercel-build","cleanUrls":true,"framework":"vite","functions":{"api/index.js":{"maxDuration":60}},"installCommand":"npm ci","outputDirectory":"dist","rewrites":[{"destination":"/api/index.js","source":"/api/(.*)"},{"destination":"/index.html","source":"/(.*)"}]}
+{
+  "buildCommand": "npm run vercel-build",
+  "cleanUrls": true,
+  "framework": "vite",
+  "functions": {
+    "api/index.js": {
+      "maxDuration": 60
+    }
+  },
+  "installCommand": "npm ci",
+  "outputDirectory": "dist",
+  "rewrites": [
+    {
+      "destination": "/api",
+      "source": "/api/(.*)"
+    },
+    {
+      "destination": "/index.html",
+      "source": "/(.*)"
+    }
+  ]
+}
