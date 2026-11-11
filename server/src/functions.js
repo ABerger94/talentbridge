@@ -273,6 +273,18 @@ const FUNCTIONS = {
 
   async sendInterviewInvitation(user, payload) {
     const { application, job } = requireOwnedApplication(user, payload, 'schedule interviews');
+    const when = payload?.proposed_time ? new Date(payload.proposed_time) : null;
+    if (!when || Number.isNaN(when.getTime())) throw fail(400, 'A valid proposed_time is required');
+    if (application) {
+      // Save the proposal on the application so both dashboards show it;
+      // a new proposal clears the candidate's previous answer.
+      store.update('JobApplication', application.id, {
+        status: 'interview',
+        interview_proposed_time: when.toISOString(),
+        interview_response: null,
+        interview_counter_time: null,
+      });
+    }
     queueNotification('interview_invitation', {
       ...payload,
       application_id: application?.id || payload?.application_id,
@@ -286,7 +298,7 @@ const FUNCTIONS = {
     const { application_id, offer_details } = payload || {};
     const { application, job } = requireOwnedApplication(user, payload, 'send offers');
     if (application) {
-      store.update('JobApplication', application.id, { status: 'offer_extended', offer_details });
+      store.update('JobApplication', application.id, { status: 'offered', offer_details, offer_response: null });
     }
     queueNotification('offer', { application_id, job_id: job.id, offer_details });
     return { success: true, queued: true };

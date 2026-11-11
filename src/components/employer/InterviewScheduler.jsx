@@ -30,7 +30,9 @@ export default function InterviewScheduler({ application, job, onScheduled }) {
       await base44.functions.invoke("sendInterviewInvitation", {
         application_id: application.id,
         job_id: job.id,
-        proposed_time: datetime,
+        // datetime-local has no time zone; convert in the browser so the
+        // server stores the moment the employer actually picked.
+        proposed_time: new Date(datetime).toISOString(),
       });
       toast.success("Interview invitation sent!");
       setOpen(false);
