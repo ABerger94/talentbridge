@@ -3,7 +3,7 @@
 // Same contract: { prompt, response_json_schema } in, parsed JSON object out.
 const { authRequired } = require('./auth');
 
-const MODEL = process.env.TB_GEMINI_MODEL || 'gemini-2.5-flash';
+const MODEL = process.env.TB_GEMINI_MODEL || 'gemini-3.8-flash';
 
 // Gemini's responseSchema accepts a JSON-Schema subset; drop keys it rejects.
 function sanitizeSchema(schema) {
