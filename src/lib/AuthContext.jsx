@@ -19,7 +19,13 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const checkAppState = async () => {
-    if (!appParams.token) {
+    // appParams.token is snapshotted at module load; the Google OAuth
+    // return stores the session token in localStorage possibly after
+    // that snapshot was taken. Accept either source (same pattern as
+    // AuthBridge) or a fresh sign-in looks logged-out to the gate.
+    let storedToken = null;
+    try { storedToken = window.localStorage.getItem('base44_access_token'); } catch { /* storage unavailable */ }
+    if (!appParams.token && !storedToken) {
       setUser(null);
       setIsAuthenticated(false);
       setIsLoadingPublicSettings(false);
