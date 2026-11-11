@@ -5,7 +5,11 @@ export default function LogoutBridge() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const target = getAllowedPublicTarget(params.get('target'));
-    target.searchParams.set('clear_access_token', 'true');
+    // Only Base44-hosted targets need the clear flag; on our own origin
+    // it lingers in the URL and wipes future sign-ins (sign-out loop).
+    if (target.hostname.endsWith('base44.app')) {
+      target.searchParams.set('clear_access_token', 'true');
+    }
     window.location.replace(target.toString());
   }, []);
 

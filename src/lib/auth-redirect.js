@@ -49,12 +49,16 @@ export const logoutLocally = (targetPath = '/') => {
   clearStoredAuth();
 
   const logoutUrl = new URL(targetPath, window.location.origin);
-  logoutUrl.searchParams.set('clear_access_token', 'true');
 
   if (!window.location.hostname.endsWith('base44.app')) {
+    // Self-hosted: clearStoredAuth() above already removed the session.
+    // The clear_access_token flag is a Base44-hosted-logout device; on
+    // our own origin it lingers in the URL and wipes future sign-ins.
     window.location.replace(logoutUrl.toString());
     return;
   }
+
+  logoutUrl.searchParams.set('clear_access_token', 'true');
 
   try {
     const base44AppUrl = getBase44AppUrl();

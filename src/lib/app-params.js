@@ -41,6 +41,15 @@ const getAppParams = () => {
 	if (getAppParamValue("clear_access_token") === 'true') {
 		storage.removeItem('base44_access_token');
 		storage.removeItem('token');
+		// The flag is one-shot: scrub it from the address bar after honoring
+		// it. Left in the URL it rides into the login page's `next` target
+		// and wipes the fresh session token after every later sign-in —
+		// a permanent sign-out loop in that tab.
+		try {
+			const clean = new URL(window.location.href);
+			clean.searchParams.delete('clear_access_token');
+			window.history.replaceState({}, document.title, clean.toString());
+		} catch { /* non-browser */ }
 	}
 	const appBaseUrl = getAppParamValue("app_base_url", { defaultValue: import.meta.env.VITE_BASE44_APP_BASE_URL || DEFAULT_BASE44_APP_BASE_URL });
 	return {
