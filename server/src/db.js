@@ -51,6 +51,15 @@ CREATE TABLE IF NOT EXISTS otps (
   expires_at INTEGER NOT NULL,
   PRIMARY KEY (email, purpose)
 );
+CREATE TABLE IF NOT EXISTS files (
+  name TEXT PRIMARY KEY,
+  content_type TEXT,
+  original_name TEXT,
+  size INTEGER,
+  data BLOB NOT NULL,
+  created_by_id TEXT,
+  created_date TEXT NOT NULL
+);
 CREATE TABLE IF NOT EXISTS notifications (
   id TEXT PRIMARY KEY,
   kind TEXT NOT NULL,
