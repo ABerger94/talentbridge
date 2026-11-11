@@ -112,7 +112,10 @@ function withApplicantName(record, cache) {
     cache.set(key, applicantName(profile, record.created_by_id));
   }
   const name = cache.get(key);
-  return name ? { ...record, applicant_name: name } : record;
+  const out = name ? { ...record, applicant_name: name } : { ...record };
+  // Older offers were saved as 'offer_extended', which no screen knows.
+  if (out.status === 'offer_extended') out.status = 'offered';
+  return out;
 }
 
 // Keep the account's display name in step with the seeker profile name.

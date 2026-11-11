@@ -20,6 +20,7 @@ const MATCH_THRESHOLD = 60;
 export default function EmployerDashboard() {
   const queryClient = useQueryClient();
   const [selectedJob, setSelectedJob] = useState(null);
+  const [tab, setTab] = useState("jobs");
   const [invitingSeekerId, setInvitingSeekerId] = useState(null);
 
   const { data: myJobs = [], isLoading: jobsLoading } = useQuery({
@@ -83,6 +84,9 @@ export default function EmployerDashboard() {
   });
 
   const selectedJobData = myJobs.find(j => j.id === selectedJob);
+  const visibleApplications = selectedJob
+    ? allApplications.filter((a) => a.job_id === selectedJob)
+    : allApplications;
 
   const totalApplications = myJobs.reduce((sum) => sum + 0, 0);
   const activeJobs = myJobs.filter(j => j.status === "active").length;
@@ -127,7 +131,7 @@ export default function EmployerDashboard() {
         ))}
       </div>
 
-      <Tabs defaultValue="jobs">
+      <Tabs value={tab} onValueChange={setTab}>
         <TabsList className="mb-6">
           <TabsTrigger value="jobs" className="gap-2">
             <Briefcase className="w-4 h-4" /> My Roles ({myJobs.length})
@@ -190,7 +194,7 @@ export default function EmployerDashboard() {
                       variant="outline"
                       size="sm"
                       className="gap-1 text-xs"
-                      onClick={(e) => { e.stopPropagation(); setSelectedJob(job.id); }}
+                      onClick={(e) => { e.stopPropagation(); setSelectedJob(job.id); setTab("candidates"); }}
                     >
                       <Users className="w-3.5 h-3.5" /> Candidates
                     </Button>
@@ -203,15 +207,24 @@ export default function EmployerDashboard() {
 
         {/* Candidates Tab */}
         <TabsContent value="candidates" className="space-y-4">
+          {selectedJobData && (
+            <div className="flex items-center gap-2 text-sm flex-wrap">
+              <span className="text-muted-foreground">Showing candidates for</span>
+              <Badge>{selectedJobData.title}</Badge>
+              <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setSelectedJob(null)}>
+                Show all roles
+              </Button>
+            </div>
+          )}
           {allAppsLoading ? (
             Array(3).fill(0).map((_, i) => <Skeleton key={i} className="h-28 rounded-xl" />)
-          ) : allApplications.length === 0 ? (
+          ) : visibleApplications.length === 0 ? (
             <Card className="p-12 text-center text-muted-foreground">
               <Users className="w-12 h-12 mx-auto mb-4 opacity-20" />
-              <p>No applications yet across your roles.</p>
+              <p>{selectedJobData ? "No applications for this role yet." : "No applications yet across your roles."}</p>
             </Card>
           ) : (
-            allApplications.map(app => (
+            visibleApplications.map(app => (
               <div key={app.id} className="space-y-3">
                 <div className="flex items-center justify-between">
                   <div>
