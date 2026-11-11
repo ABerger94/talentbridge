@@ -7,7 +7,10 @@ const Database = require('libsql');
 const fs = require('fs');
 const path = require('path');
 
-const DATA_DIR = process.env.TB_DATA_DIR || path.join(__dirname, '..', 'data');
+// On Vercel (no Turso env yet) the bundle filesystem is read-only — fall
+// back to /tmp so the API still boots (ephemeral DB) instead of crashing.
+const DATA_DIR = process.env.TB_DATA_DIR
+  || (process.env.VERCEL ? '/tmp/talentbridge-data' : path.join(__dirname, '..', 'data'));
 
 let db;
 if (process.env.TURSO_DATABASE_URL) {
