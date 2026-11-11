@@ -45,7 +45,9 @@ export default function PortfolioSection({ seeker, onUpdate }) {
       toast.success("Portfolio analyzed! Employers can now see your strengths.");
       onUpdate?.();
     } catch (error) {
-      toast.error("Failed to analyze portfolio");
+      const message =
+        error?.response?.data?.error || error?.message || "Failed to analyze portfolio";
+      toast.error(message);
     }
     setAnalyzing(false);
   };
