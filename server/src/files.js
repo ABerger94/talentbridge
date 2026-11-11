@@ -3,23 +3,55 @@ const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
 const multer = require('multer');
-const { DATA_DIR } = require('./db');
+const { db, DATA_DIR } = require('./db');
 const { authRequired } = require('./auth');
 const { invokeLLM } = require('./llm');
 
 const UPLOAD_DIR = path.join(DATA_DIR, 'uploads');
-const SERVERLESS = !!process.env.TURSO_DATABASE_URL;
 
-// Uploads are held in memory so the same code works on serverless hosts
-// (Vercel), where the disk is not writable/persistent. On standalone hosts
-// (ASUS) they are ALSO written to disk and served statically as before.
-// Caveat: on serverless, the in-memory copy lives as long as the function
-// instance — the upload → extract flow happens back-to-back, so this holds.
-const stash = new Map(); // name -> { buffer, originalname }
+// Uploads are stored in the database (files table), so every serverless
+// instance can serve them — the old per-instance memory copy vanished between
+// requests on Vercel. Files written to disk by older standalone builds are
+// still served from UPLOAD_DIR as a fallback.
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 15 * 1024 * 1024 },
 });
+
+const SAFE_NAME = /^[A-Za-z0-9._-]+$/;
+
+// Only resume formats are served with their own type (inline). Anything
+// else goes out as a download, so an upload can never render as HTML/SVG on
+// the app's origin.
+const INLINE_TYPES = {
+  '.pdf': 'application/pdf',
+  '.txt': 'text/plain; charset=utf-8',
+  '.doc': 'application/msword',
+  '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+};
+
+function nameFromUrl(fileUrl) {
+  const name = path.basename(String(fileUrl || '').split(/[?#]/)[0]);
+  return SAFE_NAME.test(name) ? name : null;
+}
+
+function loadFile(name) {
+  const row = db
+    .prepare('SELECT name, content_type, original_name, data FROM files WHERE name = ?')
+    .get(name);
+  if (row) {
+    return {
+      buffer: Buffer.from(row.data),
+      contentType: row.content_type,
+      originalName: row.original_name || name,
+    };
+  }
+  const filePath = path.join(UPLOAD_DIR, name);
+  if (fs.existsSync(filePath)) {
+    return { buffer: fs.readFileSync(filePath), contentType: null, originalName: name };
+  }
+  return null;
+}
 
 async function extractTextFromBuffer(buffer, name) {
   if (name.toLowerCase().endsWith('.pdf')) {
@@ -30,40 +62,52 @@ async function extractTextFromBuffer(buffer, name) {
   return buffer.toString('utf8');
 }
 
-async function extractText(filePath) {
-  return extractTextFromBuffer(fs.readFileSync(filePath), path.basename(filePath));
+// Resolve an uploaded file's text by its URL. Returns null when the file
+// does not exist.
+async function readUploadText(fileUrl) {
+  const name = nameFromUrl(fileUrl);
+  if (!name) return null;
+  const file = loadFile(name);
+  if (!file) return null;
+  return extractTextFromBuffer(file.buffer, file.originalName || name);
 }
 
-// Resolve an uploaded file's text by its /uploads/<name> URL (memory copy
-// first, then disk). Returns null when the file is not available here.
-async function readUploadText(fileUrl) {
-  const name = path.basename(String(fileUrl || ''));
-  if (!name) return null;
-  const hit = stash.get(name);
-  if (hit) return extractTextFromBuffer(hit.buffer, name);
-  const filePath = path.join(UPLOAD_DIR, name);
-  if (!fs.existsSync(filePath)) return null;
-  return extractText(filePath);
+function serveFile(req, res) {
+  const name = nameFromUrl(req.params.name);
+  const file = name ? loadFile(name) : null;
+  if (!file) return res.status(404).json({ error: 'File not found' });
+  const type = INLINE_TYPES[path.extname(name).toLowerCase()];
+  const safeOriginal = String(file.originalName || name).replace(/[^\w.\- ]/g, '_');
+  res.setHeader('Content-Type', type || 'application/octet-stream');
+  res.setHeader('Content-Disposition', `${type ? 'inline' : 'attachment'}; filename="${safeOriginal}"`);
+  res.setHeader('Cache-Control', 'private, max-age=3600');
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.send(file.buffer);
 }
 
 function registerFileRoutes(app) {
   app.post('/api/files/upload', authRequired, upload.single('file'), (req, res) => {
     if (!req.file) return res.status(400).json({ error: 'No file received' });
-    const ext = path.extname(req.file.originalname || '').slice(0, 10);
+    const ext = path.extname(req.file.originalname || '').replace(/[^A-Za-z0-9.]/g, '').slice(0, 10);
     const name = `${Date.now()}-${crypto.randomUUID()}${ext}`;
-    stash.set(name, { buffer: req.file.buffer, originalname: req.file.originalname });
-    if (!SERVERLESS) {
-      try { fs.writeFileSync(path.join(UPLOAD_DIR, name), req.file.buffer); } catch { /* memory copy still serves */ }
-    }
-    res.json({ data: { file_url: `/uploads/${name}` } });
+    db.prepare(
+      'INSERT INTO files (name, content_type, original_name, size, data, created_by_id, created_date) VALUES (?, ?, ?, ?, ?, ?, ?)'
+    ).run(
+      name,
+      req.file.mimetype || 'application/octet-stream',
+      req.file.originalname || name,
+      req.file.size,
+      req.file.buffer,
+      req.user.id,
+      new Date().toISOString()
+    );
+    // /api/files/... is always routed to the server (vercel.json rewrites /api/*).
+    res.json({ data: { file_url: `/api/files/${name}` } });
   });
 
-  // Serves the in-memory copy when static disk serving can't (serverless).
-  app.get('/uploads/:name', (req, res) => {
-    const hit = stash.get(path.basename(req.params.name));
-    if (!hit) return res.status(404).json({ error: 'File not found' });
-    res.type(path.extname(hit.originalname || '') || 'application/octet-stream').send(hit.buffer);
-  });
+  app.get('/api/files/:name', serveFile);
+  // Legacy URLs saved by earlier builds.
+  app.get('/uploads/:name', serveFile);
 
   // Replaces Base44 ExtractDataFromUploadedFile: read the file's text and
   // have the LLM pull the requested fields out of it.
@@ -85,4 +129,4 @@ function registerFileRoutes(app) {
   });
 }
 
-module.exports = { registerFileRoutes, extractText, readUploadText };
+module.exports = { registerFileRoutes, readUploadText };
