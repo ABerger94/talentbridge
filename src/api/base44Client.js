@@ -150,10 +150,14 @@ const functions = {
 
 const integrations = {
   Core: {
-    async InvokeLLM({ prompt, response_json_schema }) {
+    async InvokeLLM({ prompt, response_json_schema, file_urls }) {
       const { data } = await request('/api/integrations/llm', {
         method: 'POST',
-        body: { prompt, response_json_schema },
+        body: {
+          prompt,
+          response_json_schema,
+          ...(Array.isArray(file_urls) && file_urls.length ? { file_urls } : {}),
+        },
       });
       return data;
     },

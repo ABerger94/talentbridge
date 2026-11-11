@@ -9,7 +9,7 @@ const toSnakeCase = (str) => {
 	return str.replace(/([A-Z])/g, '_$1').toLowerCase();
 }
 
-const getAppParamValue = (paramName, { defaultValue = undefined, removeFromUrl = false } = {}) => {
+const getAppParamValue = (paramName, { defaultValue = undefined, removeFromUrl = false, trustUrl = true } = {}) => {
 	if (isNode) {
 		return defaultValue;
 	}
@@ -22,7 +22,9 @@ const getAppParamValue = (paramName, { defaultValue = undefined, removeFromUrl =
 			}${window.location.hash}`;
 		window.history.replaceState({}, document.title, newUrl);
 	}
-	if (searchParam) {
+	// Untrusted params (access_token) are scrubbed from the URL but never
+	// adopted: a crafted ?access_token= link must not replace the session.
+	if (searchParam && trustUrl) {
 		storage.setItem(storageKey, searchParam);
 		return searchParam;
 	}
@@ -60,7 +62,7 @@ const getAppParams = () => {
 	const appBaseUrl = getAppParamValue("app_base_url", { defaultValue: import.meta.env.VITE_BASE44_APP_BASE_URL || DEFAULT_BASE44_APP_BASE_URL });
 	return {
 		appId: getAppParamValue("app_id", { defaultValue: import.meta.env.VITE_BASE44_APP_ID || DEFAULT_BASE44_APP_ID }),
-		token: getAppParamValue("access_token", { removeFromUrl: true }),
+		token: getAppParamValue("access_token", { removeFromUrl: true, trustUrl: false }),
 		fromUrl: getAppParamValue("from_url", { defaultValue: window.location.href }),
 		functionsVersion: getAppParamValue("functions_version", { defaultValue: import.meta.env.VITE_BASE44_FUNCTIONS_VERSION }),
 		appBaseUrl: appBaseUrl?.replace(/\/$/, '') || null,

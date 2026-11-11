@@ -46,8 +46,9 @@ export default function PostJob() {
       return;
     }
     setAiLoading(true);
-    const result = await base44.integrations.Core.InvokeLLM({
-      prompt: `You are a hiring expert. Enhance this job posting to be more inclusive, people-first, and appealing. 
+    try {
+      const result = await base44.integrations.Core.InvokeLLM({
+        prompt: `You are a hiring expert. Enhance this job posting to be more inclusive, people-first, and appealing. 
 Improve the description to be welcoming and growth-oriented. 
 Add nice-to-haves (clearly labeled as not required). 
 Suggest responsibilities if missing.
@@ -61,33 +62,38 @@ Description: ${form.description}
 Qualifications: ${form.qualifications}
 
 Return ONLY a JSON object.`,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          description: { type: "string" },
-          responsibilities: { type: "string" },
-          qualifications: { type: "string" },
-          nice_to_haves: { type: "string" },
-          benefits: { type: "string" },
-          suggested_skills: { type: "array", items: { type: "string" } },
-          suggested_values: { type: "array", items: { type: "string" } },
-          growth_opportunities: { type: "string" },
+        response_json_schema: {
+          type: "object",
+          properties: {
+            description: { type: "string" },
+            responsibilities: { type: "string" },
+            qualifications: { type: "string" },
+            nice_to_haves: { type: "string" },
+            benefits: { type: "string" },
+            suggested_skills: { type: "array", items: { type: "string" } },
+            suggested_values: { type: "array", items: { type: "string" } },
+            growth_opportunities: { type: "string" },
+          },
         },
-      },
-    });
-    setForm((p) => ({
-      ...p,
-      description: result.description || p.description,
-      responsibilities: result.responsibilities || p.responsibilities,
-      qualifications: result.qualifications || p.qualifications,
-      nice_to_haves: result.nice_to_haves || p.nice_to_haves,
-      benefits: result.benefits || p.benefits,
-      skills: result.suggested_skills?.length > 0 ? [...new Set([...p.skills, ...result.suggested_skills])] : p.skills,
-      culture_values: result.suggested_values?.length > 0 ? [...new Set([...p.culture_values, ...result.suggested_values])] : p.culture_values,
-      growth_opportunities: result.growth_opportunities || p.growth_opportunities,
-    }));
-    setAiLoading(false);
-    toast.success("Job posting enhanced with AI! Review the changes.");
+      });
+      setForm((p) => ({
+        ...p,
+        description: result.description || p.description,
+        responsibilities: result.responsibilities || p.responsibilities,
+        qualifications: result.qualifications || p.qualifications,
+        nice_to_haves: result.nice_to_haves || p.nice_to_haves,
+        benefits: result.benefits || p.benefits,
+        skills: result.suggested_skills?.length > 0 ? [...new Set([...p.skills, ...result.suggested_skills])] : p.skills,
+        culture_values: result.suggested_values?.length > 0 ? [...new Set([...p.culture_values, ...result.suggested_values])] : p.culture_values,
+        growth_opportunities: result.growth_opportunities || p.growth_opportunities,
+      }));
+      toast.success("Job posting enhanced with AI! Review the changes.");
+    } catch (err) {
+      console.error("enhanceWithAI failed", err);
+      toast.error(`Couldn't enhance the posting with AI: ${err?.message || "please try again."}`);
+    } finally {
+      setAiLoading(false);
+    }
   };
 
   const postMutation = useMutation({

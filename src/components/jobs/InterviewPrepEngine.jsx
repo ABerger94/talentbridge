@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { base44 } from "@/api/base44Client";
+import { toast } from "sonner";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { BookOpen, Loader2, MessageSquare, Target, Lightbulb, ChevronDown, ChevronUp } from "lucide-react";
@@ -11,8 +12,9 @@ export default function InterviewPrepEngine({ job, profile }) {
 
   const generatePrep = async () => {
     setLoading(true);
-    const result = await base44.integrations.Core.InvokeLLM({
-      prompt: `You are Symbiot's Interview Preparation Engine. Create a highly personalized interview prep guide for this specific candidate applying to this specific role.
+    try {
+      const result = await base44.integrations.Core.InvokeLLM({
+        prompt: `You are Symbiot's Interview Preparation Engine. Create a highly personalized interview prep guide for this specific candidate applying to this specific role.
 
 Your job: Tell the candidate EXACTLY which of their existing experiences and projects to reference when answering each likely interview question. Be concrete and strategic.
 
@@ -29,30 +31,35 @@ Culture: ${job.culture_values?.join(", ") || "Not specified"}
 Growth: ${job.growth_opportunities || "Not specified"}
 
 Return targeted, specific prep.`,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          opening_strategy: { type: "string" },
-          likely_questions: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                question: { type: "string" },
-                why_asked: { type: "string" },
-                how_to_answer: { type: "string" },
-                what_to_highlight: { type: "string" }
+        response_json_schema: {
+          type: "object",
+          properties: {
+            opening_strategy: { type: "string" },
+            likely_questions: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  question: { type: "string" },
+                  why_asked: { type: "string" },
+                  how_to_answer: { type: "string" },
+                  what_to_highlight: { type: "string" }
+                }
               }
-            }
-          },
-          questions_to_ask_them: { type: "array", items: { type: "string" } },
-          red_flags_to_avoid: { type: "array", items: { type: "string" } },
-          closing_statement: { type: "string" }
+            },
+            questions_to_ask_them: { type: "array", items: { type: "string" } },
+            red_flags_to_avoid: { type: "array", items: { type: "string" } },
+            closing_statement: { type: "string" }
+          }
         }
-      }
-    });
-    setPrep(result);
-    setLoading(false);
+      });
+      setPrep(result);
+    } catch (err) {
+      console.error("generatePrep failed", err);
+      toast.error(`Couldn't generate interview prep: ${err?.message || "please try again."}`);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const toggle = (i) => setExpanded(p => ({ ...p, [i]: !p[i] }));

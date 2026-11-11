@@ -68,22 +68,37 @@ export default function ResumeUploader({ profile, onProfileUpdate, onSave }) {
     setParsing(false);
   };
 
-  const parseResume = async (file_url) => {
-    const extracted = await base44.integrations.Core.ExtractDataFromUploadedFile({
-      file_url,
-      json_schema: profileSchema
+  // A usable parse has at least one populated field.
+  const hasFields = (obj) =>
+    !!obj && typeof obj === "object" &&
+    Object.keys(profileSchema.properties).some((k) => {
+      const v = obj[k];
+      return Array.isArray(v) ? v.length > 0 : v !== undefined && v !== null && v !== "";
     });
 
-    if (extracted.status === "success" && extracted.output) {
-      return extracted.output;
+  const parseResume = async (file_url) => {
+    let extracted = null;
+    try {
+      extracted = await base44.integrations.Core.ExtractDataFromUploadedFile({
+        file_url,
+        json_schema: profileSchema
+      });
+    } catch {
+      extracted = null; // fall through to the InvokeLLM fallback
     }
 
-    // Fallback: use InvokeLLM to parse the file text
-    return await base44.integrations.Core.InvokeLLM({
+    // The self-hosted server returns the fields directly; keep accepting the
+    // legacy Base44 { status, output } envelope too.
+    const fields = extracted?.status === "success" && extracted?.output ? extracted.output : extracted;
+    if (hasFields(fields)) return fields;
+
+    // Fallback: have InvokeLLM read the uploaded file directly.
+    const fallback = await base44.integrations.Core.InvokeLLM({
       prompt: `Parse this resume and extract structured profile information. Be thorough — extract every skill, technology, and detail you can find.`,
       file_urls: [file_url],
       response_json_schema: profileSchema
     });
+    return hasFields(fallback) ? fallback : null;
   };
 
   const applyParsed = () => {

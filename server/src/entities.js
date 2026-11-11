@@ -2,7 +2,11 @@
 const crypto = require('crypto');
 const { db } = require('./db');
 const { can } = require('./rls');
-const { authRequired, getUserById } = require('./auth');
+const { authRequired, optionalAuth, getUserById } = require('./auth');
+
+// Entities whose list/read endpoints anonymous visitors may call. RLS still
+// decides which rows they see (Job: only status='active').
+const PUBLIC_READ = ['Job'];
 
 const ENTITIES = ['SeekerProfile', 'Job', 'JobApplication', 'Invitation'];
 
@@ -73,7 +77,14 @@ function matches(record, criteria) {
 }
 
 function registerEntityRoutes(app) {
-  app.use('/api/entities', authRequired);
+  // Anonymous GETs are allowed for PUBLIC_READ entities only; everything else
+  // (and every write) requires a valid session.
+  app.use('/api/entities/:entity', (req, res, next) => {
+    if (req.method === 'GET' && PUBLIC_READ.includes(req.params.entity)) {
+      return optionalAuth(req, res, next);
+    }
+    return authRequired(req, res, next);
+  });
 
   app.post('/api/entities/:entity', (req, res) => {
     const { entity } = req.params;
@@ -82,7 +93,15 @@ function registerEntityRoutes(app) {
     if (!can(entity, 'create', req.user, probe)) {
       return res.status(403).json({ error: `Permission denied for create operation on ${entity} entity` });
     }
-    const record = store.create(entity, req.body || {}, req.user.id);
+    const body = { ...(req.body || {}) };
+    if (entity === 'JobApplication') {
+      // employer_user_id drives the employer's RLS read/update branch; derive
+      // it from the job's owner server-side rather than trusting the client.
+      const job = body.job_id ? getRecord('Job', body.job_id) : null;
+      if (!job) return res.status(400).json({ error: 'job_id must reference an existing job' });
+      body.employer_user_id = job.created_by_id || null;
+    }
+    const record = store.create(entity, body, req.user.id);
     // Keep user.data.seeker_profile_id current so Invitation read rules can
     // resolve {{user.data.seeker_profile_id}} like Base44 did.
     if (entity === 'SeekerProfile') {

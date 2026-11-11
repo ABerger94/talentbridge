@@ -34,6 +34,18 @@ async function extractText(filePath) {
   return extractTextFromBuffer(fs.readFileSync(filePath), path.basename(filePath));
 }
 
+// Resolve an uploaded file's text by its /uploads/<name> URL (memory copy
+// first, then disk). Returns null when the file is not available here.
+async function readUploadText(fileUrl) {
+  const name = path.basename(String(fileUrl || ''));
+  if (!name) return null;
+  const hit = stash.get(name);
+  if (hit) return extractTextFromBuffer(hit.buffer, name);
+  const filePath = path.join(UPLOAD_DIR, name);
+  if (!fs.existsSync(filePath)) return null;
+  return extractText(filePath);
+}
+
 function registerFileRoutes(app) {
   app.post('/api/files/upload', authRequired, upload.single('file'), (req, res) => {
     if (!req.file) return res.status(400).json({ error: 'No file received' });
@@ -59,16 +71,8 @@ function registerFileRoutes(app) {
     try {
       const { file_url, json_schema } = req.body || {};
       if (!file_url) return res.status(400).json({ error: 'file_url required' });
-      const name = path.basename(file_url);
-      let text;
-      const hit = stash.get(name);
-      if (hit) {
-        text = await extractTextFromBuffer(hit.buffer, name);
-      } else {
-        const filePath = path.join(UPLOAD_DIR, name);
-        if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'File not found' });
-        text = await extractText(filePath);
-      }
+      let text = await readUploadText(file_url);
+      if (text == null) return res.status(404).json({ error: 'File not found' });
       text = text.slice(0, 24000);
       const result = await invokeLLM({
         prompt: `Extract the requested fields from this document. Use only information present in the document; leave fields empty when the information is absent.\n\nDOCUMENT:\n${text}`,
@@ -81,4 +85,4 @@ function registerFileRoutes(app) {
   });
 }
 
-module.exports = { registerFileRoutes, extractText };
+module.exports = { registerFileRoutes, extractText, readUploadText };
