@@ -41,6 +41,12 @@ const getAppParams = () => {
 	if (getAppParamValue("clear_access_token") === 'true') {
 		storage.removeItem('base44_access_token');
 		storage.removeItem('token');
+		// Purge the persisted flag itself: getAppParamValue stored it in
+		// localStorage (base44_clear_access_token) the first time it rode
+		// in on a URL, and would otherwise re-fire on every page load,
+		// wiping every future sign-in. One-shot means one shot — from
+		// both the URL and storage.
+		storage.removeItem('base44_clear_access_token');
 		// The flag is one-shot: scrub it from the address bar after honoring
 		// it. Left in the URL it rides into the login page's `next` target
 		// and wipes the fresh session token after every later sign-in —
