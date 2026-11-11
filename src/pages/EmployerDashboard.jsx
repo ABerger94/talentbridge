@@ -7,6 +7,8 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import {
   Briefcase, Users, Plus, Eye, Clock, Layers, Send
@@ -14,13 +16,21 @@ import {
 import { formatDistanceToNow } from "date-fns";
 import CandidateCapabilityCard from "@/components/employer/CandidateCapabilityCard";
 
-// Minimum AI match score (0-100) for a seeker to appear under Explore Seekers.
+// AI match score (0-100) that counts as a strong match ("Strong matches only").
 const MATCH_THRESHOLD = 60;
+
+const scoreTone = (score) =>
+  score >= MATCH_THRESHOLD
+    ? "bg-emerald-100 text-emerald-700 border-emerald-200"
+    : score >= 40
+      ? "bg-amber-100 text-amber-700 border-amber-200"
+      : "bg-secondary text-muted-foreground border-border";
 
 export default function EmployerDashboard() {
   const queryClient = useQueryClient();
   const [selectedJob, setSelectedJob] = useState(null);
   const [tab, setTab] = useState("jobs");
+  const [strongOnly, setStrongOnly] = useState(false);
   const [invitingSeekerId, setInvitingSeekerId] = useState(null);
 
   const { data: myJobs = [], isLoading: jobsLoading } = useQuery({
@@ -43,8 +53,9 @@ export default function EmployerDashboard() {
   });
 
   // One matching call per job (the server scores every seeker in a batch and
-  // caches the result), then group strong matches by seeker.
-  const { data: allSeekers = [], isLoading: allSeekersLoading } = useQuery({
+  // caches the result), then group every scored seeker with their per-role
+  // scores. Filtering by strength happens at render time.
+  const { data: explore = { seekers: [], unscored: 0, failedRoles: [] }, isLoading: allSeekersLoading } = useQuery({
     queryKey: ["allSeekers", myJobs.map((j) => `${j.id}:${j.updated_date}`).join(",")],
     enabled: myJobs.length > 0,
     staleTime: 10 * 60 * 1000,
@@ -53,18 +64,37 @@ export default function EmployerDashboard() {
         myJobs.map((job) => base44.functions.invoke("findMatchingSeekers", { job_id: job.id }))
       );
       const bySeeker = new Map();
+      const failedRoles = [];
+      let unscored = 0;
       results.forEach((r, i) => {
-        if (r.status !== "fulfilled") return; // that job's matching failed; others still show
+        const job = myJobs[i];
+        if (r.status !== "fulfilled") {
+          failedRoles.push(job.title);
+          return;
+        }
+        unscored += r.value.data?.unscored || 0;
         for (const m of r.value.data?.matches || []) {
-          if ((m.match_score ?? 0) < MATCH_THRESHOLD || !m.seeker) continue;
-          const entry = bySeeker.get(m.seeker_id) || { ...m.seeker, matched_jobs: [] };
-          entry.matched_jobs.push(myJobs[i]);
+          if (!m.seeker) continue;
+          const entry = bySeeker.get(m.seeker_id) || { ...m.seeker, roles: [] };
+          entry.roles.push({ job, score: m.match_score ?? 0, summary: m.match_summary || "" });
           bySeeker.set(m.seeker_id, entry);
         }
       });
-      return [...bySeeker.values()];
+      const seekers = [...bySeeker.values()].map((sk) => {
+        sk.roles.sort((x, y) => y.score - x.score);
+        return { ...sk, best_score: sk.roles[0]?.score ?? 0 };
+      });
+      seekers.sort((x, y) => y.best_score - x.best_score);
+      return { seekers, unscored, failedRoles };
     },
   });
+
+  const exploreSeekers = strongOnly
+    ? explore.seekers
+        .map((sk) => ({ ...sk, roles: sk.roles.filter((r) => r.score >= MATCH_THRESHOLD) }))
+        .filter((sk) => sk.roles.length > 0)
+    : explore.seekers;
+  const hiddenByFilter = explore.seekers.length - exploreSeekers.length;
 
   const updateAppMutation = useMutation({
     mutationFn: ({ id, status }) => base44.entities.JobApplication.update(id, { status }),
@@ -140,7 +170,7 @@ export default function EmployerDashboard() {
             <Users className="w-4 h-4" /> Candidates ({allApplications.length})
           </TabsTrigger>
           <TabsTrigger value="explore" className="gap-2">
-            <Users className="w-4 h-4" /> Explore Seekers ({allSeekers.length})
+            <Users className="w-4 h-4" /> Explore Seekers ({exploreSeekers.length})
           </TabsTrigger>
         </TabsList>
 
@@ -248,61 +278,103 @@ export default function EmployerDashboard() {
 
           {/* Explore Seekers Tab */}
           <TabsContent value="explore" className="space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <p className="text-sm text-muted-foreground">
+                Every job seeker, scored by AI against each of your roles. Best match first.
+              </p>
+              <div className="flex items-center gap-2 shrink-0">
+                <Switch id="strong-only" checked={strongOnly} onCheckedChange={setStrongOnly} />
+                <Label htmlFor="strong-only" className="text-sm cursor-pointer">
+                  Strong matches only ({MATCH_THRESHOLD}%+)
+                </Label>
+              </div>
+            </div>
+
+            {!allSeekersLoading && (hiddenByFilter > 0 || explore.unscored > 0 || explore.failedRoles.length > 0) && (
+              <div className="rounded-lg border bg-secondary/50 px-4 py-3 text-xs text-muted-foreground space-y-1">
+                {hiddenByFilter > 0 && (
+                  <p>
+                    {hiddenByFilter} seeker{hiddenByFilter === 1 ? "" : "s"} scored below {MATCH_THRESHOLD}% and {hiddenByFilter === 1 ? "is" : "are"} hidden.{" "}
+                    <button type="button" className="underline text-foreground" onClick={() => setStrongOnly(false)}>Show all</button>
+                  </p>
+                )}
+                {explore.unscored > 0 && (
+                  <p>{explore.unscored} seeker match{explore.unscored === 1 ? "" : "es"} couldn't be scored right now (AI unavailable) — reload later to include them.</p>
+                )}
+                {explore.failedRoles.length > 0 && (
+                  <p>Matching failed for: {explore.failedRoles.join(", ")}. Reload later to try again.</p>
+                )}
+              </div>
+            )}
+
             {allSeekersLoading ? (
               Array(3).fill(0).map((_, i) => <Skeleton key={i} className="h-32 rounded-xl" />)
-            ) : allSeekers.length === 0 ? (
+            ) : exploreSeekers.length === 0 ? (
               <Card className="p-12 text-center text-muted-foreground">
                 <Users className="w-12 h-12 mx-auto mb-4 opacity-20" />
-                <p>No matching seekers found for your active roles.</p>
+                <p>
+                  {myJobs.length === 0
+                    ? "Post a role to see matching seekers."
+                    : explore.seekers.length > 0
+                      ? `No seekers scored ${MATCH_THRESHOLD}% or higher for your roles.`
+                      : "No job seekers have created a profile yet."}
+                </p>
               </Card>
             ) : (
-              allSeekers.map(seeker => (
+              exploreSeekers.map(seeker => (
                 <Card key={seeker.id} className="p-5 space-y-3">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <h3 className="font-semibold text-sm">{seeker.headline}</h3>
-                        {seeker.bio && <p className="text-xs text-muted-foreground mt-1">{seeker.bio.substring(0, 100)}</p>}
-                      </div>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-sm">{seeker.full_name || "Name not provided"}</h3>
+                      {seeker.headline && <p className="text-sm text-foreground/80 mt-0.5">{seeker.headline}</p>}
+                      {seeker.bio && <p className="text-xs text-muted-foreground mt-1">{seeker.bio.substring(0, 140)}{seeker.bio.length > 140 ? "…" : ""}</p>}
                     </div>
+                    <Badge variant="outline" className={`text-xs shrink-0 ${scoreTone(seeker.best_score)}`}>
+                      Best {seeker.best_score}%
+                    </Badge>
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-xs text-muted-foreground font-medium">Match by role:</p>
                     <div className="space-y-2">
-                      <p className="text-xs text-muted-foreground font-medium">Matches with:</p>
-                      <div className="flex flex-wrap gap-2">
-                        {seeker.matched_jobs.map(job => (
-                          <div key={job.id} className="flex items-center gap-2">
-                            <Badge className="text-xs">
-                              {job.title}
-                            </Badge>
+                      {seeker.roles.map(({ job, score, summary }) => (
+                        <div key={job.id} className="rounded-lg border border-border/60 p-2.5 space-y-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <Badge className="text-xs">{job.title}</Badge>
+                            <Badge variant="outline" className={`text-xs ${scoreTone(score)}`}>{score}%</Badge>
                             <Button
                               size="sm"
                               variant="ghost"
-                              className="h-6 w-6 p-0"
+                              className="h-6 px-2 gap-1 text-xs ml-auto"
                               onClick={() => inviteMutation.mutate({ seeker_profile_id: seeker.id, job_id: job.id })}
                               disabled={invitingSeekerId === seeker.id || inviteMutation.isPending}
+                              title={`Invite to apply for ${job.title}`}
                             >
-                              <Send className="w-3.5 h-3.5" />
+                              <Send className="w-3.5 h-3.5" /> Invite
                             </Button>
                           </div>
+                          {summary && <p className="text-xs text-muted-foreground leading-relaxed">{summary}</p>}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  {seeker.skills && seeker.skills.length > 0 && (
+                    <div className="space-y-2">
+                      <p className="text-xs text-muted-foreground font-medium">Skills:</p>
+                      <div className="flex flex-wrap gap-1">
+                        {seeker.skills.slice(0, 5).map((skill, idx) => (
+                          <Badge key={idx} variant="secondary" className="text-xs">
+                            {skill}
+                          </Badge>
                         ))}
+                        {seeker.skills.length > 5 && (
+                          <Badge variant="secondary" className="text-xs">
+                            +{seeker.skills.length - 5}
+                          </Badge>
+                        )}
                       </div>
                     </div>
-                    {seeker.skills && seeker.skills.length > 0 && (
-                      <div className="space-y-2">
-                        <p className="text-xs text-muted-foreground font-medium">Skills:</p>
-                        <div className="flex flex-wrap gap-1">
-                          {seeker.skills.slice(0, 5).map((skill, idx) => (
-                            <Badge key={idx} variant="secondary" className="text-xs">
-                              {skill}
-                            </Badge>
-                          ))}
-                          {seeker.skills.length > 5 && (
-                            <Badge variant="secondary" className="text-xs">
-                              +{seeker.skills.length - 5}
-                            </Badge>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                  </Card>
+                  )}
+                </Card>
               ))
             )}
           </TabsContent>
