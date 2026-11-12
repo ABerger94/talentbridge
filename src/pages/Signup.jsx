@@ -253,6 +253,12 @@ export default function Signup() {
                 {isSubmitting ? 'Creating account...' : 'Create Account'}
               </Button>
             </form>
+
+            <p className="text-xs text-muted-foreground text-center mt-5">
+              By creating an account (with email or Google), you confirm you’re 18 or older and agree to our{' '}
+              <Link to="/terms" target="_blank" className="text-primary hover:underline">Terms of Service</Link> and{' '}
+              <Link to="/privacy" target="_blank" className="text-primary hover:underline">Privacy Policy</Link>.
+            </p>
           </>
         )}
 

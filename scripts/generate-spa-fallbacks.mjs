@@ -15,6 +15,8 @@ const routes = [
   'logout-bridge',
   'login',
   'signup',
+  'privacy',
+  'terms',
 ];
 
 await Promise.all(
