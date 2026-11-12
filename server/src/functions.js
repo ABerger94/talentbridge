@@ -82,17 +82,26 @@ function requireOwnedApplication(user, payload, action) {
 
 const MATCH_BATCH_SIZE = 25; // seekers scored per AI call
 const MATCH_MAX_SEEKERS = 100; // per request: at most 4 parallel AI calls
-const MATCH_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+const MATCH_CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+const MATCH_PROMPT_VERSION = 2; // bump to invalidate cached scores when the prompt changes
+
+db.exec(`CREATE TABLE IF NOT EXISTS match_scores (
+  job_id TEXT NOT NULL,
+  seeker_id TEXT NOT NULL,
+  job_key TEXT NOT NULL,
+  seeker_updated TEXT,
+  score INTEGER NOT NULL,
+  summary TEXT,
+  created_date TEXT NOT NULL,
+  PRIMARY KEY (job_id, seeker_id)
+)`);
 
 // Seeker profile as an employer may see it in matching (no resume link: an
 // employer gets that only on an application to their job).
 function publicSeeker(seeker) {
   if (!seeker) return seeker;
-  const { resume_url: _resume, ...rest } = seeker;
-  return rest;
-}
-function withoutPrivateFields(matches) {
-  return (matches || []).map((m) => ({ ...m, seeker: publicSeeker(m.seeker) }));
+  const { resume_url: resumeUrl, ...rest } = seeker;
+  return { ...rest, has_resume: !!resumeUrl };
 }
 
 const clip = (v, n) => (v == null ? undefined : String(v).slice(0, n));
@@ -123,7 +132,7 @@ Experience Level: ${job.experience_level || 'N/A'}
 SEEKERS (JSON):
 ${JSON.stringify(roster)}
 
-Score every seeker independently. Return exactly one entry per seeker in "matches", using the seeker_id given above, with match_score as an integer 0-100 and match_summary as one or two sentences explaining the score.`;
+Score every seeker independently, using only the evidence present. A missing field is NOT evidence of weakness: never mention missing, empty, or absent profile information, and never call anyone a "poor fit" — describe how their actual experience relates to the role, in neutral, respectful terms. Return exactly one entry per seeker in "matches", using the seeker_id given above, with match_score as an integer 0-100 and match_summary as one or two sentences explaining the score.`;
   const result = await invokeLLM({
     prompt,
     response_json_schema: {
@@ -244,82 +253,79 @@ Return a concise, evidence-based summary an employer can skim.`;
     if (jobData.created_by_id !== user.id && user.role !== 'admin') {
       throw fail(403, 'Forbidden: You can only find matches for your own jobs');
     }
+    const { isListable, hasMatchableData } = require('./completeness');
     const allSeekers = store.all('SeekerProfile');
-    if (!allSeekers.length) return { matches: [], total_seekers: 0 };
+    // Only complete, visible profiles are listed (and scored); never score a
+    // profile that has nothing to judge — no data is not a bad fit.
+    const listed = allSeekers.filter(isListable);
+    const scorable = listed.filter(hasMatchableData);
+    const base = { total_seekers: listed.length, hidden_incomplete: allSeekers.length - listed.length };
+    if (!listed.length) return { matches: [], unscored: 0, ...base };
 
-    // Cache: same job content + same seeker profiles => same answer. Any job
-    // edit or profile change (or 24h) recomputes.
-    const fingerprint = crypto.createHash('sha256').update(JSON.stringify([
-      jobData.updated_date, jobData.title, jobData.description, jobData.skills, jobData.experience_level,
-      allSeekers.map((sp) => `${sp.id}:${sp.updated_date}`).sort(),
-    ])).digest('hex');
-    if (!force) {
-      const hit = db.prepare('SELECT fingerprint, result, created_date FROM match_cache WHERE job_id = ?').get(job_id);
-      if (hit && hit.fingerprint === fingerprint && Date.now() - Date.parse(hit.created_date) < MATCH_CACHE_TTL_MS) {
-        const cached = JSON.parse(hit.result);
-        return { ...cached, matches: withoutPrivateFields(cached.matches), cached: true };
-      }
-    }
+    // One cached score per (job, seeker): re-scored only when either changes.
+    const jobKey = crypto.createHash('sha256').update(JSON.stringify([
+      jobData.title, jobData.description, jobData.skills, jobData.experience_level, MATCH_PROMPT_VERSION,
+    ])).digest('hex').slice(0, 16);
+    const cachedFor = (sp) => {
+      if (force) return null;
+      const row = db.prepare('SELECT * FROM match_scores WHERE job_id = ? AND seeker_id = ?').get(job_id, sp.id);
+      if (!row || row.job_key !== jobKey || row.seeker_updated !== sp.updated_date) return null;
+      if (Date.now() - Date.parse(row.created_date) > MATCH_CACHE_TTL_MS) return null;
+      return row;
+    };
 
-    spendAiAllowance(user);
-
+    let candidates = scorable.filter((sp) => !cachedFor(sp));
     // Past MATCH_MAX_SEEKERS, shortlist by skill overlap so the AI calls stay
     // within the request time limit.
-    let candidates = allSeekers;
-    if (allSeekers.length > MATCH_MAX_SEEKERS) {
+    if (candidates.length > MATCH_MAX_SEEKERS) {
       const jobSkills = new Set((jobData.skills || []).map((x) => String(x).toLowerCase()));
-      candidates = allSeekers
+      candidates = candidates
         .map((sp) => ({ sp, overlap: (sp.skills || []).filter((x) => jobSkills.has(String(x).toLowerCase())).length }))
         .sort((x, y) => y.overlap - x.overlap)
         .slice(0, MATCH_MAX_SEEKERS)
         .map((x) => x.sp);
     }
 
-    const chunks = [];
-    for (let i = 0; i < candidates.length; i += MATCH_BATCH_SIZE) chunks.push(candidates.slice(i, i + MATCH_BATCH_SIZE));
-    const settled = await Promise.allSettled(chunks.map((chunk) => scoreSeekerBatch(jobData, chunk)));
-    const failed = settled.filter((r) => r.status === 'rejected');
-    if (failed.length === settled.length) {
-      const e = failed[0].reason;
-      throw fail(e?.status || 502, e?.message || 'AI matching failed');
+    const { normalizePercent } = require('./scales-server');
+    if (candidates.length) {
+      spendAiAllowance(user);
+      const chunks = [];
+      for (let i = 0; i < candidates.length; i += MATCH_BATCH_SIZE) chunks.push(candidates.slice(i, i + MATCH_BATCH_SIZE));
+      const settled = await Promise.allSettled(chunks.map((chunk) => scoreSeekerBatch(jobData, chunk)));
+      const now = new Date().toISOString();
+      settled.forEach((r, i) => {
+        if (r.status !== 'fulfilled') return;
+        for (const sp of chunks[i]) {
+          const scored = r.value.get(sp.id);
+          if (!scored) continue;
+          db.prepare(`INSERT OR REPLACE INTO match_scores (job_id, seeker_id, job_key, seeker_updated, score, summary, created_date)
+            VALUES (?, ?, ?, ?, ?, ?, ?)`).run(job_id, sp.id, jobKey, sp.updated_date, normalizePercent(scored.match_score, 0), scored.match_summary || '', now);
+        }
+      });
+      if (settled.every((r) => r.status === 'rejected') && !scorable.some(cachedFor)) {
+        const e = settled[0].reason;
+        throw fail(e?.status || 502, e?.message || 'AI matching failed');
+      }
     }
 
-    const { normalizePercent } = require('./scales-server');
     const matches = [];
     let unscored = 0;
-    settled.forEach((r, i) => {
-      if (r.status !== 'fulfilled') {
-        unscored += chunks[i].length;
-        return;
-      }
-      for (const seeker of chunks[i]) {
-        const scored = r.value.get(seeker.id);
-        if (!scored) {
-          unscored += 1;
-          continue;
-        }
-        matches.push({
-          seeker_id: seeker.id,
-          seeker: publicSeeker(seeker),
-          seeker_headline: seeker.headline || 'Candidate',
-          match_score: normalizePercent(scored.match_score, 0),
-          match_summary: scored.match_summary || '',
-        });
-      }
-    });
-    matches.sort((a, b) => (b.match_score || 0) - (a.match_score || 0));
-    const result = {
-      matches,
-      total_seekers: allSeekers.length,
-      considered: candidates.length,
-      unscored,
-    };
-    // Cache only complete results so a partial failure is retried next time.
-    if (!unscored) {
-      db.prepare('INSERT OR REPLACE INTO match_cache (job_id, fingerprint, result, created_date) VALUES (?, ?, ?, ?)')
-        .run(job_id, fingerprint, JSON.stringify(result), new Date().toISOString());
+    for (const sp of listed) {
+      const row = hasMatchableData(sp) ? db.prepare('SELECT * FROM match_scores WHERE job_id = ? AND seeker_id = ?').get(job_id, sp.id) : null;
+      const fresh = row && row.job_key === jobKey && row.seeker_updated === sp.updated_date;
+      if (hasMatchableData(sp) && !fresh) unscored += 1;
+      matches.push({
+        seeker_id: sp.id,
+        seeker: publicSeeker(sp),
+        seeker_headline: sp.headline || '',
+        // null = not scored (insufficient data, or the AI couldn't score it yet)
+        match_score: fresh ? row.score : null,
+        match_summary: fresh ? row.summary : '',
+        status: !hasMatchableData(sp) ? 'insufficient_data' : fresh ? 'scored' : 'unscored',
+      });
     }
-    return result;
+    matches.sort((x, y) => (y.match_score ?? -1) - (x.match_score ?? -1));
+    return { matches, unscored, ...base };
   },
 
   async inviteSeekerToJob(user, { seeker_profile_id, job_id }) {
@@ -332,7 +338,7 @@ Return a concise, evidence-based summary an employer can skim.`;
     }
     if (job.status !== 'active') throw fail(409, 'Reopen this role before inviting candidates');
     const seeker = store.get('SeekerProfile', seeker_profile_id);
-    if (!seeker) throw fail(404, 'Seeker profile not found');
+    if (!seeker || !require('./completeness').isListable(seeker)) throw fail(404, 'Seeker profile not found');
     store.create('Invitation', {
       job_id,
       seeker_profile_id,
