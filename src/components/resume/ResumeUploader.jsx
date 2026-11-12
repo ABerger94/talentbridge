@@ -6,10 +6,11 @@ import { Badge } from "@/components/ui/badge";
 import { Upload, FileText, Loader2, CheckCircle2, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
-export default function ResumeUploader({ profile, onProfileUpdate, onSave }) {
+export default function ResumeUploader({ profile, onAutoSave }) {
   const [uploading, setUploading] = useState(false);
   const [parsing, setParsing] = useState(false);
   const [parsedData, setParsedData] = useState(null);
+  const [filledCount, setFilledCount] = useState(0);
   const fileRef = useRef();
 
   const profileSchema = {
@@ -51,16 +52,24 @@ export default function ResumeUploader({ profile, onProfileUpdate, onSave }) {
     }
     setUploading(false);
 
-    // Update resume_url on profile immediately
-    onProfileUpdate("resume_url", file_url);
+    // Save the resume on the profile right away (it used to wait for "Save Profile").
+    await onAutoSave({ resume_url: file_url });
 
     // Step 2 — AI parsing. If it can't run, the resume is still saved.
     setParsing(true);
     try {
       const data = await parseResume(file_url);
-      setParsedData(data);
       if (!data) {
         toast.error("Resume saved, but the AI couldn't read any profile details from it — you can fill them in manually.");
+      } else {
+        // Fill only empty fields (and merge skills), then save — nothing the
+        // seeker already wrote is overwritten automatically.
+        const updates = fillEmptyFrom(data);
+        const count = Object.keys(updates).length;
+        if (count) await onAutoSave(updates);
+        setParsedData(data);
+        setFilledCount(count);
+        toast.success(count ? `Filled ${count} field${count === 1 ? "" : "s"} from your resume and saved your profile.` : "Resume saved. Your profile already had these details.");
       }
     } catch (err) {
       console.error("Resume parse failed", err);
@@ -100,42 +109,32 @@ export default function ResumeUploader({ profile, onProfileUpdate, onSave }) {
     return hasFields(fallback) ? fallback : null;
   };
 
-  const applyParsed = () => {
-    if (!parsedData) return;
-    // Merge parsed data into profile — only fill in empty fields
+  const TEXT_FIELDS = ["headline", "bio", "work_history", "education", "career_goals", "preferred_location"];
+
+  // Parsed values for fields the profile doesn't have yet; skills are merged.
+  const fillEmptyFrom = (data) => {
     const updates = {};
-    if (parsedData.headline && !profile.headline) updates.headline = parsedData.headline;
-    if (parsedData.bio && !profile.bio) updates.bio = parsedData.bio;
-    if (parsedData.work_history && !profile.work_history) updates.work_history = parsedData.work_history;
-    if (parsedData.education && !profile.education) updates.education = parsedData.education;
-    if (parsedData.career_goals && !profile.career_goals) updates.career_goals = parsedData.career_goals;
-    if (parsedData.preferred_location && !profile.preferred_location) updates.preferred_location = parsedData.preferred_location;
-    if (parsedData.experience_years > 0) updates.experience_years = parsedData.experience_years;
-    if (parsedData.experience_level) updates.experience_level = parsedData.experience_level;
-    // Merge skills without duplicates
-    if (parsedData.skills?.length > 0) {
-      const merged = [...new Set([...(profile.skills || []), ...parsedData.skills])];
-      updates.skills = merged;
+    for (const k of TEXT_FIELDS) if (data[k] && !String(profile[k] || "").trim()) updates[k] = data[k];
+    if (data.experience_years > 0 && !(profile.experience_years > 0)) updates.experience_years = data.experience_years;
+    if (data.experience_level && !profile.experience_level) updates.experience_level = data.experience_level;
+    if (data.skills?.length > 0) {
+      const merged = [...new Set([...(profile.skills || []), ...data.skills])];
+      if (merged.length > (profile.skills || []).length) updates.skills = merged;
     }
-    Object.entries(updates).forEach(([k, v]) => onProfileUpdate(k, v));
-    toast.success("Profile filled from your resume! Review and save.");
-    setParsedData(null);
+    return updates;
   };
 
-  const applyAll = () => {
+  const replaceAll = async () => {
     if (!parsedData) return;
-    // Overwrite everything with parsed data
-    if (parsedData.headline) onProfileUpdate("headline", parsedData.headline);
-    if (parsedData.bio) onProfileUpdate("bio", parsedData.bio);
-    if (parsedData.work_history) onProfileUpdate("work_history", parsedData.work_history);
-    if (parsedData.education) onProfileUpdate("education", parsedData.education);
-    if (parsedData.career_goals) onProfileUpdate("career_goals", parsedData.career_goals);
-    if (parsedData.preferred_location) onProfileUpdate("preferred_location", parsedData.preferred_location);
-    if (parsedData.experience_years > 0) onProfileUpdate("experience_years", parsedData.experience_years);
-    if (parsedData.experience_level) onProfileUpdate("experience_level", parsedData.experience_level);
-    if (parsedData.skills?.length > 0) onProfileUpdate("skills", parsedData.skills);
-    toast.success("Profile fully replaced with resume data. Review and save.");
-    setParsedData(null);
+    const updates = {};
+    for (const k of TEXT_FIELDS) if (parsedData[k]) updates[k] = parsedData[k];
+    if (parsedData.experience_years > 0) updates.experience_years = parsedData.experience_years;
+    if (parsedData.experience_level) updates.experience_level = parsedData.experience_level;
+    if (parsedData.skills?.length > 0) updates.skills = parsedData.skills;
+    if (await onAutoSave(updates)) {
+      toast.success("Profile replaced with your resume's details and saved.");
+      setParsedData(null);
+    }
   };
 
   return (
@@ -187,8 +186,10 @@ export default function ResumeUploader({ profile, onProfileUpdate, onSave }) {
         <Card className="p-6 border-accent/25 bg-accent/5">
           <div className="flex items-center gap-2 mb-4">
             <Sparkles className="w-4 h-4 text-accent" />
-            <h3 className="font-semibold text-sm">AI Parsed Your Resume</h3>
-            <Badge className="bg-accent/15 text-accent border-accent/20 text-xs">Preview</Badge>
+            <h3 className="font-semibold text-sm">
+              {filledCount ? `Filled ${filledCount} field${filledCount === 1 ? "" : "s"} from your resume` : "AI read your resume"}
+            </h3>
+            <Badge className="bg-accent/15 text-accent border-accent/20 text-xs">Saved</Badge>
           </div>
 
           <div className="space-y-3 text-sm mb-5">
@@ -212,12 +213,12 @@ export default function ResumeUploader({ profile, onProfileUpdate, onSave }) {
             )}
           </div>
 
+          <p className="text-xs text-muted-foreground mb-3">
+            We only filled fields that were empty, so nothing you wrote was changed. Review them on the Profile tab.
+          </p>
           <div className="flex gap-2 flex-wrap">
-            <Button size="sm" className="gap-1.5" onClick={applyParsed}>
-              <Sparkles className="w-3.5 h-3.5" /> Fill Empty Fields
-            </Button>
-            <Button size="sm" variant="outline" onClick={applyAll}>
-              Replace All Fields
+            <Button size="sm" variant="outline" onClick={replaceAll}>
+              Replace all fields with my resume
             </Button>
             <Button size="sm" variant="ghost" className="text-muted-foreground" onClick={() => setParsedData(null)}>
               Dismiss

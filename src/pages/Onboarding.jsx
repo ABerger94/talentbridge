@@ -44,7 +44,8 @@ export default function Onboarding() {
       if (selected === "employer") {
         setStep("company");
       } else {
-        navigate("/dashboard", { replace: true });
+        // Resume first: parsing it fills most of the profile.
+        navigate("/dashboard?tab=resume", { replace: true });
       }
     } catch (err) {
       toast.error(err?.message || "Couldn't save your choice. Please try again.");

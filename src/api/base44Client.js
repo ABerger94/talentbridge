@@ -224,6 +224,12 @@ const admin = {
   async reports() {
     return (await request('/api/admin/reports')).data;
   },
+  async incompleteSignups() {
+    return (await request('/api/admin/incomplete-signups')).data;
+  },
+  async remind(userId) {
+    return (await request(`/api/admin/incomplete-signups/${encodeURIComponent(userId)}/remind`, { method: 'POST' })).data;
+  },
 };
 
 export const base44 = { auth, entities, functions, integrations, messages, employer, admin };
