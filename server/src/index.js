@@ -14,8 +14,7 @@ try {
   }
 } catch { /* env file optional */ }
 const express = require('express');
-const { DATA_DIR } = require('./db');
-const { registerAuthRoutes } = require('./auth');
+const { registerAuthRoutes, secretStatus } = require('./auth');
 const { registerEntityRoutes } = require('./entities');
 const { registerLlmRoutes, providerStatus } = require('./llm');
 const { registerFileRoutes } = require('./files');
@@ -43,6 +42,7 @@ app.get('/api/health', (req, res) => {
     service: 'talentbridge-server',
     ai: providerStatus(),
     mail: mailStatus(),
+    auth_secret: secretStatus(), // 'ok' | 'short' | 'missing' | 'default' | 'dev-default'
     google_auth_configured: !!process.env.TB_GOOGLE_CLIENT_ID,
   });
 });
@@ -53,8 +53,8 @@ registerLlmRoutes(app);
 registerFileRoutes(app);
 registerFunctionRoutes(app);
 
-// Uploaded files (resumes). Paths are unguessable timestamp+UUID names.
-app.use('/uploads', express.static(path.join(DATA_DIR, 'uploads')));
+// Uploaded files are served only through files.js (access-checked); there
+// is deliberately no static route for the uploads directory.
 
 // In production the server also serves the built frontend (../dist) so the
 // whole product is one process on the ASUS.

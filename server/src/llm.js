@@ -420,7 +420,7 @@ async function invokeLLM({ prompt, response_json_schema }) {
 }
 
 function registerLlmRoutes(app) {
-  app.post('/api/integrations/llm', authRequired, async (req, res) => {
+  app.post('/api/integrations/llm', authRequired, require('./ratelimit').limits.ai, async (req, res) => {
     try {
       const { prompt, response_json_schema, file_urls } = req.body || {};
       let fullPrompt = prompt || '';
@@ -429,8 +429,9 @@ function registerLlmRoutes(app) {
       if (Array.isArray(file_urls) && file_urls.length) {
         const { readUploadText } = require('./files');
         const parts = [];
+        const { canAccessFile } = require('./files');
         for (const url of file_urls.slice(0, 5)) {
-          const text = await readUploadText(url);
+          const text = canAccessFile(req.user, url) ? await readUploadText(url) : null;
           if (text == null) {
             // Uploads can be missing on another serverless instance; tell the
             // model instead of failing the whole call.

@@ -130,6 +130,50 @@ function syncUserFullName(userId, fullName) {
   db.prepare('UPDATE users SET data = ? WHERE id = ?').run(JSON.stringify(data), userId);
 }
 
+// --- File fields -----------------------------------------------------------
+// resume_url points at a private upload. Stored canonical (/api/files/<name>);
+// handed out signed, and only to readers allowed to open the file.
+function filesApi() {
+  return require('./files'); // lazy: files.js loads after this module
+}
+
+// Normalizes resume_url on a write. Returns an error message or null.
+function checkResumeWrite(entity, data, user, existing) {
+  if (!('resume_url' in data)) return null;
+  if (!data.resume_url) {
+    data.resume_url = null;
+    return null;
+  }
+  const { canonicalFileUrl, canAttachFile } = filesApi();
+  const canonical = canonicalFileUrl(data.resume_url);
+  if (!canonical) return 'resume_url must be an uploaded file';
+  const unchanged = existing && canonicalFileUrl(existing.resume_url || '') === canonical;
+  if (!unchanged && !canAttachFile(user, canonical)) return 'resume_url must be a file you uploaded';
+  data.resume_url = canonical;
+  return null;
+}
+
+// What `user` gets to see of a record (after RLS already allowed the read).
+function present(entity, record, user, cache = new Map()) {
+  if (!record) return record;
+  let out = entity === 'JobApplication' ? withApplicantName(record, cache) : { ...record };
+  if (out.resume_url) {
+    const { signFileUrl } = filesApi();
+    const isOwner = user && out.created_by_id === user.id;
+    const isAdmin = user && user.role === 'admin';
+    if (entity === 'JobApplication') {
+      // Readers of an application are its applicant, the job's employer, or admin.
+      out.resume_url = signFileUrl(out.resume_url);
+    } else if (entity === 'SeekerProfile' && (isOwner || isAdmin)) {
+      out.resume_url = signFileUrl(out.resume_url);
+    } else {
+      // Employers browsing seekers see the resume only on applications.
+      delete out.resume_url;
+    }
+  }
+  return out;
+}
+
 function registerEntityRoutes(app) {
   // Anonymous GETs are allowed for PUBLIC_READ entities only; everything else
   // (and every write) requires a valid session.
@@ -160,6 +204,11 @@ function registerEntityRoutes(app) {
       body.seeker_profile_id = profile ? profile.id : null;
       body.applicant_name = applicantName(profile, req.user.id) || String(body.applicant_name || '').trim() || 'Anonymous';
       body.applicant_email = req.user.email;
+      // The resume comes from the applicant's own profile, never the request.
+      body.resume_url = profile?.resume_url || null;
+    } else {
+      const bad = checkResumeWrite(entity, body, req.user, null);
+      if (bad) return res.status(400).json({ error: bad });
     }
     if (entity === 'SeekerProfile' && typeof body.full_name === 'string') {
       body.full_name = body.full_name.trim().slice(0, 120);
@@ -174,7 +223,7 @@ function registerEntityRoutes(app) {
       db.prepare('UPDATE users SET data = ? WHERE id = ?').run(JSON.stringify(data), req.user.id);
       syncUserFullName(req.user.id, record.full_name);
     }
-    res.json({ data: record });
+    res.json({ data: present(entity, record, req.user) });
   });
 
   app.get('/api/entities/:entity', (req, res) => {
@@ -191,10 +240,8 @@ function registerEntityRoutes(app) {
       .filter(entity, criteria)
       .filter((r) => can(entity, 'read', req.user, r))
       .slice(0, limit);
-    if (entity === 'JobApplication') {
-      const cache = new Map();
-      visible = visible.map((r) => withApplicantName(r, cache));
-    }
+    const cache = new Map();
+    visible = visible.map((r) => present(entity, r, req.user, cache));
     res.json({ data: visible });
   });
 
@@ -205,7 +252,7 @@ function registerEntityRoutes(app) {
     if (!record || !can(entity, 'read', req.user, record)) {
       return res.status(404).json({ error: 'Not found' });
     }
-    res.json({ data: entity === 'JobApplication' ? withApplicantName(record, new Map()) : record });
+    res.json({ data: present(entity, record, req.user) });
   });
 
   app.put('/api/entities/:entity/:id', (req, res) => {
@@ -217,6 +264,8 @@ function registerEntityRoutes(app) {
       return res.status(403).json({ error: `Permission denied for update operation on ${entity} entity` });
     }
     const changes = { ...(req.body || {}) };
+    const bad = checkResumeWrite(entity, changes, req.user, record);
+    if (bad) return res.status(400).json({ error: bad });
     if (entity === 'SeekerProfile' && typeof changes.full_name === 'string') {
       changes.full_name = changes.full_name.trim().slice(0, 120);
     }
@@ -224,7 +273,7 @@ function registerEntityRoutes(app) {
     if (entity === 'SeekerProfile' && updated.created_by_id === req.user.id) {
       syncUserFullName(req.user.id, updated.full_name);
     }
-    res.json({ data: entity === 'JobApplication' ? withApplicantName(updated, new Map()) : updated });
+    res.json({ data: present(entity, updated, req.user) });
   });
 
   app.delete('/api/entities/:entity/:id', (req, res) => {
@@ -240,4 +289,4 @@ function registerEntityRoutes(app) {
   });
 }
 
-module.exports = { registerEntityRoutes, store };
+module.exports = { registerEntityRoutes, store, present };

@@ -8,6 +8,15 @@ const { store } = require('./entities');
 const { invokeLLM } = require('./llm');
 const { authRequired, getUserById } = require('./auth');
 const { sendMail, mailConfigured, layout, appUrl } = require('./mailer');
+const { hit } = require('./ratelimit');
+
+// Counts one AI-backed call against the caller's hourly AI allowance (the
+// same budget as /api/integrations/llm). Cached answers don't count.
+function spendAiAllowance(user) {
+  const max = parseInt(process.env.TB_AI_LIMIT_PER_HOUR || '', 10) || 60;
+  const r = hit(`ai-user:${user.id}`, max, 60 * 60 * 1000);
+  if (!r.ok) throw fail(429, `You’ve hit the hourly AI limit. Please try again in ${Math.ceil(r.retryAfter / 60)} minutes.`);
+}
 
 function fail(status, message) {
   const e = new Error(message);
@@ -81,6 +90,17 @@ function requireOwnedApplication(user, payload, action) {
 const MATCH_BATCH_SIZE = 25; // seekers scored per AI call
 const MATCH_MAX_SEEKERS = 100; // per request: at most 4 parallel AI calls
 const MATCH_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+
+// Seeker profile as an employer may see it in matching (no resume link: an
+// employer gets that only on an application to their job).
+function publicSeeker(seeker) {
+  if (!seeker) return seeker;
+  const { resume_url: _resume, ...rest } = seeker;
+  return rest;
+}
+function withoutPrivateFields(matches) {
+  return (matches || []).map((m) => ({ ...m, seeker: publicSeeker(m.seeker) }));
+}
 
 const clip = (v, n) => (v == null ? undefined : String(v).slice(0, n));
 
@@ -157,6 +177,7 @@ const FUNCTIONS = {
     if (seekerProfile.created_by_id !== user.id && user.role !== 'admin') {
       throw fail(403, 'Forbidden: You can only analyze your own profile');
     }
+    spendAiAllowance(user);
     let portfolioContent = '';
     if (portfolio_url) {
       try {
@@ -219,9 +240,12 @@ const FUNCTIONS = {
     if (!force) {
       const hit = db.prepare('SELECT fingerprint, result, created_date FROM match_cache WHERE job_id = ?').get(job_id);
       if (hit && hit.fingerprint === fingerprint && Date.now() - Date.parse(hit.created_date) < MATCH_CACHE_TTL_MS) {
-        return { ...JSON.parse(hit.result), cached: true };
+        const cached = JSON.parse(hit.result);
+        return { ...cached, matches: withoutPrivateFields(cached.matches), cached: true };
       }
     }
+
+    spendAiAllowance(user);
 
     // Past MATCH_MAX_SEEKERS, shortlist by skill overlap so the AI calls stay
     // within the request time limit.
@@ -260,7 +284,7 @@ const FUNCTIONS = {
         }
         matches.push({
           seeker_id: seeker.id,
-          seeker,
+          seeker: publicSeeker(seeker),
           seeker_headline: seeker.headline || 'Candidate',
           match_score: normalizePercent(scored.match_score, 0),
           match_summary: scored.match_summary || '',
