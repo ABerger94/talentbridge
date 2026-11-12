@@ -156,6 +156,7 @@ export default function EmployerDashboard() {
   });
 
   const applicantCount = (jobId) => allApplications.filter((a) => a.job_id === jobId && a.status !== "withdrawn").length;
+  const withdrawnCount = (jobId) => allApplications.filter((a) => a.job_id === jobId && a.status === "withdrawn").length;
 
 
   const inviteMutation = useMutation({
@@ -266,6 +267,7 @@ export default function EmployerDashboard() {
                       </Badge>
                       <span className="text-xs text-muted-foreground">
                         {applicantCount(job.id)} applicant{applicantCount(job.id) === 1 ? "" : "s"}
+                        {withdrawnCount(job.id) > 0 && ` · ${withdrawnCount(job.id)} withdrew`}
                       </span>
                       {selectedJob === job.id && (
                         <Badge className="text-xs bg-primary/10 text-primary border-primary/20">Viewing</Badge>
@@ -304,7 +306,7 @@ export default function EmployerDashboard() {
                         <Pencil className="w-3.5 h-3.5" /> Edit
                       </Button>
                     </Link>
-                    {applicantCount(job.id) === 0 && !allApplications.some((a) => a.job_id === job.id) && (
+                    {applicantCount(job.id) === 0 && (
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
                           <Button variant="ghost" size="sm" className="gap-1 text-xs text-muted-foreground" aria-label="Delete role">
@@ -315,7 +317,9 @@ export default function EmployerDashboard() {
                           <AlertDialogHeader>
                             <AlertDialogTitle>Delete “{job.title}”?</AlertDialogTitle>
                             <AlertDialogDescription>
-                              This permanently removes the role. Roles with applicants can only be closed, not deleted.
+                              This permanently removes the role{withdrawnCount(job.id) > 0
+                                ? `, along with its ${withdrawnCount(job.id)} withdrawn application${withdrawnCount(job.id) === 1 ? "" : "s"} and their messages`
+                                : ""}. Roles with active applicants can only be closed, not deleted.
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
