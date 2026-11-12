@@ -110,3 +110,15 @@ test('role stats count unique visitors (not the owner or bots) and the pipeline'
   assert.equal(s.response_rate, 100);
   assert.equal((await call('cand', 'GET', '/api/employer/job-stats')).status, 403);
 });
+
+test('a role whose only applications were withdrawn can be deleted; active ones block it', async () => {
+  const solo = store.create('Job', { title: 'Temp role', status: 'closed' }, 'emp');
+  const gone = store.create('JobApplication', { job_id: solo.id, employer_user_id: 'emp', status: 'withdrawn' }, 'cand');
+  const live = store.create('Job', { title: 'Busy role', status: 'active' }, 'emp');
+  store.create('JobApplication', { job_id: live.id, employer_user_id: 'emp', status: 'applied' }, 'cand');
+  assert.equal((await call('emp', 'DELETE', `/api/entities/Job/${live.id}`)).status, 409);
+  const res = await call('emp', 'DELETE', `/api/entities/Job/${solo.id}`);
+  assert.equal(res.status, 200);
+  assert.equal(store.get('Job', solo.id), null);
+  assert.equal(store.get('JobApplication', gone.id), null);
+});

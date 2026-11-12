@@ -507,10 +507,24 @@ function registerEntityRoutes(app) {
     if (!can(entity, 'delete', req.user, record)) {
       return res.status(403).json({ error: `Permission denied for delete operation on ${entity} entity` });
     }
-    if (entity === 'Job' && req.user.role !== 'admin') {
-      const hasApplicants = filterRecords('JobApplication', { job_id: id }).length > 0;
-      if (hasApplicants) {
+    if (entity === 'Job') {
+      // Active candidates keep the role on record; withdrawn applications
+      // (including those of deleted accounts) don't block deleting it and
+      // are removed with it.
+      const apps = filterRecords('JobApplication', { job_id: id });
+      const live = apps.filter((a) => a.status !== 'withdrawn');
+      if (live.length && req.user.role !== 'admin') {
         return res.status(409).json({ error: 'This role has applicants, so it can’t be deleted. Close it instead.' });
+      }
+      if (!live.length) {
+        for (const a of apps) {
+          db.prepare('DELETE FROM messages WHERE application_id = ?').run(a.id);
+          db.prepare('DELETE FROM conversation_state WHERE application_id = ?').run(a.id);
+          store.remove('JobApplication', a.id);
+        }
+        for (const inv of filterRecords('Invitation', { job_id: id })) store.remove('Invitation', inv.id);
+        db.prepare('DELETE FROM match_scores WHERE job_id = ?').run(id);
+        db.prepare('DELETE FROM job_views WHERE job_id = ?').run(id);
       }
     }
     store.remove(entity, id);
