@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -12,10 +12,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Sparkles, Loader2, Save, User, Briefcase, Network,
-  X, Plus, Zap, Brain, TrendingUp, GitBranch, Layers, FileText, Users, Eye, Globe
+  X, Plus, Zap, Brain, TrendingUp, GitBranch, FileText, Users, Eye, Globe
 } from "lucide-react";
 import { toast } from "sonner";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
+import ProfileChecklist from "@/components/seeker/ProfileChecklist";
 import JobCard from "@/components/jobs/JobCard";
 import { normalizePercent, normalizeCapabilityGraph } from "@/lib/scales";
 import ResumeUploader from "@/components/resume/ResumeUploader";
@@ -28,6 +29,23 @@ import { profileCompleteness } from "@/lib/completeness";
 
 export default function SeekerDashboard() {
   const { user } = useAuth();
+  // The open tab lives in the URL (?tab=resume) so steps and emails can deep-link.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const TABS = ["profile", "resume", "portfolio", "capability", "matches", "applications", "invitations"];
+  const tab = TABS.includes(searchParams.get("tab")) ? searchParams.get("tab") : "profile";
+  const setTab = (t) => setSearchParams((sp) => { const n = new URLSearchParams(sp); n.set("tab", t); return n; }, { replace: true });
+  const goToStep = (t, focusId) => {
+    setTab(t);
+    if (focusId) {
+      setTimeout(() => {
+        const el = document.getElementById(focusId);
+        el?.scrollIntoView({ behavior: "smooth", block: "center" });
+        el?.focus({ preventScroll: true });
+      }, 150);
+    } else {
+      setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), 50);
+    }
+  };
   const queryClient = useQueryClient();
   const [profile, setProfile] = useState(null);
   const [skillInput, setSkillInput] = useState("");
@@ -108,6 +126,36 @@ export default function SeekerDashboard() {
   });
 
   const update = (key, val) => setProfile(p => ({ ...p, [key]: val }));
+
+  // Saves immediately (used by resume upload): persists the given fields plus
+  // any unsaved edits on the form. Returns true on success.
+  const savedIdRef = useRef(null);
+  savedIdRef.current = savedIdRef.current || profiles[0]?.id || null;
+  // Latest form state, so back-to-back saves (resume, then parsed fields)
+  // build on each other instead of a stale copy.
+  const profileRef = useRef(profile);
+  profileRef.current = profile;
+  const autoSave = async (updates) => {
+    const next = { ...profileRef.current, ...updates };
+    profileRef.current = next;
+    setProfile(next);
+    try {
+      const { id: _id, created_by_id: _c, created_date: _cd, updated_date: _ud, ...fields } = next;
+      // A blank name would be rejected; send only the new fields until it's set.
+      const body = String(next.full_name || "").trim() ? fields : updates;
+      if (savedIdRef.current) {
+        await base44.entities.SeekerProfile.update(savedIdRef.current, body);
+      } else {
+        const created = await base44.entities.SeekerProfile.create(body);
+        savedIdRef.current = created.id;
+      }
+      queryClient.invalidateQueries({ queryKey: ["seekerProfile"] });
+      return true;
+    } catch (err) {
+      toast.error(err?.message || "Couldn't save your profile automatically. Please click Save.");
+      return false;
+    }
+  };
   const addSkill = () => {
     if (skillInput.trim() && !profile.skills?.includes(skillInput.trim())) {
       update("skills", [...(profile.skills || []), skillInput.trim()]);
@@ -288,16 +336,7 @@ Return the top matches with specific reasoning.`,
   const invitationStatusLabel = { pending: "Pending", accepted: "Accepted", declined: "Declined" };
   const invitationStatusColor = { pending: "bg-amber-100 text-amber-700", accepted: "bg-green-100 text-green-700", declined: "bg-red-100 text-red-700" };
 
-  const profileScore = (() => {
-    let s = 0;
-    if (profile.headline) s += 20;
-    if (profile.bio) s += 15;
-    if (profile.skills?.length > 0) s += 20;
-    if (profile.work_history) s += 20;
-    if (profile.career_goals) s += 15;
-    if (profile.values?.length > 0) s += 10;
-    return s;
-  })();
+
 
   return (
     <div className="max-w-4xl mx-auto px-3 sm:px-4 lg:px-8 py-6 sm:py-10">
@@ -306,7 +345,8 @@ Return the top matches with specific reasoning.`,
         <p className="text-xs sm:text-sm text-muted-foreground">Build your Capability Graph. Let AI surface your full potential to the right employers.</p>
       </div>
 
-      <Tabs defaultValue="profile">
+      <div className="mb-6"><ProfileChecklist saved={profiles[0]} onGo={goToStep} /></div>
+      <Tabs value={tab} onValueChange={setTab}>
         <TabsList className="mb-6 flex-wrap h-auto gap-1">
           <TabsTrigger value="profile" className="gap-1 text-xs sm:text-sm"><User className="w-3 h-3 sm:w-4 sm:h-4" /> <span className="hidden sm:inline">Profile</span></TabsTrigger>
           <TabsTrigger value="resume" className="gap-1 text-xs sm:text-sm"><FileText className="w-3 h-3 sm:w-4 sm:h-4" /> <span className="hidden sm:inline">Resume</span></TabsTrigger>
@@ -319,19 +359,7 @@ Return the top matches with specific reasoning.`,
 
         {/* Profile Tab */}
         <TabsContent value="profile" className="space-y-6">
-          {/* Completion score */}
-          <Card className="p-4 sm:p-5 bg-primary/5 border-primary/15">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
-              <span className="text-xs sm:text-sm font-medium flex items-center gap-2">
-                <Layers className="w-3 h-3 sm:w-4 sm:h-4 text-primary" /> Capability Profile Strength
-              </span>
-              <span className="text-xs sm:text-sm font-bold text-primary">{profileScore}%</span>
-            </div>
-            <Progress value={profileScore} className="h-2" />
-            <p className="text-xs text-muted-foreground mt-2 line-clamp-2">
-              {profileScore < 60 ? "Complete your profile to improve match quality." : profileScore < 90 ? "Strong profile — add more context to maximize AI matching." : "Excellent profile — your Capability Graph is rich with signal."}
-            </p>
-          </Card>
+
 
           {/* Visibility to employers */}
           {(() => {
@@ -376,7 +404,7 @@ Return the top matches with specific reasoning.`,
               </div>
               <div className="space-y-2 sm:col-span-2">
                 <Label>Professional Headline</Label>
-                <Input placeholder="e.g. Systems builder who ships at velocity — React, Node, Supabase" value={profile.headline || ""} onChange={(e) => update("headline", e.target.value)} />
+                <Input id="headline" placeholder="e.g. Systems builder who ships at velocity — React, Node, Supabase" value={profile.headline || ""} onChange={(e) => update("headline", e.target.value)} />
               </div>
               <div className="space-y-2 sm:col-span-2">
                 <Label>About Me</Label>
@@ -407,7 +435,7 @@ Return the top matches with specific reasoning.`,
             <div className="space-y-2">
               <Label>Skills & Technologies</Label>
               <div className="flex gap-2">
-                <Input placeholder="Add a skill or tool" value={skillInput} onChange={(e) => setSkillInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addSkill())} />
+                <Input id="skill-input" placeholder="Add a skill or tool" value={skillInput} onChange={(e) => setSkillInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addSkill())} />
                 <Button variant="outline" size="icon" onClick={addSkill}><Plus className="w-4 h-4" /></Button>
               </div>
               {profile.skills?.length > 0 && (
@@ -486,8 +514,7 @@ Return the top matches with specific reasoning.`,
         <TabsContent value="resume" className="space-y-5">
           <ResumeUploader
             profile={profile}
-            onProfileUpdate={update}
-            onSave={() => saveMutation.mutate()}
+            onAutoSave={autoSave}
           />
           <ResumeCritique profile={profile} />
         </TabsContent>

@@ -137,6 +137,21 @@ employer can also open a profile that applied to one of their roles.
 - Rules live in `server/src/completeness.js` (mirrored for the UI in
   `src/lib/completeness.js`).
 
+## Seeker onboarding & follow-up
+
+- Seekers see a "Finish your profile" checklist (Name → Headline → Upload
+  resume → Capability Graph → Skills) above their dashboard tabs; each step
+  deep-links to its tab (`/dashboard?tab=…`). New seekers land on
+  `?tab=resume`.
+- Uploading a resume saves it immediately, then fills empty profile fields
+  from the AI parse and saves them (nothing typed is overwritten; "Replace
+  all fields with my resume" is offered).
+- `/admin` → Incomplete: signups not yet visible to employers (no account
+  type, unverified email, no profile, or below the completeness bar) with %
+  complete, the step they stopped after, and a Send reminder button
+  (email listing remaining steps, linking to the next one; once per person
+  per 7 days, tracked in `users.data.last_reminder_at`).
+
 ## Tests
 
 `npm test` (repo root) runs the server acceptance tests in `server/test/`

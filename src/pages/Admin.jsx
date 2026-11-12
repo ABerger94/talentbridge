@@ -13,7 +13,8 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { CheckCircle2, AlertTriangle, Info, ShieldCheck, Flag, ExternalLink } from "lucide-react";
+import { CheckCircle2, AlertTriangle, Info, ShieldCheck, Flag, ExternalLink, UserPlus, Send, Loader2 } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 
 const LEVEL = {
@@ -105,6 +106,19 @@ export default function Admin() {
     queryFn: () => base44.admin.reports(),
   });
 
+  const { data: signups = [], isLoading: signupsLoading } = useQuery({
+    queryKey: ["adminIncompleteSignups"],
+    queryFn: () => base44.admin.incompleteSignups(),
+  });
+  const remind = useMutation({
+    mutationFn: (u) => base44.admin.remind(u.id),
+    onSuccess: (_, u) => {
+      toast.success(`Reminder sent to ${u.name || u.email}.`);
+      queryClient.invalidateQueries({ queryKey: ["adminIncompleteSignups"] });
+    },
+    onError: (err) => toast.error(err?.message || "Couldn't send the reminder."),
+  });
+
   const decide = useMutation({
     mutationFn: ({ e, decision }) => base44.admin.decide(e.id, decision, note),
     onSuccess: (res, { e, decision }) => {
@@ -121,10 +135,11 @@ export default function Admin() {
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
       <h1 className="text-2xl sm:text-3xl font-bold mb-1">Admin</h1>
-      <p className="text-muted-foreground mb-6">Review employers and reported conversations.</p>
+      <p className="text-muted-foreground mb-6">Review employers, follow up on incomplete signups, and check reported conversations.</p>
       <Tabs defaultValue="employers">
         <TabsList className="mb-5">
           <TabsTrigger value="employers">Employers</TabsTrigger>
+          <TabsTrigger value="signups" className="gap-1.5"><UserPlus className="w-3.5 h-3.5" /> Incomplete ({signups.length})</TabsTrigger>
           <TabsTrigger value="reports" className="gap-1.5"><Flag className="w-3.5 h-3.5" /> Reports ({reports.length})</TabsTrigger>
         </TabsList>
 
@@ -144,6 +159,59 @@ export default function Admin() {
             </Card>
           ) : (
             employers.map((e) => <EmployerCard key={e.id} e={e} onDecide={(emp, decision) => setPending({ e: emp, decision })} />)
+          )}
+        </TabsContent>
+
+        <TabsContent value="signups" className="space-y-3">
+          <p className="text-sm text-muted-foreground">
+            People who signed up but aren’t visible to employers yet, newest first. A reminder email lists their
+            remaining steps and links straight to the next one (at most once a week per person).
+          </p>
+          {signupsLoading ? (
+            <Skeleton className="h-24 rounded-xl" />
+          ) : signups.length === 0 ? (
+            <Card className="p-10 text-center text-muted-foreground">Everyone who signed up has a complete profile. 🎉</Card>
+          ) : (
+            signups.map((u) => (
+              <Card key={u.id} className="p-4 space-y-2">
+                <div className="flex items-start justify-between gap-3 flex-wrap">
+                  <div className="min-w-0">
+                    <p className="font-medium text-sm">{u.name || <span className="text-muted-foreground">No name yet</span>}</p>
+                    <p className="text-xs text-muted-foreground break-all">{u.email}</p>
+                  </div>
+                  <span className="text-xs text-muted-foreground">
+                    Signed up {formatDistanceToNow(new Date(u.created_date), { addSuffix: true })}
+                    {u.role === "user" ? " · no account type yet" : ""}
+                  </span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Progress value={u.percent} className="h-2 flex-1" />
+                  <span className="text-xs font-semibold w-10 text-right">{u.percent}%</span>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Stopped after: <span className="text-foreground">{u.last_step}</span>
+                  {u.next_step && <> · Next: <span className="text-foreground">{u.next_step}</span></>}
+                </p>
+                <div className="flex items-center gap-3 flex-wrap pt-1">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="gap-1.5"
+                    disabled={!u.can_remind || (remind.isPending && remind.variables?.id === u.id)}
+                    onClick={() => remind.mutate(u)}
+                  >
+                    {remind.isPending && remind.variables?.id === u.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+                    Send reminder
+                  </Button>
+                  {u.last_reminder_at && (
+                    <span className="text-xs text-muted-foreground">
+                      Reminded {formatDistanceToNow(new Date(u.last_reminder_at), { addSuffix: true })}
+                      {!u.can_remind ? " · next one available a week after" : ""}
+                    </span>
+                  )}
+                </div>
+              </Card>
+            ))
           )}
         </TabsContent>
 

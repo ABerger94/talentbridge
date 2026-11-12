@@ -21,6 +21,7 @@ const { registerFileRoutes } = require('./files');
 const { registerFunctionRoutes } = require('./functions');
 const { registerMessageRoutes } = require('./messages');
 const { registerEmployerRoutes } = require('./employers');
+const { registerSignupRoutes } = require('./signups');
 const { mailStatus } = require('./mailer');
 
 const app = express();
@@ -56,6 +57,7 @@ registerFileRoutes(app);
 registerFunctionRoutes(app);
 registerMessageRoutes(app);
 registerEmployerRoutes(app);
+registerSignupRoutes(app);
 
 // Uploaded files are served only through files.js (access-checked); there
 // is deliberately no static route for the uploads directory.
