@@ -64,6 +64,7 @@ function requireOwnedApplication(user, payload, action) {
   if (user.role !== 'employer' && user.role !== 'admin') {
     throw fail(403, `Forbidden: Only employers can ${action}`);
   }
+  require('./employers').requireApprovedEmployer(user);
   const { application_id, job_id } = payload || {};
   if (!application_id && !job_id) throw fail(400, 'application_id or job_id is required');
   const application = application_id ? store.get('JobApplication', application_id) : null;
@@ -155,9 +156,12 @@ Score every seeker independently. Return exactly one entry per seeker in "matche
 const FUNCTIONS = {
   async setUserRole(user, { role }) {
     if (!['employer', 'job_seeker'].includes(role)) throw fail(400, 'Invalid role');
-    if (user.role !== 'admin') {
-      db.prepare('UPDATE users SET role = ? WHERE id = ?').run(role, user.id);
-    }
+    if (user.role === 'admin' || user.role === role) return { success: true };
+    // The account type is chosen once, during onboarding.
+    if (user.role !== 'user') throw fail(403, 'Your account type is already set');
+    const data = { ...(user.data || {}) };
+    if (role === 'employer') data.employer_status = 'pending'; // reviewed before seeing candidates
+    db.prepare('UPDATE users SET role = ?, data = ? WHERE id = ?').run(role, JSON.stringify(data), user.id);
     return { success: true };
   },
 
@@ -214,6 +218,7 @@ const FUNCTIONS = {
 
   async findMatchingSeekers(user, { job_id, force }) {
     if (user.role !== 'employer' && user.role !== 'admin') throw fail(403, 'Unauthorized');
+    require('./employers').requireApprovedEmployer(user);
     if (!job_id) throw fail(400, 'job_id is required');
     const jobData = store.get('Job', job_id);
     if (!jobData) throw fail(404, 'Job not found');
@@ -300,6 +305,7 @@ const FUNCTIONS = {
 
   async inviteSeekerToJob(user, { seeker_profile_id, job_id }) {
     if (user.role !== 'employer' && user.role !== 'admin') throw fail(403, 'Forbidden: Only employers can send invitations');
+    require('./employers').requireApprovedEmployer(user);
     const job = store.get('Job', job_id);
     if (!job) throw fail(404, 'Job not found');
     if (job.created_by_id !== user.id && user.role !== 'admin') {

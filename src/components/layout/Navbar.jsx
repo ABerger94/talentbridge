@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Menu, Briefcase, User, Building2, Search, LogIn, LogOut, MessageSquare } from "lucide-react";
+import { Menu, Briefcase, User, Building2, Search, LogIn, LogOut, MessageSquare, ShieldCheck } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
@@ -31,6 +31,7 @@ export default function Navbar() {
     { path: "/dashboard", label: "My Profile", icon: User, show: !isAuthenticated || role === 'job_seeker' || role === 'admin' },
     { path: "/employer", label: "Employer Dashboard", icon: Building2, show: role === 'employer' || role === 'admin' },
     { path: "/messages", label: "Messages", icon: MessageSquare, show: canMessage, badge: unread },
+    { path: "/admin", label: "Admin", icon: ShieldCheck, show: role === 'admin' },
   ].filter(l => l.show);
 
   const handleLogin = () => redirectToLogin(window.location.href);

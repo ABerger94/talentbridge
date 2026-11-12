@@ -18,6 +18,8 @@ const routes = [
   'privacy',
   'terms',
   'messages',
+  'company',
+  'admin',
 ];
 
 await Promise.all(

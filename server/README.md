@@ -101,6 +101,27 @@ selected). Set **one** provider (more = automatic fallback, in
   wrong guesses; AI calls `TB_AI_LIMIT_PER_HOUR` per user (cached matching
   results are free); uploads 30 per user per hour.
 
+## Employer verification
+
+New employers start **pending**: during onboarding they fill in a company
+profile (name, website, size, location, about, LinkedIn, their title) and
+it's submitted for review. While pending (or rejected) they can draft roles
+— held as `pending_review`, hidden from the board — but can't see seeker
+profiles, run matching, invite, message, or act on applications.
+
+- Admins review at `/admin` (also reachable from the navbar). Each employer
+  shows automatic trust signals: work email matching the company website,
+  free email domains, missing website, email verified, account age.
+- Approve publishes their held roles and emails them; reject (or revoke)
+  emails them your note, and they can edit their profile to resubmit.
+- New submissions are emailed to admins: everyone in `TB_ADMIN_EMAILS` plus
+  users with the `admin` role. The same list receives message reports.
+- Employers who existed before verification count as approved (no badge).
+  Approved-by-review employers show a "Verified employer" badge on jobs.
+- The account type is chosen once in onboarding; it can't be switched later.
+- Status lives in `users.data.employer_status` (`pending`/`approved`/
+  `rejected`); the company profile in `users.data.company`.
+
 ## Messaging
 
 One conversation per job application, between the applicant and the

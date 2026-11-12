@@ -203,4 +203,27 @@ const messages = {
   },
 };
 
-export const base44 = { auth, entities, functions, integrations, messages };
+// Employer company profile + verification (server/src/employers.js).
+const employer = {
+  async profile() {
+    return (await request('/api/employer/profile')).data;
+  },
+  async saveProfile(company) {
+    return (await request('/api/employer/profile', { method: 'PUT', body: company })).data;
+  },
+};
+
+// Admin-only review endpoints.
+const admin = {
+  async employers(status = 'pending') {
+    return (await request(`/api/admin/employers?status=${encodeURIComponent(status)}`)).data;
+  },
+  async decide(employerId, decision, note) {
+    return (await request(`/api/admin/employers/${encodeURIComponent(employerId)}/decision`, { method: 'POST', body: { decision, note } })).data;
+  },
+  async reports() {
+    return (await request('/api/admin/reports')).data;
+  },
+};
+
+export const base44 = { auth, entities, functions, integrations, messages, employer, admin };

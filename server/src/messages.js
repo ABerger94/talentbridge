@@ -90,6 +90,10 @@ function otherParty(c) {
 
 function readOnlyReason(c) {
   if (!c.participant) return 'Admins can read conversations but not send messages.';
+  const employerRow = getUserById(c.app.employer_user_id);
+  if (employerRow && !require('./employers').isApprovedEmployer(require('./auth').publicUser(employerRow))) {
+    return 'Messaging opens once the employer account is approved.';
+  }
   if (READ_ONLY_STATUSES[c.app.status]) return READ_ONLY_STATUSES[c.app.status];
   const mine = state(c.app.id, c.isApplicant ? c.app.created_by_id : c.app.employer_user_id);
   const theirs = state(c.app.id, c.otherId);
@@ -254,7 +258,7 @@ function registerMessageRoutes(app) {
     db.prepare('INSERT INTO message_reports (id, application_id, reporter_id, reason, created_date) VALUES (?, ?, ?, ?, ?)')
       .run(crypto.randomUUID(), c.app.id, req.user.id, reason || null, new Date().toISOString());
     // Let the site owner know (admins listed in TB_ADMIN_EMAILS).
-    const admins = (process.env.TB_ADMIN_EMAILS || '').split(',').map((s) => s.trim()).filter(Boolean);
+    const admins = require('./employers').adminEmails();
     if (admins.length) {
       const { notify } = require('./notifications');
       const { layout, appUrl } = require('./mailer');

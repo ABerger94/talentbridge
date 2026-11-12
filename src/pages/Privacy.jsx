@@ -35,7 +35,8 @@ const sections = [
           on your application.</p>
         <p><strong>Messages.</strong> Messages you send to an employer or candidate about an application, and whether
           they’ve been read. Messages are only available between the two people on that application.</p>
-        <p><strong>Employer content.</strong> Job postings (including documents you upload to fill a posting), and the
+        <p><strong>Employer content.</strong> Your company profile (name, website, size, location, description, LinkedIn
+          page, and your job title), which we use to verify employers and show with your postings; job postings (including documents you upload to fill a posting), and the
           actions you take on candidates.</p>
         <p><strong>Emails we send.</strong> A record of each notification (type, recipient, and whether it was
           delivered).</p>
@@ -69,7 +70,8 @@ const sections = [
       <>
         <p><strong>If you’re a job seeker:</strong></p>
         <ul>
-          <li><strong>Employers on {LEGAL.siteName}</strong> can browse job seeker profiles (your name, headline, bio,
+          <li><strong>Approved employers on {LEGAL.siteName}</strong> (we review each employer before they can see
+            candidates) can browse job seeker profiles (your name, headline, bio,
             skills, experience, and other profile details) and see AI match scores for their roles.</li>
           <li><strong>Your resume file</strong> is private. Only you, employers whose roles you apply to, and site
             administrators can open it.</li>

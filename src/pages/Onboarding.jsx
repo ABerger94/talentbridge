@@ -7,10 +7,14 @@ import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
 import { motion } from "framer-motion";
 import TalentBridgeLogo from "@/components/TalentBridgeLogo";
+import CompanyProfileForm from "@/components/employer/CompanyProfileForm";
+import { toast } from "sonner";
 
 export default function Onboarding() {
   const [selected, setSelected] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [step, setStep] = useState("role"); // 'role' | 'company'
+  const [saving, setSaving] = useState(false);
   const navigate = useNavigate();
   const { checkUserAuth, user, isAuthenticated, isLoadingAuth } = useAuth();
 
@@ -22,6 +26,11 @@ export default function Onboarding() {
     }
 
     if (!isLoadingAuth && isAuthenticated && user?.role && user.role !== 'user') {
+      // Employers finish onboarding with their company profile.
+      if (user.role === 'employer' && !user.data?.company?.name) {
+        setStep("company");
+        return;
+      }
       navigate(user.role === 'employer' ? '/employer' : '/dashboard', { replace: true });
     }
   }, [user, isAuthenticated, isLoadingAuth]);
@@ -29,10 +38,57 @@ export default function Onboarding() {
   const handleContinue = async () => {
     if (!selected) return;
     setLoading(true);
-    await base44.functions.invoke('setUserRole', { role: selected });
-    await checkUserAuth(); // refresh user in context
-    navigate(selected === "employer" ? "/employer" : "/dashboard", { replace: true });
+    try {
+      await base44.functions.invoke('setUserRole', { role: selected });
+      await checkUserAuth(); // refresh user in context
+      if (selected === "employer") {
+        setStep("company");
+      } else {
+        navigate("/dashboard", { replace: true });
+      }
+    } catch (err) {
+      toast.error(err?.message || "Couldn't save your choice. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
+
+  const handleCompany = async (company) => {
+    setSaving(true);
+    try {
+      await base44.employer.saveProfile(company);
+      await checkUserAuth();
+      toast.success("Thanks! We'll review your company and email you when you're approved.");
+      navigate("/employer", { replace: true });
+    } catch (err) {
+      toast.error(err?.message || "Couldn't save your company profile.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (step === "company") {
+    return (
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center px-4 py-10">
+        <div className="w-full max-w-xl">
+          <div className="flex items-center justify-center gap-2.5 mb-8">
+            <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center shadow-lg shadow-primary/25">
+              <TalentBridgeLogo size={32} />
+            </div>
+            <span className="text-2xl font-bold tracking-tight">TalentBridge</span>
+          </div>
+          <h1 className="text-3xl font-bold text-center mb-2">Tell us about your company</h1>
+          <p className="text-muted-foreground text-center mb-8">
+            We review every employer before they can see candidates. That keeps job seekers safe from scams. You can
+            draft roles while you wait, and they go live as soon as you're approved.
+          </p>
+          <Card className="p-6">
+            <CompanyProfileForm onSubmit={handleCompany} saving={saving} submitLabel="Submit for review" email={user?.email} />
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   const roles = [
     {

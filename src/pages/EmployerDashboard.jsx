@@ -11,10 +11,12 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import {
-  Briefcase, Users, Plus, Eye, Clock, Layers, Send, Pencil, Trash2
+  Briefcase, Users, Plus, Eye, Clock, Layers, Send, Pencil, Trash2, Building2, Lock
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import CandidateCapabilityCard from "@/components/employer/CandidateCapabilityCard";
+import EmployerStatusBanner from "@/components/employer/EmployerStatusBanner";
+import { useAuth } from "@/lib/AuthContext";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   AlertDialog,
@@ -35,6 +37,7 @@ const JOB_STATUS = {
   active: { label: "Open", badge: "default" },
   paused: { label: "Paused", badge: "secondary" },
   closed: { label: "Closed", badge: "outline" },
+  pending_review: { label: "Awaiting approval", badge: "secondary" },
 };
 
 const scoreTone = (score) =>
@@ -45,6 +48,8 @@ const scoreTone = (score) =>
       : "bg-secondary text-muted-foreground border-border";
 
 export default function EmployerDashboard() {
+  const { user } = useAuth();
+  const approved = user?.employer_status === "approved";
   const queryClient = useQueryClient();
   const [selectedJob, setSelectedJob] = useState(null);
   const [tab, setTab] = useState("jobs");
@@ -75,7 +80,7 @@ export default function EmployerDashboard() {
   // scores. Filtering by strength happens at render time.
   const { data: explore = { seekers: [], unscored: 0, failedRoles: [] }, isLoading: allSeekersLoading } = useQuery({
     queryKey: ["allSeekers", myJobs.map((j) => `${j.id}:${j.updated_date}`).join(",")],
-    enabled: myJobs.length > 0,
+    enabled: myJobs.length > 0 && approved,
     staleTime: 10 * 60 * 1000,
     queryFn: async () => {
       const results = await Promise.allSettled(
@@ -179,12 +184,21 @@ export default function EmployerDashboard() {
           <h1 className="text-3xl font-bold mb-2">Employer Dashboard</h1>
           <p className="text-muted-foreground">AI-powered candidate capability assessments — see beyond the resume.</p>
         </div>
-        <Link to="/post-job">
-          <Button className="gap-2">
-            <Plus className="w-4 h-4" /> Post New Role
-          </Button>
-        </Link>
+        <div className="flex items-center gap-2 flex-wrap justify-end">
+          <Link to="/company">
+            <Button variant="outline" className="gap-2">
+              <Building2 className="w-4 h-4" /> <span className="hidden sm:inline">Company profile</span>
+            </Button>
+          </Link>
+          <Link to="/post-job">
+            <Button className="gap-2">
+              <Plus className="w-4 h-4" /> Post New Role
+            </Button>
+          </Link>
+        </div>
       </div>
+
+      <div className="mb-6 empty:hidden"><EmployerStatusBanner user={user} /></div>
 
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
@@ -209,13 +223,13 @@ export default function EmployerDashboard() {
             overflow and make the whole page scroll sideways). */}
         <TabsList className="mb-6 w-full sm:w-auto max-w-full justify-start overflow-x-auto">
           <TabsTrigger value="jobs" className="gap-1.5 sm:gap-2 text-xs sm:text-sm">
-            <Briefcase className="w-4 h-4 shrink-0" /> <span className="hidden sm:inline">My </span>Roles ({myJobs.length})
+            <Briefcase className="w-4 h-4 shrink-0" /> <span><span className="hidden sm:inline">My </span>Roles ({myJobs.length})</span>
           </TabsTrigger>
           <TabsTrigger value="candidates" className="gap-1.5 sm:gap-2 text-xs sm:text-sm">
             <Users className="w-4 h-4 shrink-0" /> Candidates ({allApplications.length})
           </TabsTrigger>
           <TabsTrigger value="explore" className="gap-1.5 sm:gap-2 text-xs sm:text-sm">
-            <Users className="w-4 h-4 shrink-0" /> <span className="hidden sm:inline">Explore </span>Seekers ({exploreSeekers.length})
+            <Users className="w-4 h-4 shrink-0" /> <span><span className="hidden sm:inline">Explore </span>Seekers ({exploreSeekers.length})</span>
           </TabsTrigger>
         </TabsList>
 
@@ -263,6 +277,7 @@ export default function EmployerDashboard() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2 flex-wrap justify-end" onClick={e => e.stopPropagation()}>
+                    {job.status === "pending_review" ? null : (
                     <Select
                       value={job.status || "active"}
                       onValueChange={(status) => jobStatusMutation.mutate({ id: job.id, status })}
@@ -277,6 +292,7 @@ export default function EmployerDashboard() {
                         <SelectItem value="closed">Closed</SelectItem>
                       </SelectContent>
                     </Select>
+                    )}
                     <Link to={`/post-job?edit=${job.id}`}>
                       <Button variant="ghost" size="sm" className="gap-1 text-xs">
                         <Pencil className="w-3.5 h-3.5" /> Edit
@@ -366,6 +382,13 @@ export default function EmployerDashboard() {
 
           {/* Explore Seekers Tab */}
           <TabsContent value="explore" className="space-y-4">
+            {!approved ? (
+              <Card className="p-10 text-center text-muted-foreground">
+                <Lock className="w-10 h-10 mx-auto mb-3 opacity-30" />
+                <p className="font-medium text-foreground">Candidate search unlocks once you’re approved</p>
+                <p className="text-sm mt-1">We review every employer to keep job seekers safe. We’ll email you as soon as you’re verified.</p>
+              </Card>
+            ) : (<>
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <p className="text-sm text-muted-foreground">
                 Every job seeker, scored by AI against each of your roles. Best match first.
@@ -465,6 +488,7 @@ export default function EmployerDashboard() {
                 </Card>
               ))
             )}
+            </>)}
           </TabsContent>
           </Tabs>
           </div>
