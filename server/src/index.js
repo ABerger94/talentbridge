@@ -28,6 +28,8 @@ const { registerAccountRoutes } = require('./account');
 const { registerSeoRoutes } = require('./seo');
 const { registerAlertRoutes } = require('./alerts');
 const { registerJobStatsRoutes } = require('./jobstats');
+const { registerImportRoutes } = require('./imports');
+const { registerJobRoutes } = require('./jobsapi');
 const { securityHeaders } = require('./security');
 
 const app = express();
@@ -69,6 +71,8 @@ registerSystemRoutes(app);
 registerAccountRoutes(app);
 registerAlertRoutes(app);
 registerJobStatsRoutes(app);
+registerImportRoutes(app);
+registerJobRoutes(app);
 registerSeoRoutes(app); // before the static app below, so job pages get their real <head>
 
 // Uploaded files are served only through files.js (access-checked); there

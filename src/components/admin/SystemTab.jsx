@@ -21,6 +21,9 @@ const ACTIONS = {
   "account.signed_out_others": "signed out other devices",
   "storage.migrated_batch": "moved files to the bucket",
   "ai.fairness_check": "ran an AI fairness check",
+  "jobs.import_run": "ran the job import",
+  "jobs.source_added": "added a job source",
+  "jobs.source_removed": "removed a job source",
 };
 
 function Check({ ok, label, detail }) {
@@ -117,7 +120,7 @@ export default function SystemTab() {
         </div>
         <p className="text-xs text-muted-foreground">
           Accounts: {users.job_seeker || 0} seekers · {users.employer || 0} employers · {users.user || 0} without a role yet · {users.admin || 0} admins.
-          Active roles: {counts.jobs_active}{counts.jobs_pending_review ? ` (+${counts.jobs_pending_review} awaiting approval)` : ""}.
+          Active roles: {counts.jobs_active} posted here{counts.jobs_pending_review ? ` (+${counts.jobs_pending_review} awaiting approval)` : ""}, {(counts.jobs_imported_active || 0).toLocaleString()} imported.
         </p>
         <div className="flex items-center gap-2 flex-wrap text-xs text-muted-foreground">
           <span>

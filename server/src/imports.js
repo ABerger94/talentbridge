@@ -1,0 +1,668 @@
+'use strict';
+// Real job listings from outside TalentBridge, refreshed daily:
+//   greenhouse / lever / ashby  a company's own public job board (free, no key)
+//   remotive                    remote jobs (credit + link back required)
+//   usajobs                     federal jobs (USAJOBS_API_KEY + USAJOBS_EMAIL)
+//   adzuna                      broad aggregator (ADZUNA_APP_ID + ADZUNA_APP_KEY)
+//   jooble                      broad aggregator (JOOBLE_API_KEY)
+// Imported jobs are Job records with imported: true. They link out to apply
+// (no in-app applications), carry attribution, stay out of Google's job data
+// and the sitemap, and are closed when they disappear from their source.
+// Each run has a time budget; sources not reached run next time.
+const crypto = require('crypto');
+const { db } = require('./db');
+const { authRequired } = require('./auth');
+
+const DAY = 24 * 60 * 60 * 1000;
+const DESCRIPTION_MAX = 12000;
+const FETCH_TIMEOUT_MS = 30000;
+
+const KINDS = {
+  greenhouse: { label: 'Greenhouse', company: true, minGapMs: 20 * 60 * 60 * 1000 },
+  lever: { label: 'Lever', company: true, minGapMs: 20 * 60 * 60 * 1000 },
+  ashby: { label: 'Ashby', company: true, minGapMs: 20 * 60 * 60 * 1000 },
+  remotive: { label: 'Remotive', company: false, minGapMs: 6 * 60 * 60 * 1000 },
+  usajobs: { label: 'USAJOBS', company: false, minGapMs: 20 * 60 * 60 * 1000, env: ['USAJOBS_API_KEY', 'USAJOBS_EMAIL'] },
+  adzuna: { label: 'Adzuna', company: false, minGapMs: 20 * 60 * 60 * 1000, env: ['ADZUNA_APP_ID', 'ADZUNA_APP_KEY'] },
+  jooble: { label: 'Jooble', company: false, minGapMs: 20 * 60 * 60 * 1000, env: ['JOOBLE_API_KEY'] },
+};
+
+// Starting set: real boards checked to be live, picked for a spread of work
+// (clinical, food service, retail and auto, nonprofit, aerospace technicians,
+// logistics, finance, media, software). Admins add or remove them in Admin.
+const DEFAULT_SOURCES = [
+  ['greenhouse', 'onemedical', 'One Medical', 40], ['greenhouse', 'oscar', 'Oscar Health', 30],
+  ['lever', 'lyrahealth', 'Lyra Health', 40], ['lever', 'ro', 'Ro', 25], ['greenhouse', 'talkspace', 'Talkspace', 20],
+  ['greenhouse', 'zocdoc', 'Zocdoc', 25], ['greenhouse', 'mavenclinic', 'Maven Clinic', 20], ['greenhouse', 'honor', 'Honor', 15],
+  ['greenhouse', 'omadahealth', 'Omada Health', 15], ['greenhouse', 'twinhealth', 'Twin Health', 20], ['greenhouse', 'tia', 'Tia', 20],
+  ['greenhouse', 'galileo', 'Galileo', 10], ['ashby', 'benchling', 'Benchling', 20],
+  ['greenhouse', 'sweetgreen', 'sweetgreen', 40], ['greenhouse', 'toast', 'Toast', 40], ['greenhouse', 'instacart', 'Instacart', 30],
+  ['greenhouse', 'carvana', 'Carvana', 60], ['greenhouse', 'glossier', 'Glossier', 20], ['greenhouse', 'peloton', 'Peloton', 20],
+  ['greenhouse', 'codeforamerica', 'Code for America', 10], ['greenhouse', 'khanacademy', 'Khan Academy', 10],
+  ['greenhouse', 'wikimedia', 'Wikimedia Foundation', 16], ['greenhouse', 'mozilla', 'Mozilla', 25], ['greenhouse', 'duolingo', 'Duolingo', 25],
+  ['greenhouse', 'rocketlab', 'Rocket Lab', 50], ['greenhouse', 'relativity', 'Relativity Space', 40], ['greenhouse', 'astranis', 'Astranis', 30],
+  ['lever', 'zoox', 'Zoox', 40], ['greenhouse', 'samsara', 'Samsara', 30], ['greenhouse', 'flexport', 'Flexport', 30],
+  ['greenhouse', 'affirm', 'Affirm', 25], ['greenhouse', 'sofi', 'SoFi', 25], ['greenhouse', 'betterment', 'Betterment', 15],
+  ['greenhouse', 'gusto', 'Gusto', 25], ['greenhouse', 'mercury', 'Mercury', 20], ['greenhouse', 'chime', 'Chime', 25],
+  ['greenhouse', 'robinhood', 'Robinhood', 25], ['ashby', 'ramp', 'Ramp', 25],
+  ['greenhouse', 'gitlab', 'GitLab', 25], ['greenhouse', 'reddit', 'Reddit', 25], ['greenhouse', 'pinterest', 'Pinterest', 25],
+  ['greenhouse', 'figma', 'Figma', 20], ['greenhouse', 'axios', 'Axios', 20], ['greenhouse', 'twilio', 'Twilio', 20],
+  ['greenhouse', 'datadog', 'Datadog', 25], ['greenhouse', 'dropbox', 'Dropbox', 20], ['greenhouse', 'asana', 'Asana', 20],
+  ['greenhouse', 'everlaw', 'Everlaw', 15], ['greenhouse', 'nextdoor', 'Nextdoor', 15], ['greenhouse', 'taskrabbit', 'Taskrabbit', 15],
+  ['ashby', 'notion', 'Notion', 20], ['ashby', 'openai', 'OpenAI', 30], ['ashby', 'harvey', 'Harvey', 20], ['ashby', 'vanta', 'Vanta', 20],
+  ['ashby', 'replit', 'Replit', 15], ['ashby', 'supabase', 'Supabase', 15], ['lever', 'palantir', 'Palantir', 30], ['lever', 'greenlight', 'Greenlight', 10],
+  // Maryland / DC / Virginia employers.
+  ['greenhouse', 'appian', 'Appian', 60], ['lever', 'aledade', 'Aledade', 35], ['greenhouse', 'aclu', 'ACLU', 17],
+  ['greenhouse', 'huntress', 'Huntress', 30], ['greenhouse', 'dragos', 'Dragos', 30], ['greenhouse', 'navapbc', 'Nava PBC', 21],
+  ['ashby', 'socure', 'Socure', 30], ['greenhouse', 'oddball', 'Oddball', 12], ['greenhouse', 'civisanalytics', 'Civis Analytics', 5],
+  ['remotive', '', 'Remotive (remote jobs)', 120],
+  ['usajobs', JSON.stringify({ location: 'Maryland' }), 'USAJOBS: Maryland', 80],
+  ['usajobs', JSON.stringify({ location: 'Washington, District of Columbia' }), 'USAJOBS: Washington, DC', 60],
+  ['usajobs', JSON.stringify({ location: 'Virginia' }), 'USAJOBS: Virginia', 60],
+  ['adzuna', JSON.stringify({ where: 'Maryland' }), 'Adzuna: Maryland', 100],
+  ['adzuna', JSON.stringify({ where: 'Washington, DC' }), 'Adzuna: Washington, DC', 60],
+  ['jooble', JSON.stringify({ location: 'Maryland' }), 'Jooble: Maryland', 80],
+];
+
+db.exec(`
+CREATE TABLE IF NOT EXISTS job_sources (
+  id TEXT PRIMARY KEY,
+  kind TEXT NOT NULL,
+  token TEXT NOT NULL DEFAULT '',
+  name TEXT NOT NULL,
+  enabled INTEGER NOT NULL DEFAULT 1,
+  max_jobs INTEGER NOT NULL DEFAULT 30,
+  last_run_at TEXT,
+  last_status TEXT,
+  last_error TEXT,
+  last_found INTEGER,
+  active_count INTEGER NOT NULL DEFAULT 0,
+  created_date TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS app_flags (key TEXT PRIMARY KEY, value TEXT);
+`);
+
+// Adds any default source not added before. Removing one in Admin is
+// remembered, so it never comes back on its own.
+function seedDefaults() {
+  const row = db.prepare("SELECT value FROM app_flags WHERE key = 'job_sources_seeded_keys'").get();
+  let seeded = [];
+  try { seeded = JSON.parse(row?.value || '[]'); } catch { seeded = []; }
+  const done = new Set(seeded);
+  const now = new Date().toISOString();
+  for (const [kind, token, name, max] of DEFAULT_SOURCES) {
+    const key = `${kind}:${token}`;
+    if (done.has(key)) continue;
+    if (!db.prepare('SELECT 1 FROM job_sources WHERE kind = ? AND token = ?').get(kind, token)) {
+      db.prepare('INSERT INTO job_sources (id, kind, token, name, enabled, max_jobs, created_date) VALUES (?, ?, ?, ?, 1, ?, ?)')
+        .run(crypto.randomUUID(), kind, token, name, max, now);
+    }
+    done.add(key);
+  }
+  if (done.size !== seeded.length) {
+    db.prepare("INSERT OR REPLACE INTO app_flags (key, value) VALUES ('job_sources_seeded_keys', ?)").run(JSON.stringify([...done]));
+  }
+}
+seedDefaults();
+
+function fail(status, message) {
+  return Object.assign(new Error(message), { status });
+}
+
+const env = (n) => (process.env[n] || '').trim();
+const REGION = new RegExp(env('TB_JOB_REGION') || '\\b(MD|Maryland|Baltimore|Bethesda|Rockville|Silver Spring|Columbia|Annapolis|Frederick|Hanover|Towson|DC|D\\.C\\.|District of Columbia|Washington, D|VA|Virginia|Arlington|Alexandria|Reston|McLean|Tysons|Herndon|Fairfax)\\b', 'i');
+const missingEnv = (kind) => (KINDS[kind].env || []).filter((n) => !env(n));
+
+// --- Text helpers ------------------------------------------------------------
+const ENTITIES = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ', rsquo: '’', lsquo: '‘', rdquo: '”', ldquo: '“', ndash: '–', mdash: '—', hellip: '…', bull: '•', middot: '·', trade: '™', reg: '®', copy: '©' };
+function decode(s) {
+  return String(s || '').replace(/&(#x[0-9a-f]+|#\d+|[a-z]+);/gi, (m, e) => {
+    if (e[0] === '#') {
+      const code = e[1] === 'x' || e[1] === 'X' ? parseInt(e.slice(2), 16) : parseInt(e.slice(1), 10);
+      return Number.isFinite(code) && code > 0 && code < 0x110000 ? String.fromCodePoint(code) : '';
+    }
+    return ENTITIES[e.toLowerCase()] ?? m;
+  });
+}
+
+// HTML job description -> light Markdown (rendered by react-markdown, which
+// never renders raw HTML).
+function htmlToMarkdown(html) {
+  let s = String(html || '');
+  if (/&lt;\/?[a-z]/i.test(s)) s = decode(s); // Greenhouse double-escapes
+  s = s.replace(/<(script|style|iframe|noscript)[\s\S]*?<\/\1>/gi, ' ')
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<h[1-6][^>]*>([\s\S]*?)<\/h[1-6]>/gi, (m, t) => `\n\n**${t.replace(/<[^>]+>/g, '').trim()}**\n\n`)
+    .replace(/<li[^>]*>/gi, '\n- ')
+    .replace(/<\/(li|ul|ol)>/gi, '\n')
+    .replace(/<(strong|b)>\s*([\s\S]*?)\s*<\/\1>/gi, (m, tag, t) => (t.trim() ? `**${t.trim()}**` : ''))
+    .replace(/<\/?(p|div|section|article|tr|table)[^>]*>/gi, '\n\n')
+    .replace(/<[^>]+>/g, '');
+  s = decode(s)
+    .replace(/\*\*\s*\*\*/g, '')
+    // Bold markers must hug their text, or Markdown prints the asterisks.
+    .replace(/\*\*[ \t]*([^*\n]*?\S)[ \t]*\*\*/g, '**$1**')
+    .replace(/\*\*([^*\n]+)\*\*(?=[A-Za-z0-9])/g, '**$1** ')
+    .replace(/[ \t ]+/g, ' ')
+    .replace(/ *\n */g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+  return s.length > DESCRIPTION_MAX ? `${s.slice(0, DESCRIPTION_MAX).replace(/\s+\S*$/, '')}…` : s;
+}
+
+function safeUrl(u) {
+  try {
+    const url = new URL(String(u || ''));
+    return ['http:', 'https:'].includes(url.protocol) ? url.href : null;
+  } catch {
+    return null;
+  }
+}
+
+const US_STATE_ABBR = /\b(A[LKZR]|C[AOT]|D[EC]|FL|GA|HI|I[ADLN]|K[SY]|LA|M[ADEINOST]|N[CDEHJMVY]|O[HKR]|PA|RI|S[CD]|T[NX]|UT|V[AT]|W[AIVY])\b/;
+const US_WORDS = /united states|\busa\b|\bu\.s\.|\bus\b|remote|anywhere|americas|north america|new york|san francisco|los angeles|chicago|boston|seattle|austin|denver|atlanta|miami|dallas|houston|phoenix|baltimore|washington|philadelphia|portland|san diego|san jose|nashville|raleigh|salt lake|minneapolis|detroit/i;
+const NON_US = /\b(canada|toronto|vancouver|montreal|uk|united kingdom|london|ireland|dublin|germany|berlin|munich|france|paris|spain|madrid|barcelona|netherlands|amsterdam|india|bangalore|bengaluru|hyderabad|pune|singapore|japan|tokyo|australia|sydney|melbourne|brazil|são paulo|sao paulo|mexico|poland|warsaw|israel|tel aviv|sweden|stockholm|switzerland|zurich|italy|milan|portugal|lisbon|korea|seoul|china|hong kong|philippines|argentina|colombia|chile|new zealand|auckland|emea|apac|europe|latam)\b/i;
+
+function looksUS(location, country) {
+  const c = String(country || '').trim().toLowerCase();
+  if (c) return ['us', 'usa', 'united states', 'united states of america'].includes(c);
+  const loc = String(location || '');
+  if (!loc) return true;
+  if (/remote/i.test(loc) && !NON_US.test(loc)) return true;
+  if (NON_US.test(loc) && !/united states|\busa\b|\bus\b/i.test(loc)) return false;
+  return US_WORDS.test(loc) || US_STATE_ABBR.test(loc);
+}
+
+function workTypeOf(...hints) {
+  const t = hints.filter(Boolean).join(' ').toLowerCase();
+  if (/hybrid/.test(t)) return 'hybrid';
+  if (/remote/.test(t)) return 'remote';
+  return 'onsite';
+}
+
+function employmentOf(text) {
+  const t = String(text || '').toLowerCase().replace(/[^a-z]/g, '');
+  if (!t) return null;
+  if (t.includes('intern')) return 'internship';
+  if (t.includes('parttime')) return 'part_time';
+  if (t.includes('contract') || t.includes('temporary') || t.includes('temp')) return 'contract';
+  if (t.includes('freelance')) return 'freelance';
+  if (t.includes('fulltime') || t.includes('permanent')) return 'full_time';
+  return null;
+}
+
+function levelOf(title) {
+  const t = String(title || '').toLowerCase();
+  if (/\b(intern|internship|apprentice|trainee)\b/.test(t)) return 'entry';
+  if (/\b(chief|vp|vice president|head of|director)\b/.test(t)) return 'executive';
+  if (/\b(lead|principal|staff)\b/.test(t)) return 'lead';
+  if (/\b(senior|sr\.?|iii|iv|manager)\b/.test(t)) return 'senior';
+  if (/\b(junior|jr\.?|associate|entry|assistant|i)\b/.test(t)) return 'entry';
+  return 'mid';
+}
+
+// "$120K – $150K", "$58,000 - $70,000", "$14 - $20/hour" -> yearly numbers.
+function salaryOf(text) {
+  const s = String(text || '').replace(/,/g, '');
+  const m = s.match(/\$\s?(\d+(?:\.\d+)?)\s*([kK])?\s*(?:-|–|to)\s*\$?\s?(\d+(?:\.\d+)?)\s*([kK])?/);
+  if (!m) return {};
+  let lo = parseFloat(m[1]) * (m[2] ? 1000 : 1);
+  let hi = parseFloat(m[3]) * (m[4] ? 1000 : 1);
+  if (/hour|hr\b/i.test(s) && hi < 500) { lo *= 2080; hi *= 2080; }
+  if (hi < 10000 || lo > hi) return {};
+  return { salary_min: Math.round(lo), salary_max: Math.round(hi) };
+}
+
+async function getJSON(url, init = {}) {
+  const res = await fetch(url, { ...init, signal: AbortSignal.timeout(FETCH_TIMEOUT_MS), headers: { Accept: 'application/json', ...(init.headers || {}) } });
+  if (!res.ok) throw fail(res.status === 404 ? 404 : 502, `${new URL(url).host} answered HTTP ${res.status}`);
+  return res.json();
+}
+
+async function mapLimit(items, n, fn) {
+  const out = new Array(items.length);
+  let i = 0;
+  await Promise.all(Array.from({ length: Math.min(n, items.length) }, async () => {
+    while (i < items.length) {
+      const k = i++;
+      try { out[k] = await fn(items[k]); } catch { out[k] = null; }
+    }
+  }));
+  return out;
+}
+
+function parseQuery(token) {
+  try { return JSON.parse(token || '{}') || {}; } catch { return {}; }
+}
+
+// --- Fetchers: each returns normalized jobs (newest first, US-relevant) -------
+// A normalized job: { external_id, title, company, location, work_type,
+// employment_type, description, salary_min, salary_max, salary_text,
+// external_url, posted_date, attribution?, needsDetail? }
+const FETCHERS = {
+  async greenhouse(src) {
+    const data = await getJSON(`https://boards-api.greenhouse.io/v1/boards/${encodeURIComponent(src.token)}/jobs`);
+    return (data.jobs || [])
+      .filter((j) => looksUS(j.location?.name))
+      .map((j) => ({
+        external_id: String(j.id),
+        title: String(j.title || '').trim(),
+        company: src.name || String(j.company_name || '').trim(),
+        location: j.location?.name || '',
+        work_type: workTypeOf(j.location?.name, j.title),
+        employment_type: null,
+        description: null,
+        external_url: safeUrl(j.absolute_url),
+        posted_date: j.first_published || j.updated_at,
+        needsDetail: true,
+      }));
+  },
+  async greenhouseDetail(src, job) {
+    const d = await getJSON(`https://boards-api.greenhouse.io/v1/boards/${encodeURIComponent(src.token)}/jobs/${encodeURIComponent(job.external_id)}`);
+    const description = htmlToMarkdown(d.content);
+    return { ...job, description, ...salaryOf(description.match(/\$[\d,.]+[kK]?\s*(?:-|–|to)\s*\$?[\d,.]+[kK]?[^\n]{0,20}/)?.[0]) };
+  },
+  async lever(src) {
+    const data = await getJSON(`https://api.lever.co/v0/postings/${encodeURIComponent(src.token)}?mode=json`);
+    return (Array.isArray(data) ? data : [])
+      .filter((j) => looksUS(j.categories?.location, j.country))
+      .map((j) => {
+        const lists = (j.lists || []).map((l) => `\n\n**${decode(l.text)}**\n${htmlToMarkdown(`<ul>${l.content}</ul>`)}`).join('');
+        const description = `${htmlToMarkdown(j.description)}${lists}${j.additional ? `\n\n${htmlToMarkdown(j.additional)}` : ''}`.slice(0, DESCRIPTION_MAX);
+        const range = j.salaryRange && j.salaryRange.min && j.salaryRange.interval === 'per-year-salary'
+          ? { salary_min: Math.round(j.salaryRange.min), salary_max: Math.round(j.salaryRange.max) } : salaryOf(j.additionalPlain);
+        return {
+          external_id: String(j.id),
+          title: String(j.text || '').trim(),
+          company: src.name,
+          location: j.categories?.location || '',
+          work_type: workTypeOf(j.workplaceType, j.categories?.location),
+          employment_type: employmentOf(j.categories?.commitment),
+          description,
+          ...range,
+          external_url: safeUrl(j.hostedUrl),
+          posted_date: j.createdAt ? new Date(Number(j.createdAt)).toISOString() : null,
+        };
+      });
+  },
+  async ashby(src) {
+    const data = await getJSON(`https://api.ashbyhq.com/posting-api/job-board/${encodeURIComponent(src.token)}?includeCompensation=true`);
+    return (data.jobs || [])
+      .filter((j) => j.isListed !== false)
+      .filter((j) => {
+        const country = j.address?.postalAddress?.addressCountry;
+        if (looksUS(j.location, country)) return true;
+        return (j.secondaryLocations || []).some((l) => looksUS(l.location, l.address?.postalAddress?.addressCountry));
+      })
+      .map((j) => ({
+        external_id: String(j.id),
+        title: String(j.title || '').trim(),
+        company: src.name,
+        location: String(j.location || '').replace(/\s*\(HQ\)\s*/i, '').trim(),
+        work_type: workTypeOf(j.workplaceType, j.isRemote ? 'remote' : '', j.location),
+        employment_type: employmentOf(j.employmentType),
+        description: htmlToMarkdown(j.descriptionHtml),
+        ...salaryOf(j.compensation?.scrapeableCompensationSalarySummary || j.compensation?.compensationTierSummary),
+        external_url: safeUrl(j.jobUrl),
+        posted_date: j.publishedAt,
+      }));
+  },
+  async remotive() {
+    const data = await getJSON('https://remotive.com/api/remote-jobs');
+    return (data.jobs || [])
+      .filter((j) => /usa|united states|americas|north america|worldwide|anywhere|global/i.test(j.candidate_required_location || ''))
+      .map((j) => ({
+        external_id: String(j.id),
+        title: decode(j.title).trim(),
+        company: decode(j.company_name).trim(),
+        location: `Remote (${j.candidate_required_location || 'anywhere'})`,
+        work_type: 'remote',
+        employment_type: employmentOf(j.job_type),
+        description: htmlToMarkdown(j.description),
+        salary_text: j.salary || null,
+        ...salaryOf(j.salary),
+        external_url: safeUrl(j.url),
+        posted_date: j.publication_date ? `${j.publication_date}Z`.replace(/ZZ$/, 'Z') : null,
+        company_logo_url: safeUrl(j.company_logo),
+        attribution: { label: 'Remotive', url: safeUrl(j.url) },
+      }));
+  },
+  async usajobs(src) {
+    const q = parseQuery(src.token);
+    const params = new URLSearchParams({ ResultsPerPage: String(Math.min(src.max_jobs * 2, 250)), DatePosted: '30', SortField: 'opendate', SortDirection: 'desc' });
+    if (q.location) params.set('LocationName', q.location);
+    if (q.keyword) params.set('Keyword', q.keyword);
+    const data = await getJSON(`https://data.usajobs.gov/api/search?${params}`, {
+      headers: { Host: 'data.usajobs.gov', 'User-Agent': env('USAJOBS_EMAIL'), 'Authorization-Key': env('USAJOBS_API_KEY') },
+    });
+    return (data.SearchResult?.SearchResultItems || []).map((it) => {
+      const d = it.MatchedObjectDescriptor || {};
+      const pay = (d.PositionRemuneration || [])[0] || {};
+      const yearly = pay.RateIntervalCode === 'PA' || pay.RateIntervalCode === 'Per Year';
+      const details = d.UserArea?.Details || {};
+      const description = [details.JobSummary, details.MajorDuties?.length ? `**Duties**\n${details.MajorDuties.map((x) => `- ${x}`).join('\n')}` : '',
+        d.QualificationSummary ? `**Qualifications**\n${d.QualificationSummary}` : ''].filter(Boolean).join('\n\n');
+      return {
+        external_id: String(d.PositionID || it.MatchedObjectId),
+        title: String(d.PositionTitle || '').trim(),
+        company: [d.OrganizationName, d.DepartmentName && d.DepartmentName !== d.OrganizationName ? d.DepartmentName : ''].filter(Boolean).join(' · '),
+        location: d.PositionLocationDisplay || '',
+        work_type: workTypeOf(details.TeleworkEligible ? 'hybrid' : '', d.PositionLocationDisplay),
+        employment_type: employmentOf((d.PositionSchedule || [])[0]?.Name),
+        description: htmlToMarkdown(description),
+        ...(yearly ? { salary_min: Math.round(Number(pay.MinimumRange)) || null, salary_max: Math.round(Number(pay.MaximumRange)) || null } : {}),
+        external_url: safeUrl((d.ApplyURI || [])[0] || d.PositionURI),
+        posted_date: d.PublicationStartDate,
+        attribution: { label: 'USAJOBS', url: safeUrl(d.PositionURI) },
+      };
+    });
+  },
+  async adzuna(src) {
+    const q = parseQuery(src.token);
+    const params = new URLSearchParams({
+      app_id: env('ADZUNA_APP_ID'), app_key: env('ADZUNA_APP_KEY'), results_per_page: '50', max_days_old: '21', sort_by: 'date',
+      'content-type': 'application/json',
+    });
+    if (q.where) params.set('where', q.where);
+    if (q.what) params.set('what', q.what);
+    const pages = Math.max(1, Math.min(3, Math.ceil(src.max_jobs / 50)));
+    const results = [];
+    for (let p = 1; p <= pages; p += 1) {
+      const data = await getJSON(`https://api.adzuna.com/v1/api/jobs/us/search/${p}?${params}`);
+      results.push(...(data.results || []));
+      if ((data.results || []).length < 50) break;
+    }
+    return results.map((j) => ({
+      external_id: String(j.id),
+      title: decode(String(j.title || '').replace(/<[^>]+>/g, '')).trim(),
+      company: decode(j.company?.display_name || '').trim(),
+      location: j.location?.display_name || '',
+      work_type: workTypeOf(j.title, j.description),
+      employment_type: employmentOf(j.contract_time || j.contract_type),
+      description: htmlToMarkdown(j.description),
+      salary_min: j.salary_min && !j.salary_is_predicted ? Math.round(j.salary_min) : null,
+      salary_max: j.salary_max && !j.salary_is_predicted ? Math.round(j.salary_max) : null,
+      external_url: safeUrl(j.redirect_url),
+      posted_date: j.created,
+      attribution: { label: 'Jobs by Adzuna', url: 'https://www.adzuna.com' },
+    }));
+  },
+  async jooble(src) {
+    const q = parseQuery(src.token);
+    const data = await getJSON(`https://jooble.org/api/${encodeURIComponent(env('JOOBLE_API_KEY'))}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ keywords: q.keywords || '', location: q.location || '', page: 1, ResultOnPage: Math.min(src.max_jobs, 100) }),
+    });
+    return (data.jobs || []).map((j) => ({
+      external_id: String(j.id),
+      title: decode(String(j.title || '').replace(/<[^>]+>/g, '')).trim(),
+      company: decode(j.company || '').trim(),
+      location: j.location || '',
+      work_type: workTypeOf(j.title, j.location, j.snippet),
+      employment_type: employmentOf(j.type),
+      description: htmlToMarkdown(j.snippet),
+      salary_text: j.salary || null,
+      ...salaryOf(j.salary),
+      external_url: safeUrl(j.link),
+      posted_date: j.updated,
+      attribution: { label: 'Jooble', url: 'https://jooble.org' },
+    }));
+  },
+};
+
+// --- Sync one source -----------------------------------------------------------
+function existingJobs(sourceId) {
+  return db.prepare("SELECT id, data FROM records WHERE entity = 'Job' AND json_extract(data, '$.source_id') = ?").all(sourceId)
+    .map((r) => ({ id: r.id, ...JSON.parse(r.data || '{}') }));
+}
+
+function toRecord(src, j, now) {
+  const kind = KINDS[src.kind];
+  return {
+    title: j.title.slice(0, 300),
+    company: (j.company || src.name).slice(0, 200),
+    location: (j.location || '').slice(0, 200),
+    work_type: j.work_type || null,
+    employment_type: j.employment_type || null,
+    experience_level: levelOf(j.title),
+    description: j.description || '',
+    salary_min: j.salary_min || null,
+    salary_max: j.salary_max || null,
+    salary_text: j.salary_text || null,
+    skills: [],
+    status: 'active',
+    imported: true,
+    source: src.kind,
+    source_id: src.id,
+    source_name: kind.label,
+    external_key: `${src.kind}:${src.token}:${j.external_id}`,
+    external_url: j.external_url,
+    company_logo_url: j.company_logo_url || null,
+    attribution: j.attribution || null,
+    posted_date: j.posted_date ? new Date(j.posted_date).toISOString() : now,
+    imported_at: now,
+  };
+}
+
+function insertJobs(records) {
+  const { upsertRows, toRow } = require('./jobindex');
+  const now = new Date().toISOString();
+  const rows = records.map((data) => ({ id: crypto.randomUUID(), data }));
+  for (let i = 0; i < rows.length; i += 80) {
+    const chunk = rows.slice(i, i + 80);
+    db.prepare(`INSERT INTO records (entity, id, created_by_id, created_date, updated_date, data) VALUES ${chunk.map(() => "('Job', ?, NULL, ?, ?, ?)").join(', ')}`)
+      .run(...chunk.flatMap((r) => [r.id, r.data.posted_date || now, now, JSON.stringify(r.data)]));
+  }
+  upsertRows(rows.map((r) => toRow({ id: r.id, ...r.data, created_date: r.data.posted_date })));
+}
+
+function setJobsStatus(ids, status) {
+  const { setStatus } = require('./jobindex');
+  const now = new Date().toISOString();
+  for (let i = 0; i < ids.length; i += 200) {
+    const chunk = ids.slice(i, i + 200);
+    db.prepare(`UPDATE records SET data = json_set(data, '$.status', ?), updated_date = ? WHERE entity = 'Job' AND id IN (${chunk.map(() => '?').join(', ')})`)
+      .run(status, now, ...chunk);
+  }
+  setStatus(ids, status);
+}
+
+async function syncSource(src) {
+  const kind = KINDS[src.kind];
+  if (!kind) throw fail(400, `Unknown source type ${src.kind}`);
+  const missing = missingEnv(src.kind);
+  if (missing.length) throw fail(412, `Needs ${missing.join(' and ')}`);
+  const now = new Date().toISOString();
+  let fetched = await FETCHERS[src.kind](src);
+  fetched = fetched.filter((j) => j.title && j.external_id && j.external_url);
+  // Local roles first (TB_JOB_REGION, default Maryland / DC / Virginia), then
+  // newest, capped per source.
+  const local = (j) => (REGION.test(j.location || '') ? 1 : 0);
+  fetched.sort((a, b) => local(b) - local(a) || String(b.posted_date || '').localeCompare(String(a.posted_date || '')));
+  const wanted = fetched.slice(0, src.max_jobs);
+
+  const existing = existingJobs(src.id);
+  const byKey = new Map(existing.map((j) => [j.external_key, j]));
+  const wantedKeys = new Set(wanted.map((j) => `${src.kind}:${src.token}:${j.external_id}`));
+
+  let fresh = wanted.filter((j) => !byKey.has(`${src.kind}:${src.token}:${j.external_id}`));
+  if (src.kind === 'greenhouse') {
+    fresh = (await mapLimit(fresh, 8, (j) => FETCHERS.greenhouseDetail(src, j))).filter(Boolean);
+  }
+  if (fresh.length) insertJobs(fresh.map((j) => toRecord(src, j, now)));
+
+  // Jobs back in the feed after being closed reopen; gone ones close.
+  const reopen = existing.filter((j) => j.status !== 'active' && wantedKeys.has(j.external_key)).map((j) => j.id);
+  const close = existing.filter((j) => j.status === 'active' && !wantedKeys.has(j.external_key)).map((j) => j.id);
+  if (reopen.length) setJobsStatus(reopen, 'active');
+  if (close.length) setJobsStatus(close, 'closed');
+
+  const active = db.prepare("SELECT COUNT(*) AS n FROM records WHERE entity = 'Job' AND json_extract(data, '$.source_id') = ? AND json_extract(data, '$.status') = 'active'").get(src.id).n;
+  return { found: fetched.length, added: fresh.length, reopened: reopen.length, closed: close.length, active };
+}
+
+// A failed run keeps the old last_run_at, so the source is retried on the
+// next run instead of waiting a day.
+function recordRun(src, result, error) {
+  db.prepare('UPDATE job_sources SET last_run_at = ?, last_status = ?, last_error = ?, last_found = ?, active_count = ? WHERE id = ?').run(
+    error && error.status !== 412 ? src.last_run_at : new Date().toISOString(),
+    error ? (error.status === 412 ? 'needs_key' : 'error') : 'ok',
+    error ? String(error.message).slice(0, 300) : null,
+    result?.found ?? null,
+    result?.active ?? (db.prepare("SELECT COUNT(*) AS n FROM records WHERE entity = 'Job' AND json_extract(data, '$.source_id') = ? AND json_extract(data, '$.status') = 'active'").get(src.id).n),
+    src.id
+  );
+}
+
+// Runs due sources (or the given ones) within a time budget.
+async function runImports({ budgetMs = 45000, force = false, sourceIds = null, concurrency = 5 } = {}) {
+  require('./jobindex').rebuildIfEmpty();
+  const started = Date.now();
+  const all = db.prepare('SELECT * FROM job_sources WHERE enabled = 1 ORDER BY COALESCE(last_run_at, \'\') ASC').all();
+  const due = all.filter((s) => {
+    if (sourceIds) return sourceIds.includes(s.id);
+    if (missingEnv(s.kind).length) return false;
+    if (force) return true;
+    const last = Date.parse(s.last_run_at || '') || 0;
+    return Date.now() - last >= KINDS[s.kind].minGapMs;
+  });
+  const report = { due: due.length, ran: 0, added: 0, closed: 0, errors: [], skipped: 0 };
+  let next = 0;
+  await Promise.all(Array.from({ length: Math.min(concurrency, due.length) }, async () => {
+    while (next < due.length) {
+      if (Date.now() - started > budgetMs * 0.65) { report.skipped = due.length - next; next = due.length; break; }
+      const src = due[next++];
+      try {
+        const r = await syncSource(src);
+        recordRun(src, r, null);
+        report.ran += 1;
+        report.added += r.added;
+        report.closed += r.closed;
+      } catch (e) {
+        recordRun(src, null, e);
+        report.errors.push(`${src.name}: ${e.message}`);
+      }
+    }
+  }));
+  return report;
+}
+
+function listSources() {
+  return db.prepare('SELECT * FROM job_sources ORDER BY kind, name').all().map((s) => ({
+    ...s,
+    enabled: !!s.enabled,
+    kind_label: KINDS[s.kind]?.label || s.kind,
+    needs: missingEnv(s.kind),
+    query: KINDS[s.kind]?.company ? null : parseQuery(s.token),
+  }));
+}
+
+async function addSource(body) {
+  const kind = String(body.kind || '');
+  if (!KINDS[kind]) throw fail(400, 'Choose a source type');
+  let token = '';
+  if (KINDS[kind].company) {
+    token = String(body.token || '').trim().toLowerCase();
+    // Accept a pasted board URL as well as the bare name.
+    const m = token.match(/(?:boards\.greenhouse\.io|job-boards\.greenhouse\.io|jobs\.lever\.co|jobs\.ashbyhq\.com)\/([a-z0-9_-]+)/);
+    if (m) token = m[1];
+    if (!/^[a-z0-9_-]{2,80}$/.test(token)) throw fail(400, 'Enter the company’s board name (the part after the domain in its jobs URL)');
+  } else if (kind !== 'remotive') {
+    const q = {};
+    for (const k of ['location', 'keyword', 'where', 'what', 'keywords']) if (body[k]) q[k] = String(body[k]).trim().slice(0, 100);
+    token = JSON.stringify(q);
+  }
+  if (db.prepare('SELECT 1 FROM job_sources WHERE kind = ? AND token = ?').get(kind, token)) throw fail(409, 'That source is already on the list');
+  const src = {
+    id: crypto.randomUUID(),
+    kind,
+    token,
+    name: String(body.name || '').trim().slice(0, 80) || (KINDS[kind].company ? token : `${KINDS[kind].label}${token && token !== '{}' ? `: ${Object.values(parseQuery(token)).join(', ')}` : ''}`),
+    max_jobs: Math.min(Math.max(parseInt(body.max_jobs, 10) || 30, 1), 200),
+  };
+  // Company boards: check the board exists before saving it.
+  if (KINDS[kind].company) {
+    const jobs = await FETCHERS[kind]({ ...src }).catch((e) => { throw fail(400, e.status === 404 ? `No ${KINDS[kind].label} board called “${token}”` : e.message); });
+    src.preview = jobs.length;
+  }
+  db.prepare('INSERT INTO job_sources (id, kind, token, name, enabled, max_jobs, created_date) VALUES (?, ?, ?, ?, 1, ?, ?)')
+    .run(src.id, src.kind, src.token, src.name, src.max_jobs, new Date().toISOString());
+  return src;
+}
+
+function updateSource(id, body) {
+  const src = db.prepare('SELECT * FROM job_sources WHERE id = ?').get(id);
+  if (!src) throw fail(404, 'Source not found');
+  if ('enabled' in body) {
+    db.prepare('UPDATE job_sources SET enabled = ? WHERE id = ?').run(body.enabled ? 1 : 0, id);
+    if (!body.enabled) closeSourceJobs(id);
+  }
+  if ('max_jobs' in body) db.prepare('UPDATE job_sources SET max_jobs = ? WHERE id = ?').run(Math.min(Math.max(parseInt(body.max_jobs, 10) || 30, 1), 200), id);
+  if ('name' in body && String(body.name).trim()) db.prepare('UPDATE job_sources SET name = ? WHERE id = ?').run(String(body.name).trim().slice(0, 80), id);
+  return listSources().find((s) => s.id === id);
+}
+
+function closeSourceJobs(id) {
+  const ids = db.prepare("SELECT id FROM records WHERE entity = 'Job' AND json_extract(data, '$.source_id') = ? AND json_extract(data, '$.status') = 'active'").all(id).map((r) => r.id);
+  if (ids.length) setJobsStatus(ids, 'closed');
+  db.prepare('UPDATE job_sources SET active_count = 0 WHERE id = ?').run(id);
+  return ids.length;
+}
+
+function removeSource(id) {
+  const closed = closeSourceJobs(id);
+  db.prepare('DELETE FROM job_sources WHERE id = ?').run(id);
+  return { removed: true, closed };
+}
+
+function registerImportRoutes(app) {
+  const wrap = (fn) => async (req, res) => {
+    try {
+      res.json({ data: await fn(req) });
+    } catch (e) {
+      if (!e.status || e.status >= 500) require('./monitor').captureServerError(e, req);
+      res.status(e.status || 500).json({ error: e.message });
+    }
+  };
+  const admin = (req) => { if (req.user?.role !== 'admin') throw fail(403, 'Admins only'); };
+
+  app.get('/api/admin/job-sources', authRequired, wrap((req) => {
+    admin(req);
+    return { sources: listSources(), kinds: Object.entries(KINDS).map(([id, k]) => ({ id, label: k.label, company: k.company, needs: missingEnv(id) })), totals: require('./jobindex').counts() };
+  }));
+  app.post('/api/admin/job-sources', authRequired, wrap(async (req) => {
+    admin(req);
+    const src = await addSource(req.body || {});
+    require('./audit').audit(req.user, 'jobs.source_added', { type: 'job_source', id: src.id }, { kind: src.kind, name: src.name });
+    return src;
+  }));
+  app.put('/api/admin/job-sources/:id', authRequired, wrap((req) => { admin(req); return updateSource(req.params.id, req.body || {}); }));
+  app.delete('/api/admin/job-sources/:id', authRequired, wrap((req) => {
+    admin(req);
+    const out = removeSource(req.params.id);
+    require('./audit').audit(req.user, 'jobs.source_removed', { type: 'job_source', id: req.params.id }, out);
+    return out;
+  }));
+  app.post('/api/admin/job-sources/run', authRequired, wrap(async (req) => {
+    admin(req);
+    const ids = Array.isArray(req.body?.source_ids) ? req.body.source_ids.map(String) : null;
+    const report = await runImports({ force: true, sourceIds: ids });
+    require('./audit').audit(req.user, 'jobs.import_run', { type: 'job_sources' }, { ran: report.ran, added: report.added, closed: report.closed, errors: report.errors.length });
+    return report;
+  }));
+
+  // Daily, from Vercel Cron (same CRON_SECRET as job alerts).
+  app.get('/api/cron/import-jobs', wrap(async (req) => {
+    const secret = process.env.CRON_SECRET;
+    if (!secret) throw fail(503, 'Set CRON_SECRET to enable scheduled imports');
+    const given = Buffer.from(String(req.headers.authorization || ''));
+    const expected = Buffer.from(`Bearer ${secret}`);
+    if (given.length !== expected.length || !crypto.timingSafeEqual(given, expected)) throw fail(401, 'Unauthorized');
+    const report = await runImports();
+    console.log('[imports] run', report);
+    return report;
+  }));
+}
+
+module.exports = { registerImportRoutes, runImports, syncSource, listSources, addSource, htmlToMarkdown, looksUS, salaryOf, levelOf, KINDS, FETCHERS, DEFAULT_SOURCES };

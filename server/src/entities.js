@@ -38,7 +38,7 @@ function allRecords(entity) {
 // Indexes for the lookups the app makes most (owner, job, employer, seeker,
 // status). Record fields live in the JSON `data` column, so these are
 // expression indexes on json_extract — the same expressions sqlFilter emits.
-const INDEXED_FIELDS = ['job_id', 'employer_user_id', 'seeker_profile_id', 'status'];
+const INDEXED_FIELDS = ['job_id', 'employer_user_id', 'seeker_profile_id', 'status', 'source_id'];
 db.exec(`
 CREATE INDEX IF NOT EXISTS records_entity_owner ON records (entity, created_by_id);
 ${INDEXED_FIELDS.map((f) => `CREATE INDEX IF NOT EXISTS records_${f} ON records (entity, json_extract(data, '$.${f}'));`).join('\n')}
@@ -77,7 +77,9 @@ const store = {
     db.prepare(
       'INSERT INTO records (entity, id, created_by_id, created_date, updated_date, data) VALUES (?, ?, ?, ?, ?, ?)'
     ).run(entity, id, createdById || null, now, now, JSON.stringify(data || {}));
-    return getRecord(entity, id);
+    const created = getRecord(entity, id);
+    if (entity === 'Job') require('./jobindex').upsertJob(created);
+    return created;
   },
   update(entity, id, data) {
     const existing = getRecord(entity, id);
@@ -90,10 +92,13 @@ const store = {
       entity,
       id
     );
-    return getRecord(entity, id);
+    const updated = getRecord(entity, id);
+    if (entity === 'Job') require('./jobindex').upsertJob(updated);
+    return updated;
   },
   remove(entity, id) {
     db.prepare('DELETE FROM records WHERE entity = ? AND id = ?').run(entity, id);
+    if (entity === 'Job') require('./jobindex').removeJob(id);
   },
 };
 
@@ -340,6 +345,9 @@ function registerEntityRoutes(app) {
       // it from the job's owner server-side rather than trusting the client.
       const job = body.job_id ? getRecord('Job', body.job_id) : null;
       if (!job) return res.status(400).json({ error: 'job_id must reference an existing job' });
+      if (job.imported) {
+        return res.status(409).json({ error: `This role is listed from ${job.company || 'the employer'}'s own site. Use “Apply on company site” to apply there.`, code: 'external_job' });
+      }
       if (job.status !== 'active' && req.user.role !== 'admin') {
         return res.status(409).json({ error: 'This role is no longer accepting applications.' });
       }
@@ -427,6 +435,9 @@ function registerEntityRoutes(app) {
     if (entity === 'SeekerProfile') {
       visible = visible.filter((r) => canSeeSeeker(req.user, r));
     }
+    // Imported listings are served by /api/jobs/search; the generic list
+    // only returns them when asked for by id.
+    if (entity === 'Job' && !('id' in criteria)) visible = visible.filter((r) => !r.imported);
     const cache = new Map();
     visible = visible.map((r) => present(entity, r, req.user, cache));
     res.json({ data: visible });

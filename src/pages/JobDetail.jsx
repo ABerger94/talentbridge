@@ -18,6 +18,7 @@ import { toast } from "sonner";
 import { profileCompleteness } from "@/lib/completeness";
 import { useAuth } from "@/lib/AuthContext";
 import ReactMarkdown from "react-markdown";
+import ExternalApplyCard from "@/components/jobs/ExternalApplyCard";
 import HiddenVectorsPanel from "@/components/jobs/HiddenVectorsPanel";
 import InterviewPrepEngine from "@/components/jobs/InterviewPrepEngine";
 
@@ -233,7 +234,9 @@ export default function JobDetail() {
 
         {/* Sidebar */}
         <div className="space-y-4">
-          {!jobOpen ? (
+          {job.imported ? (
+            <ExternalApplyCard job={job} open={jobOpen} />
+          ) : !jobOpen ? (
             <Card className="p-5 bg-secondary/60">
               <h3 className="font-semibold text-sm">This role is {job.status === "paused" ? "paused" : "closed"}</h3>
               <p className="text-xs text-muted-foreground mt-1">

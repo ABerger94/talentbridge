@@ -72,9 +72,11 @@ export default function SeekerDashboard() {
     },
   });
 
+  // The open roles most relevant to this profile (from every source,
+  // including employers' own job boards), for AI matching.
   const { data: jobs = [] } = useQuery({
-    queryKey: ["allJobs"],
-    queryFn: () => base44.entities.Job.filter({ status: "active" }),
+    queryKey: ["suggestedJobs"],
+    queryFn: () => base44.jobs.suggested(25),
   });
 
   const { data: invitations = [] } = useQuery({
@@ -249,7 +251,7 @@ IMPORTANT: Rate each core execution vector's "strength" as an integer from 0 to 
       const jobSummaries = jobs.slice(0, 25).map(j => ({
         id: j.id, title: j.title, company: j.company, skills: j.skills,
         work_type: j.work_type, experience_level: j.experience_level,
-        culture_values: j.culture_values, description: j.description?.slice(0, 200),
+        culture_values: j.culture_values, description: (j.snippet || j.description)?.slice(0, 200),
         qualifications: j.qualifications?.slice(0, 200),
       }));
 

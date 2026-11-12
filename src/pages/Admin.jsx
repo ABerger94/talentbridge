@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import SystemTab from "@/components/admin/SystemTab";
+import JobSourcesTab from "@/components/admin/JobSourcesTab";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { formatDistanceToNow } from "date-fns";
 import { base44 } from "@/api/base44Client";
@@ -14,7 +15,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { CheckCircle2, AlertTriangle, Info, ShieldCheck, Flag, ExternalLink, UserPlus, Send, Loader2, Activity } from "lucide-react";
+import { CheckCircle2, AlertTriangle, Info, ShieldCheck, Flag, ExternalLink, UserPlus, Send, Loader2, Activity, Briefcase } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 
@@ -98,7 +99,7 @@ export default function Admin() {
   const [pending, setPending] = useState(null); // { e, decision }
   const [note, setNote] = useState("");
   const [searchParams, setSearchParams] = useSearchParams();
-  const tab = ["employers", "signups", "reports", "system"].includes(searchParams.get("tab")) ? searchParams.get("tab") : "employers";
+  const tab = ["employers", "signups", "reports", "jobs", "system"].includes(searchParams.get("tab")) ? searchParams.get("tab") : "employers";
 
   const { data: employers = [], isLoading } = useQuery({
     queryKey: ["adminEmployers", filter],
@@ -144,6 +145,7 @@ export default function Admin() {
           <TabsTrigger value="employers">Employers</TabsTrigger>
           <TabsTrigger value="signups" className="gap-1.5"><UserPlus className="w-3.5 h-3.5" /> Incomplete ({signups.length})</TabsTrigger>
           <TabsTrigger value="reports" className="gap-1.5"><Flag className="w-3.5 h-3.5" /> Reports ({reports.length})</TabsTrigger>
+          <TabsTrigger value="jobs" className="gap-1.5"><Briefcase className="w-3.5 h-3.5" /> Job sources</TabsTrigger>
           <TabsTrigger value="system" className="gap-1.5"><Activity className="w-3.5 h-3.5" /> System</TabsTrigger>
         </TabsList>
 
@@ -239,6 +241,10 @@ export default function Admin() {
               </Card>
             ))
           )}
+        </TabsContent>
+
+        <TabsContent value="jobs">
+          {tab === "jobs" && <JobSourcesTab />}
         </TabsContent>
 
         <TabsContent value="system">

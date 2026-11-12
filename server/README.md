@@ -269,3 +269,37 @@ conversations (to review reports) but can't send.
 3. Run it as a scheduled task / service at logon (`npm start`).
 4. Expose it with a Cloudflare Tunnel (`cloudflared tunnel`) pointing a
    hostname at `http://localhost:8787` — public HTTPS, no port forwarding.
+
+## Real job listings (imports)
+
+The job board also shows real roles imported from outside TalentBridge
+(`server/src/imports.js`). Each one links out ("Apply on company site"),
+credits its source, stays out of Google's job data and the sitemap
+(`noindex`), and closes when it disappears from its source. In-app
+applications are blocked for them.
+
+Sources (Admin → Job sources to add, pause, cap or remove):
+- **Company job boards**, no key: Greenhouse, Lever and Ashby public
+  boards. About 70 real employers are seeded (health care, food service,
+  auto, nonprofits, aerospace, logistics, finance, software, and
+  Maryland / DC / Virginia employers). Add any company by its board name
+  or jobs URL.
+- **Remotive**: remote jobs open to US candidates (credit + link back,
+  fetched at most every 6 hours).
+- **USAJOBS** (federal): set `USAJOBS_API_KEY` and `USAJOBS_EMAIL`
+  (free key at developer.usajobs.gov).
+- **Adzuna**: set `ADZUNA_APP_ID` and `ADZUNA_APP_KEY` (developer.adzuna.com;
+  ask them before commercial use). Shows "Jobs by Adzuna".
+- **Jooble**: set `JOOBLE_API_KEY` (jooble.org/api/about).
+
+Each source keeps its newest roles up to its cap, preferring local ones
+(`TB_JOB_REGION`, a regex; default Maryland / DC / Virginia). A daily Vercel
+Cron (`/api/cron/import-jobs`, uses `CRON_SECRET`) refreshes them; "Run
+import now" in Admin does it on demand (about 45 s per run; run again if it
+says sources are left). For a first fill of the production database without
+time limits: `TURSO_DATABASE_URL=... TURSO_AUTH_TOKEN=... npm run import-jobs`.
+
+Search, seeker suggestions, job alerts and the sitemap read a compact
+`job_index` table instead of the full records, so thousands of listings stay
+fast. LinkedIn, Indeed and Google don't offer any permitted way to display
+their listings, so they aren't sources.
