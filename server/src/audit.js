@@ -20,6 +20,12 @@ CREATE TABLE IF NOT EXISTS audit_log (
 CREATE INDEX IF NOT EXISTS audit_log_created ON audit_log (created_date);
 `);
 
+// Details stay valid JSON: oversized ones are replaced, never cut mid-way.
+function capped(detail) {
+  const json = JSON.stringify(detail);
+  return json.length <= 8000 ? json : JSON.stringify({ truncated: true, size: json.length });
+}
+
 function audit(actor, action, target = {}, detail = null) {
   try {
     db.prepare(
@@ -31,7 +37,7 @@ function audit(actor, action, target = {}, detail = null) {
       action,
       target.type || null,
       target.id || null,
-      detail == null ? null : JSON.stringify(detail).slice(0, 2000),
+      detail == null ? null : capped(detail),
       new Date().toISOString()
     );
   } catch (e) {

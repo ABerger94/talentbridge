@@ -61,8 +61,15 @@ export default function SystemTab() {
     onError: (e) => toast.error(e?.message || "Couldn't move files."),
   });
 
+  const fairness = useMutation({
+    mutationFn: () => base44.admin.fairnessCheck(),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["adminSystem"] }),
+    onError: (e) => toast.error(e?.message || "The fairness check couldn't run."),
+  });
+
   if (isLoading || !data) return <Skeleton className="h-64 rounded-xl" />;
   const { health, counts, email_7d: mail, failed_emails: failed, errors, audit } = data;
+  const fair = fairness.data || data.fairness;
   const users = counts.users || {};
 
   return (
@@ -110,6 +117,48 @@ export default function SystemTab() {
             {failed.slice(0, 5).map((f, i) => (
               <p key={i} className="text-xs text-amber-900/80 break-all">{f.kind} → {f.recipient || "?"}: {f.error} ({ago(f.created_date)})</p>
             ))}
+          </div>
+        )}
+      </Card>
+
+      <Card className="p-5 space-y-3">
+        <div className="flex items-center justify-between gap-2 flex-wrap">
+          <h3 className="font-semibold">AI fairness check</h3>
+          <Button size="sm" variant="outline" onClick={() => fairness.mutate()} disabled={fairness.isPending} className="gap-1.5">
+            {fairness.isPending && <Loader2 className="w-3.5 h-3.5 animate-spin" />} {fair ? "Run again" : "Run check"}
+          </Button>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Scores identical made-up candidates for one of your live roles. Each differs only by one sentence hinting at gender,
+          ethnicity, nationality, age, disability, or religion. A fair model scores them all about the same. Uses one AI call.
+        </p>
+        {fair && (
+          <div className="space-y-2">
+            <div className={`rounded-md border p-2.5 text-sm ${fair.passed ? "bg-emerald-50 border-emerald-200 text-emerald-900" : "bg-amber-50 border-amber-200 text-amber-900"}`}>
+              {fair.passed
+                ? `Passed: no variant moved more than ${fair.worst_difference} points from the control (limit ${fair.threshold}).`
+                : `Review needed: a variant moved ${fair.worst_difference} points from the control (limit ${fair.threshold}).`}
+              <span className="block text-xs opacity-80">
+                Role: {fair.job.title} · control {fair.baseline}%{fair.noise != null ? ` · control repeat differed by ${fair.noise}` : ""} · {ago(fair.ran_at)}
+              </span>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs">
+                <thead><tr className="text-left text-muted-foreground"><th className="py-1 pr-2">Variant</th><th className="pr-2">Added sentence</th><th className="pr-2 text-right">Score</th><th className="text-right">vs control</th></tr></thead>
+                <tbody>
+                  {fair.rows.map((r) => (
+                    <tr key={r.variant} className="border-t">
+                      <td className="py-1 pr-2 whitespace-nowrap">{r.variant}</td>
+                      <td className="pr-2 text-muted-foreground">{r.added_text}</td>
+                      <td className="pr-2 text-right tabular-nums">{r.score ?? "—"}</td>
+                      <td className={`text-right tabular-nums ${Math.abs(r.difference ?? 0) >= fair.threshold ? "text-amber-700 font-semibold" : ""}`}>
+                        {r.difference == null ? "—" : r.difference > 0 ? `+${r.difference}` : r.difference}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
       </Card>

@@ -17,6 +17,7 @@ import { formatDistanceToNow } from "date-fns";
 import CandidateCapabilityCard from "@/components/employer/CandidateCapabilityCard";
 import EmployerStatusBanner from "@/components/employer/EmployerStatusBanner";
 import ProfessionalLinks, { linksOf } from "@/components/seeker/ProfessionalLinks";
+import { AiAssisted, IntegrityWarning } from "@/components/AiDisclosure";
 import { useAuth } from "@/lib/AuthContext";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
@@ -102,7 +103,7 @@ export default function EmployerDashboard() {
         hiddenIncomplete = Math.max(hiddenIncomplete, r.value.data?.hidden_incomplete || 0);
         for (const m of r.value.data?.matches || []) {
           if (!m.seeker) continue;
-          const entry = bySeeker.get(m.seeker_id) || { ...m.seeker, roles: [] };
+          const entry = bySeeker.get(m.seeker_id) || { ...m.seeker, roles: [], integrity_flags: m.integrity_flags || [] };
           entry.roles.push({ job, score: m.match_score, status: m.status, summary: m.match_summary || "" });
           bySeeker.set(m.seeker_id, entry);
         }
@@ -461,11 +462,15 @@ export default function EmployerDashboard() {
                       {linksOf(seeker).length > 0 && <div className="mt-2"><ProfessionalLinks links={linksOf(seeker)} /></div>}
                     </div>
                     {seeker.best_score != null && (
-                      <Badge variant="outline" className={`text-xs shrink-0 ${scoreTone(seeker.best_score)}`}>
-                        Best {seeker.best_score}%
-                      </Badge>
+                      <div className="flex flex-col items-end gap-1 shrink-0">
+                        <Badge variant="outline" className={`text-xs ${scoreTone(seeker.best_score)}`}>
+                          Best {seeker.best_score}%
+                        </Badge>
+                        <AiAssisted />
+                      </div>
                     )}
                   </div>
+                  <IntegrityWarning flags={seeker.integrity_flags} />
                   <div className="space-y-2">
                     {seeker.roles.map(({ job, score, status, summary }) => (
                       <div key={job.id} className="rounded-lg border border-border/60 p-2.5 space-y-1">

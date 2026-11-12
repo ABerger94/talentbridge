@@ -33,6 +33,7 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
+import { AiAssisted } from "@/components/AiDisclosure";
 
 const statusConfig = {
   applied: { label: "Applied", color: "bg-blue-100 text-blue-700", icon: Briefcase },
@@ -135,7 +136,7 @@ export default function ApplicationCard({ application, job, onUpdate }) {
         {application.ai_match_score && (
           <div className="space-y-1">
             <div className="flex justify-between text-xs text-muted-foreground">
-              <span>Capability Match</span>
+              <span className="flex items-center gap-1.5">Capability Match <AiAssisted /></span>
               <span className="font-medium">{application.ai_match_score}%</span>
             </div>
             <Progress value={application.ai_match_score} className="h-1.5" />

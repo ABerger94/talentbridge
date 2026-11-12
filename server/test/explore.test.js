@@ -19,7 +19,7 @@ const realFetch = globalThis.fetch;
 globalThis.fetch = async (url, init) => {
   if (!String(url).includes('generativelanguage.googleapis.com')) return realFetch(url, init);
   const prompt = JSON.parse(init.body).contents[0].parts[0].text;
-  const roster = JSON.parse(prompt.split('SEEKERS (JSON):\n')[1].split('\n\nScore every')[0]);
+  const roster = JSON.parse(prompt.split('<untrusted source="seeker profiles">\n')[1].split('\n</untrusted>')[0]);
   aiCalls.push({ prompt, ids: roster.map((r) => r.seeker_id) });
   const matches = roster.map((r) => ({ seeker_id: r.seeker_id, match_score: 80, match_summary: 'Hands-on QA lab experience maps to this role.' }));
   return new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: JSON.stringify({ matches }) }] } }] }));

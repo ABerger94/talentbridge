@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import InterviewScheduler from "./InterviewScheduler";
 import { normalizePercent } from "@/lib/scales";
 import OfferDialog from "./OfferDialog";
+import { AiAssisted, IntegrityWarning } from "@/components/AiDisclosure";
 import ProfessionalLinks from "@/components/seeker/ProfessionalLinks";
 
 export default function CandidateCapabilityCard({ application, job, onStatusChange }) {
@@ -30,7 +31,8 @@ export default function CandidateCapabilityCard({ application, job, onStatusChan
   );
   const [loading, setLoading] = useState(false);
   const [expanded, setExpanded] = useState(false);
-  const [fullAssessment, setFullAssessment] = useState(null);
+  const [fullAssessment, setFullAssessment] = useState(application.ai_assessment || null);
+  const integrityFlags = fullAssessment?.integrity_flags || application.ai_integrity_flags || [];
 
   const handleStatusChange = async (newStatus) => {
     if (newStatus === "shortlisted") {
@@ -60,68 +62,20 @@ export default function CandidateCapabilityCard({ application, job, onStatusChan
   const runCapabilityAssessment = async () => {
     setLoading(true);
     try {
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `You are Symbiot's Employer Capability Assessment Engine. You are NOT a rejection filter. You are an ADVOCATE ENGINE for the employer — helping them see the full potential of this candidate for their role.
-
-Current date: ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
-
-CRITICAL: Never recommend rejection. Always frame capability as proof points. If traditional qualifications are missing, surface operational execution evidence instead.
-
-Think like this: "This candidate doesn't have a CS degree, but they have deployed 10 operational apps in the past year, processed over 275M tokens, and possess elite QA logic that matches the employer's need for clean database schemas and reliable error handling."
-
-JOB: ${job.title} at ${job.company}
-Core Needs: ${job.description?.slice(0, 400)}
-Required Skills: ${job.skills?.join(", ")}
-Culture Values: ${job.culture_values?.join(", ") || "Not specified"}
-Problems to Solve: ${job.qualifications?.slice(0, 300) || "Not specified"}
-
-APPLICANT:
-Name: ${application.applicant_name || "Candidate"}
-Cover Letter / Statement: ${application.cover_letter || "Not provided"}
-
-Generate a rich, evidence-based capability profile. Be specific and concrete.
-
-IMPORTANT: Express "match_score" as an integer from 0 to 100. Never return it as a decimal or fraction.`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            match_score: { type: "number", description: "Integer from 0 to 100" },
-            executive_summary: { type: "string" },
-            capability_proof_points: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  capability: { type: "string" },
-                  evidence: { type: "string" },
-                  relevance_to_role: { type: "string" }
-                }
-              }
-            },
-            adaptability_verdict: { type: "string" },
-            growth_trajectory: { type: "string" },
-            suggested_interview_angles: { type: "array", items: { type: "string" } },
-            culture_alignment_note: { type: "string" }
-          }
-        }
+      // Runs on the server: blind to the candidate's identity, with the
+      // candidate's text fenced off from the AI's instructions.
+      const { data: result } = await base44.functions.invoke("assessApplication", {
+        application_id: application.id,
+        job_id: job?.id,
       });
-
-      const normalizedScore = normalizePercent(result?.match_score);
-      setFullAssessment({ ...result, match_score: normalizedScore });
+      setFullAssessment(result);
       setAssessment({
-        match_score: normalizedScore,
+        match_score: normalizePercent(result.match_score),
         summary: result.executive_summary,
         growth_potential: result.growth_trajectory,
       });
-
-      // Persist to the application record
-      base44.entities.JobApplication.update(application.id, {
-        ai_match_score: normalizedScore,
-        ai_match_summary: result.executive_summary,
-        ai_growth_potential: result.growth_trajectory,
-      });
-
       setExpanded(true);
+      queryClient.invalidateQueries({ queryKey: ["allApplications"] });
     } catch (err) {
       console.error("runCapabilityAssessment failed", err);
       toast.error(`Couldn't run the capability assessment: ${err?.message || "please try again."}`);
@@ -209,12 +163,14 @@ IMPORTANT: Express "match_score" as an integer from 0 to 100. Never return it as
       {assessment?.match_score && (
         <div className="space-y-1">
           <div className="flex justify-between text-xs text-muted-foreground">
-            <span>Capability Alignment</span>
+            <span className="flex items-center gap-1.5">Capability Alignment <AiAssisted /></span>
             <span className="font-medium text-foreground">{assessment.match_score}%</span>
           </div>
           <Progress value={assessment.match_score} className="h-1.5" />
         </div>
       )}
+
+      <IntegrityWarning flags={integrityFlags} />
 
       {/* Resume Link */}
       {application.resume_url && (

@@ -188,7 +188,8 @@ const EMPLOYER_APP_STATUSES = ['applied', 'reviewed', 'shortlisted', 'interview'
 // responses, withdrawal, offers and interviews go through /api/functions so
 // they're validated and the other side is notified.
 const APPLICANT_FIELDS = ['cover_letter'];
-const EMPLOYER_FIELDS = ['status', 'ai_match_score', 'ai_match_summary', 'ai_growth_potential', 'employer_notes'];
+// AI scores and summaries are written only by the server (assessApplication).
+const EMPLOYER_FIELDS = ['status', 'employer_notes'];
 // Base44-era metadata the client may echo back unchanged.
 const IGNORED_FIELDS = ['id', 'created_by_id', 'created_date', 'updated_date', 'created_by', 'job'];
 
@@ -284,6 +285,10 @@ function present(entity, record, user, cache = new Map()) {
     const key = `links:${out.seeker_profile_id}`;
     if (!cache.has(key)) cache.set(key, require('./links').profileLinks(getRecord('SeekerProfile', out.seeker_profile_id)));
     out.seeker_links = cache.get(key);
+  }
+  // The employer's private notes never reach the candidate.
+  if (entity === 'JobApplication' && !(user && (user.id === out.employer_user_id || user.role === 'admin'))) {
+    delete out.employer_notes;
   }
   if (entity === 'Job') {
     const key = `company:${out.created_by_id}`;

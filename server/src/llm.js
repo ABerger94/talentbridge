@@ -375,7 +375,9 @@ function buildAttempts() {
   return attempts;
 }
 
-async function invokeLLM({ prompt, response_json_schema }) {
+async function invokeLLM({ prompt: rawPrompt, response_json_schema }) {
+  // Every call starts with the untrusted-text / fairness rules (aisafety.js).
+  const prompt = require('./aisafety').PREAMBLE + String(rawPrompt || '');
   const attempts = buildAttempts();
   if (!attempts.length) {
     const err = new Error('AI is not configured on this server (set at least one AI provider key, e.g. GEMINI_API_KEYS or GROQ_API_KEY)');
