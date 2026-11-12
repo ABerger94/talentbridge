@@ -17,6 +17,7 @@ const routes = [
   'signup',
   'privacy',
   'terms',
+  'messages',
 ];
 
 await Promise.all(

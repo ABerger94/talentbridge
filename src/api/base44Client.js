@@ -181,4 +181,26 @@ const integrations = {
   },
 };
 
-export const base44 = { auth, entities, functions, integrations };
+// Messaging (application-scoped conversations; see server/src/messages.js).
+const messages = {
+  async inbox() {
+    return (await request('/api/messages')).data;
+  },
+  async unreadCount() {
+    return (await request('/api/messages/unread-count')).data.unread;
+  },
+  async thread(applicationId) {
+    return (await request(`/api/messages/${encodeURIComponent(applicationId)}`)).data;
+  },
+  async send(applicationId, body) {
+    return (await request(`/api/messages/${encodeURIComponent(applicationId)}`, { method: 'POST', body: { body } })).data;
+  },
+  async setBlocked(applicationId, blocked) {
+    return (await request(`/api/messages/${encodeURIComponent(applicationId)}/block`, { method: 'POST', body: { blocked } })).data;
+  },
+  async report(applicationId, reason) {
+    return (await request(`/api/messages/${encodeURIComponent(applicationId)}/report`, { method: 'POST', body: { reason } })).data;
+  },
+};
+
+export const base44 = { auth, entities, functions, integrations, messages };
