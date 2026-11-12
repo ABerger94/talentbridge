@@ -14,9 +14,10 @@ import {
   Briefcase, Users, Plus, Eye, Clock, Layers, Send, Pencil, Trash2, Building2, Lock
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
-import CandidateCapabilityCard from "@/components/employer/CandidateCapabilityCard";
+import CandidatePipeline from "@/components/employer/CandidatePipeline";
 import EmployerStatusBanner from "@/components/employer/EmployerStatusBanner";
 import ProfessionalLinks, { linksOf } from "@/components/seeker/ProfessionalLinks";
+import { AiAssisted, IntegrityWarning } from "@/components/AiDisclosure";
 import { useAuth } from "@/lib/AuthContext";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
@@ -65,14 +66,21 @@ export default function EmployerDashboard() {
     },
   });
 
+  const { data: jobStats = [] } = useQuery({
+    queryKey: ["jobStats"],
+    queryFn: () => base44.employer.jobStats(),
+    staleTime: 60000,
+  });
+  const statsFor = (jobId) => jobStats.find((x) => x.job_id === jobId);
+
   const { data: allApplications = [], isLoading: allAppsLoading } = useQuery({
     queryKey: ["allApplications", myJobs],
     queryFn: async () => {
       const allApps = await base44.entities.JobApplication.list("-created_date", 1000);
-      return allApps.map(app => {
-        const job = myJobs.find(j => j.id === app.job_id);
-        return { ...app, matched_job: job };
-      });
+      // Admins can read every application; this dashboard is about your own roles.
+      return allApps
+        .filter((app) => myJobs.some((j) => j.id === app.job_id))
+        .map((app) => ({ ...app, matched_job: myJobs.find((j) => j.id === app.job_id) }));
     },
   });
 
@@ -102,7 +110,7 @@ export default function EmployerDashboard() {
         hiddenIncomplete = Math.max(hiddenIncomplete, r.value.data?.hidden_incomplete || 0);
         for (const m of r.value.data?.matches || []) {
           if (!m.seeker) continue;
-          const entry = bySeeker.get(m.seeker_id) || { ...m.seeker, roles: [] };
+          const entry = bySeeker.get(m.seeker_id) || { ...m.seeker, roles: [], integrity_flags: m.integrity_flags || [] };
           entry.roles.push({ job, score: m.match_score, status: m.status, summary: m.match_summary || "" });
           bySeeker.set(m.seeker_id, entry);
         }
@@ -149,10 +157,6 @@ export default function EmployerDashboard() {
 
   const applicantCount = (jobId) => allApplications.filter((a) => a.job_id === jobId && a.status !== "withdrawn").length;
 
-  const updateAppMutation = useMutation({
-    mutationFn: ({ id, status }) => base44.entities.JobApplication.update(id, { status }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["allApplications"] }),
-  });
 
   const inviteMutation = useMutation({
     mutationFn: ({ seeker_profile_id, job_id }) =>
@@ -166,10 +170,6 @@ export default function EmployerDashboard() {
     },
   });
 
-  const selectedJobData = myJobs.find(j => j.id === selectedJob);
-  const visibleApplications = selectedJob
-    ? allApplications.filter((a) => a.job_id === selectedJob)
-    : allApplications;
 
   const totalApplications = myJobs.reduce((sum) => sum + 0, 0);
   const activeJobs = myJobs.filter(j => j.status === "active").length;
@@ -182,7 +182,7 @@ export default function EmployerDashboard() {
   };
 
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
       {/* Header */}
       <div className="flex items-start justify-between mb-8">
         <div>
@@ -210,7 +210,7 @@ export default function EmployerDashboard() {
         {[
           { label: "Active Roles", value: activeJobs, icon: Briefcase, color: "text-primary" },
           { label: "Total Roles", value: myJobs.length, icon: Layers, color: "text-muted-foreground" },
-          { label: "Viewing Role", value: selectedJob ? "1" : "—", icon: Eye, color: "text-accent" },
+          { label: "Awaiting your reply", value: allApplications.filter((a) => a.status === "applied").length, icon: Clock, color: "text-amber-600" },
           { label: "Applicants", value: allApplications.length, icon: Users, color: "text-primary" },
         ].map((stat) => (
           <Card key={stat.label} className="p-4">
@@ -280,6 +280,7 @@ export default function EmployerDashboard() {
                         {job.created_date ? formatDistanceToNow(new Date(job.created_date), { addSuffix: true }) : "Recently"}
                       </span>
                     </div>
+                    {statsFor(job.id) && <RoleStats stats={statsFor(job.id)} />}
                   </div>
                   <div className="flex items-center gap-2 flex-wrap justify-end" onClick={e => e.stopPropagation()}>
                     {job.status === "pending_review" ? null : (
@@ -344,45 +345,15 @@ export default function EmployerDashboard() {
           )}
         </TabsContent>
 
-        {/* Candidates Tab */}
+        {/* Candidates Tab: pipeline board or list */}
         <TabsContent value="candidates" className="space-y-4">
-          {selectedJobData && (
-            <div className="flex items-center gap-2 text-sm flex-wrap">
-              <span className="text-muted-foreground">Showing candidates for</span>
-              <Badge>{selectedJobData.title}</Badge>
-              <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setSelectedJob(null)}>
-                Show all roles
-              </Button>
-            </div>
-          )}
-          {allAppsLoading ? (
-            Array(3).fill(0).map((_, i) => <Skeleton key={i} className="h-28 rounded-xl" />)
-          ) : visibleApplications.length === 0 ? (
-            <Card className="p-12 text-center text-muted-foreground">
-              <Users className="w-12 h-12 mx-auto mb-4 opacity-20" />
-              <p>{selectedJobData ? "No applications for this role yet." : "No applications yet across your roles."}</p>
-            </Card>
-          ) : (
-            visibleApplications.map(app => (
-              <div key={app.id} className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs text-muted-foreground">Matching role:</p>
-                    {app.matched_job && (
-                      <Badge className="text-xs gap-1 mt-1">
-                        {app.matched_job.title}
-                      </Badge>
-                    )}
-                  </div>
-                </div>
-                <CandidateCapabilityCard
-                  application={app}
-                  job={app.matched_job}
-                  onStatusChange={(id, status) => updateAppMutation.mutate({ id, status })}
-                />
-              </div>
-            ))
-          )}
+          <CandidatePipeline
+            applications={allApplications}
+            jobs={myJobs}
+            loading={allAppsLoading}
+            selectedJob={selectedJob}
+            setSelectedJob={setSelectedJob}
+          />
         </TabsContent>
 
           {/* Explore Seekers Tab */}
@@ -461,11 +432,15 @@ export default function EmployerDashboard() {
                       {linksOf(seeker).length > 0 && <div className="mt-2"><ProfessionalLinks links={linksOf(seeker)} /></div>}
                     </div>
                     {seeker.best_score != null && (
-                      <Badge variant="outline" className={`text-xs shrink-0 ${scoreTone(seeker.best_score)}`}>
-                        Best {seeker.best_score}%
-                      </Badge>
+                      <div className="flex flex-col items-end gap-1 shrink-0">
+                        <Badge variant="outline" className={`text-xs ${scoreTone(seeker.best_score)}`}>
+                          Best {seeker.best_score}%
+                        </Badge>
+                        <AiAssisted />
+                      </div>
                     )}
                   </div>
+                  <IntegrityWarning flags={seeker.integrity_flags} />
                   <div className="space-y-2">
                     {seeker.roles.map(({ job, score, status, summary }) => (
                       <div key={job.id} className="rounded-lg border border-border/60 p-2.5 space-y-1">
@@ -512,3 +487,25 @@ export default function EmployerDashboard() {
           </div>
           );
           }
+// Per-role numbers: page views, applicants, apply rate, and replies owed.
+function RoleStats({ stats }) {
+  const parts = [
+    `${stats.views} view${stats.views === 1 ? "" : "s"}${stats.views_7d ? ` (${stats.views_7d} this week)` : ""}`,
+    stats.apply_rate != null ? `${stats.apply_rate}% applied` : null,
+    stats.pipeline.interview ? `${stats.pipeline.interview} interviewing` : null,
+    stats.pipeline.offered ? `${stats.pipeline.offered} offer${stats.pipeline.offered === 1 ? "" : "s"}` : null,
+    stats.hired ? `${stats.hired} hired 🎉` : null,
+    stats.response_rate != null ? `${stats.response_rate}% replied to` : null,
+  ].filter(Boolean);
+  return (
+    <div className="flex items-center gap-2 mt-1.5 text-xs text-muted-foreground flex-wrap">
+      <Eye className="w-3 h-3" />
+      <span>{parts.join(" · ")}</span>
+      {stats.awaiting_response > 0 && (
+        <Badge variant="outline" className="text-[10px] bg-amber-50 text-amber-800 border-amber-200">
+          {stats.awaiting_response} awaiting reply
+        </Badge>
+      )}
+    </div>
+  );
+}

@@ -90,6 +90,7 @@ function otherParty(c) {
 
 function readOnlyReason(c) {
   if (!c.participant) return 'Admins can read conversations but not send messages.';
+  if (c.app.account_deleted || c.app.employer_deleted) return 'The other person deleted their account.';
   const employerRow = getUserById(c.app.employer_user_id);
   if (employerRow && !require('./employers').isApprovedEmployer(require('./auth').publicUser(employerRow))) {
     return 'Messaging opens once the employer account is approved.';
@@ -111,7 +112,9 @@ function unreadCount(appId, userId) {
 
 // Applications the user takes part in (as applicant or employer).
 function myApplications(user) {
-  return store.all('JobApplication').filter((a) => a.created_by_id === user.id || a.employer_user_id === user.id);
+  const mine = store.filter('JobApplication', { created_by_id: user.id });
+  const seen = new Set(mine.map((a) => a.id));
+  return mine.concat(store.filter('JobApplication', { employer_user_id: user.id }).filter((a) => !seen.has(a.id)));
 }
 
 async function emailRecipient(c, sender, message) {
@@ -155,7 +158,7 @@ function registerMessageRoutes(app) {
     try {
       res.json({ data: await fn(req) });
     } catch (e) {
-      if (!e.status) console.error('[messages]', e);
+      if (!e.status) { console.error('[messages]', e); require('./monitor').captureServerError(e, req); }
       res.status(e.status || 500).json({ error: e.status ? e.message : 'Something went wrong' });
     }
   };

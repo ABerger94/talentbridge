@@ -17,6 +17,7 @@ import {
 import { toast } from "sonner";
 import { Link, useSearchParams } from "react-router-dom";
 import ProfileChecklist from "@/components/seeker/ProfileChecklist";
+import { JobAlertNudge } from "@/components/seeker/JobAlertSettings";
 import JobCard from "@/components/jobs/JobCard";
 import { normalizePercent, normalizeCapabilityGraph } from "@/lib/scales";
 import ResumeUploader from "@/components/resume/ResumeUploader";
@@ -346,6 +347,9 @@ Return the top matches with specific reasoning.`,
       </div>
 
       <div className="mb-6"><ProfileChecklist saved={profiles[0]} onGo={goToStep} /></div>
+      {profiles[0] && profileCompleteness(profiles[0]).complete && profiles[0].open_to_opportunities !== false && (
+        <div className="mb-6"><JobAlertNudge /></div>
+      )}
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList className="mb-6 flex-wrap h-auto gap-1">
           <TabsTrigger value="profile" className="gap-1 text-xs sm:text-sm"><User className="w-3 h-3 sm:w-4 sm:h-4" /> <span className="hidden sm:inline">Profile</span></TabsTrigger>

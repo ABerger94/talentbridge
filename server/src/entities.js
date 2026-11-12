@@ -35,14 +35,42 @@ function allRecords(entity) {
     .map(rowToRecord);
 }
 
+// Indexes for the lookups the app makes most (owner, job, employer, seeker,
+// status). Record fields live in the JSON `data` column, so these are
+// expression indexes on json_extract — the same expressions sqlFilter emits.
+const INDEXED_FIELDS = ['job_id', 'employer_user_id', 'seeker_profile_id', 'status'];
+db.exec(`
+CREATE INDEX IF NOT EXISTS records_entity_owner ON records (entity, created_by_id);
+${INDEXED_FIELDS.map((f) => `CREATE INDEX IF NOT EXISTS records_${f} ON records (entity, json_extract(data, '$.${f}'));`).join('\n')}
+`);
+
+// Equality criteria are pushed into SQL so the database (and its indexes)
+// does the narrowing instead of loading every row of the entity. Values
+// SQL can't compare exactly (booleans, objects, null) are left to
+// matches(), which still runs on every row returned.
+function filterRecords(entity, criteria = {}) {
+  const where = ['entity = ?'];
+  const args = [entity];
+  for (const [key, value] of Object.entries(criteria || {})) {
+    if (!/^[A-Za-z0-9_]+$/.test(key)) continue;
+    if (typeof value !== 'string' && !(typeof value === 'number' && Number.isFinite(value))) continue;
+    if (key === 'id' || key === 'created_by_id') where.push(`${key} = ?`);
+    else where.push(`json_extract(data, '$.${key}') = ?`);
+    args.push(value);
+  }
+  return db
+    .prepare(`SELECT * FROM records WHERE ${where.join(' AND ')} ORDER BY created_date DESC`)
+    .all(...args)
+    .map(rowToRecord)
+    .filter((r) => matches(r, criteria));
+}
+
 // Internal (service-role) access for backend functions — bypasses RLS the
 // same way Base44's asServiceRole did. Only server code may call these.
 const store = {
   get: getRecord,
   all: allRecords,
-  filter(entity, criteria) {
-    return allRecords(entity).filter((r) => matches(r, criteria));
-  },
+  filter: filterRecords,
   create(entity, data, createdById) {
     const id = crypto.randomUUID();
     const now = new Date().toISOString();
@@ -97,7 +125,7 @@ function ownSeekerProfile(userId, requestedId) {
     const p = getRecord('SeekerProfile', requestedId);
     if (p && p.created_by_id === userId) return p;
   }
-  return allRecords('SeekerProfile').find((p) => p.created_by_id === userId) || null;
+  return filterRecords('SeekerProfile', { created_by_id: userId })[0] || null;
 }
 
 function applicantName(profile, userId) {
@@ -160,7 +188,8 @@ const EMPLOYER_APP_STATUSES = ['applied', 'reviewed', 'shortlisted', 'interview'
 // responses, withdrawal, offers and interviews go through /api/functions so
 // they're validated and the other side is notified.
 const APPLICANT_FIELDS = ['cover_letter'];
-const EMPLOYER_FIELDS = ['status', 'ai_match_score', 'ai_match_summary', 'ai_growth_potential', 'employer_notes'];
+// AI scores and summaries are written only by the server (assessApplication).
+const EMPLOYER_FIELDS = ['status', 'employer_notes'];
 // Base44-era metadata the client may echo back unchanged.
 const IGNORED_FIELDS = ['id', 'created_by_id', 'created_date', 'updated_date', 'created_by', 'job'];
 
@@ -230,7 +259,7 @@ function canSeeSeeker(user, profile) {
   if (profile.created_by_id === user.id || user.role === 'admin') return true;
   if (user.role !== 'employer' || hidesSeekers(user)) return false;
   if (require('./completeness').isListable(profile)) return true;
-  return allRecords('JobApplication').some((a) => a.seeker_profile_id === profile.id && a.employer_user_id === user.id);
+  return filterRecords('JobApplication', { seeker_profile_id: profile.id, employer_user_id: user.id }).length > 0;
 }
 
 // Short job summary attached to applications and invitations, so a seeker
@@ -256,6 +285,10 @@ function present(entity, record, user, cache = new Map()) {
     const key = `links:${out.seeker_profile_id}`;
     if (!cache.has(key)) cache.set(key, require('./links').profileLinks(getRecord('SeekerProfile', out.seeker_profile_id)));
     out.seeker_links = cache.get(key);
+  }
+  // The employer's private notes never reach the candidate.
+  if (entity === 'JobApplication' && !(user && (user.id === out.employer_user_id || user.role === 'admin'))) {
+    delete out.employer_notes;
   }
   if (entity === 'Job') {
     const key = `company:${out.created_by_id}`;
@@ -310,9 +343,8 @@ function registerEntityRoutes(app) {
       if (job.status !== 'active' && req.user.role !== 'admin') {
         return res.status(409).json({ error: 'This role is no longer accepting applications.' });
       }
-      const already = allRecords('JobApplication').find(
-        (a) => a.job_id === job.id && a.created_by_id === req.user.id && a.status !== 'withdrawn'
-      );
+      const already = filterRecords('JobApplication', { job_id: job.id, created_by_id: req.user.id })
+        .find((a) => a.status !== 'withdrawn');
       if (already) return res.status(409).json({ error: 'You’ve already applied to this role.' });
       body.employer_user_id = job.created_by_id || null;
       body.status = 'applied';
@@ -387,10 +419,11 @@ function registerEntityRoutes(app) {
       return res.status(400).json({ error: 'Invalid filter' });
     }
     const limit = Math.min(parseInt(req.query.limit || '1000', 10) || 1000, 5000);
+    const skip = Math.max(parseInt(req.query.skip || '0', 10) || 0, 0);
     let visible = store
       .filter(entity, criteria)
       .filter((r) => can(entity, 'read', req.user, r))
-      .slice(0, limit);
+      .slice(skip, skip + limit);
     if (entity === 'SeekerProfile') {
       visible = visible.filter((r) => canSeeSeeker(req.user, r));
     }
@@ -407,6 +440,7 @@ function registerEntityRoutes(app) {
         || (entity === 'SeekerProfile' && !canSeeSeeker(req.user, record))) {
       return res.status(404).json({ error: 'Not found' });
     }
+    if (entity === 'Job') require('./jobstats').recordView(req, record);
     res.json({ data: present(entity, record, req.user) });
   });
 
@@ -463,7 +497,7 @@ function registerEntityRoutes(app) {
       return res.status(403).json({ error: `Permission denied for delete operation on ${entity} entity` });
     }
     if (entity === 'Job' && req.user.role !== 'admin') {
-      const hasApplicants = allRecords('JobApplication').some((a) => a.job_id === id);
+      const hasApplicants = filterRecords('JobApplication', { job_id: id }).length > 0;
       if (hasApplicants) {
         return res.status(409).json({ error: 'This role has applicants, so it can’t be deleted. Close it instead.' });
       }

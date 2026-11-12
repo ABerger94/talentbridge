@@ -75,7 +75,7 @@ async function sendReminder(userId) {
     const next = new Date(Date.parse(data.last_reminder_at) + REMINDER_GAP_MS);
     throw fail(429, `Already reminded on ${new Date(data.last_reminder_at).toLocaleDateString('en-US')}. Next reminder possible ${next.toLocaleDateString('en-US')}.`);
   }
-  const profile = store.all('SeekerProfile').find((p) => p.created_by_id === row.id) || null;
+  const profile = store.filter('SeekerProfile', { created_by_id: row.id })[0] || null;
   const progress = progressFor(row, profile);
   // Same rule as the list: verified seekers with a complete profile are done.
   const complete = row.role === 'job_seeker' && row.email_verified && profile && profileCompleteness(profile).complete;
@@ -112,12 +112,16 @@ function registerSignupRoutes(app) {
     try {
       res.json({ data: await fn(req) });
     } catch (e) {
-      if (!e.status) console.error('[signups]', e);
+      if (!e.status) { console.error('[signups]', e); require('./monitor').captureServerError(e, req); }
       res.status(e.status || 500).json({ error: e.status ? e.message : 'Something went wrong' });
     }
   };
   app.get('/api/admin/incomplete-signups', authRequired, admin, wrap(() => incompleteSignups()));
-  app.post('/api/admin/incomplete-signups/:id/remind', authRequired, admin, wrap((req) => sendReminder(req.params.id)));
+  app.post('/api/admin/incomplete-signups/:id/remind', authRequired, admin, wrap(async (req) => {
+    const out = await sendReminder(req.params.id);
+    require('./audit').audit(req.user, 'signup.reminder_sent', { type: 'user', id: req.params.id });
+    return out;
+  }));
 }
 
 module.exports = { registerSignupRoutes, incompleteSignups, progressFor };

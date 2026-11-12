@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
+import SystemTab from "@/components/admin/SystemTab";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { formatDistanceToNow } from "date-fns";
 import { base44 } from "@/api/base44Client";
@@ -13,7 +14,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { CheckCircle2, AlertTriangle, Info, ShieldCheck, Flag, ExternalLink, UserPlus, Send, Loader2 } from "lucide-react";
+import { CheckCircle2, AlertTriangle, Info, ShieldCheck, Flag, ExternalLink, UserPlus, Send, Loader2, Activity } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 
@@ -96,6 +97,8 @@ export default function Admin() {
   const [filter, setFilter] = useState("pending");
   const [pending, setPending] = useState(null); // { e, decision }
   const [note, setNote] = useState("");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tab = ["employers", "signups", "reports", "system"].includes(searchParams.get("tab")) ? searchParams.get("tab") : "employers";
 
   const { data: employers = [], isLoading } = useQuery({
     queryKey: ["adminEmployers", filter],
@@ -135,12 +138,13 @@ export default function Admin() {
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
       <h1 className="text-2xl sm:text-3xl font-bold mb-1">Admin</h1>
-      <p className="text-muted-foreground mb-6">Review employers, follow up on incomplete signups, and check reported conversations.</p>
-      <Tabs defaultValue="employers">
-        <TabsList className="mb-5">
+      <p className="text-muted-foreground mb-6">Review employers, follow up on incomplete signups, check reported conversations, and watch site health.</p>
+      <Tabs value={tab} onValueChange={(v) => setSearchParams(v === "employers" ? {} : { tab: v }, { replace: true })}>
+        <TabsList className="mb-5 h-auto flex-wrap justify-start">
           <TabsTrigger value="employers">Employers</TabsTrigger>
           <TabsTrigger value="signups" className="gap-1.5"><UserPlus className="w-3.5 h-3.5" /> Incomplete ({signups.length})</TabsTrigger>
           <TabsTrigger value="reports" className="gap-1.5"><Flag className="w-3.5 h-3.5" /> Reports ({reports.length})</TabsTrigger>
+          <TabsTrigger value="system" className="gap-1.5"><Activity className="w-3.5 h-3.5" /> System</TabsTrigger>
         </TabsList>
 
         <TabsContent value="employers" className="space-y-4">
@@ -235,6 +239,10 @@ export default function Admin() {
               </Card>
             ))
           )}
+        </TabsContent>
+
+        <TabsContent value="system">
+          {tab === "system" && <SystemTab />}
         </TabsContent>
       </Tabs>
 

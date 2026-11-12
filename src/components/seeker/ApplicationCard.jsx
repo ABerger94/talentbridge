@@ -33,6 +33,8 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
+import { AiAssisted } from "@/components/AiDisclosure";
+import AddToCalendar from "@/components/AddToCalendar";
 
 const statusConfig = {
   applied: { label: "Applied", color: "bg-blue-100 text-blue-700", icon: Briefcase },
@@ -135,7 +137,7 @@ export default function ApplicationCard({ application, job, onUpdate }) {
         {application.ai_match_score && (
           <div className="space-y-1">
             <div className="flex justify-between text-xs text-muted-foreground">
-              <span>Capability Match</span>
+              <span className="flex items-center gap-1.5">Capability Match <AiAssisted /></span>
               <span className="font-medium">{application.ai_match_score}%</span>
             </div>
             <Progress value={application.ai_match_score} className="h-1.5" />
@@ -161,7 +163,15 @@ export default function ApplicationCard({ application, job, onUpdate }) {
                   minute: '2-digit',
                   timeZoneName: 'short'
                 })}
+                {application.interview_duration_minutes ? <span className="font-normal text-purple-700"> · {application.interview_duration_minutes} min</span> : null}
               </p>
+              {application.interview_location && (
+                <p className="text-xs text-purple-800 mt-1 break-all">
+                  Where: {/^https?:\/\//.test(application.interview_location)
+                    ? <a href={application.interview_location} target="_blank" rel="noreferrer noopener" className="underline">{application.interview_location}</a>
+                    : application.interview_location}
+                </p>
+              )}
             </div>
 
             {application.interview_response === "counter_proposed" && application.interview_counter_time && (
@@ -242,6 +252,9 @@ export default function ApplicationCard({ application, job, onUpdate }) {
                     ? "Confirmed — see you then!"
                     : "You declined this interview"}
               </Badge>
+            )}
+            {application.interview_response === "accepted" && (
+              <AddToCalendar application={application} job={application.job || job} />
             )}
           </div>
         )}

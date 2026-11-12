@@ -1,0 +1,14 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /uploads/
+Disallow: /dashboard
+Disallow: /employer
+Disallow: /messages
+Disallow: /admin
+Disallow: /settings
+Disallow: /onboarding
+Disallow: /auth-bridge
+Disallow: /logout-bridge
+
+Sitemap: https://talentbridge-jobboard.vercel.app/sitemap.xml

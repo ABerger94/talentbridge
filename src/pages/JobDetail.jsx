@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -35,9 +35,14 @@ export default function JobDetail() {
 
   const { data: job, isLoading: jobLoading } = useQuery({
     queryKey: ["job", id],
+    // The single-role endpoint also counts the visit for the employer's stats.
     queryFn: async () => {
-      const jobs = await base44.entities.Job.filter({ id });
-      return jobs[0];
+      try {
+        return await base44.entities.Job.get(id);
+      } catch (e) {
+        if (e.status === 404) return null;
+        throw e;
+      }
     },
   });
 
@@ -66,6 +71,14 @@ export default function JobDetail() {
   const { user: viewer } = useAuth();
   const profileGate = profilesLoaded && viewer?.role === "job_seeker" ? profileCompleteness(profile || {}) : null;
   const jobOpen = !job?.status || job.status === "active";
+
+  // Browser tab title (search engines get theirs from the server; see server/src/seo.js).
+  useEffect(() => {
+    if (!job?.title) return undefined;
+    const previous = document.title;
+    document.title = `${job.title}${job.company ? ` at ${job.company}` : ""} · TalentBridge`;
+    return () => { document.title = previous; };
+  }, [job?.title, job?.company]);
 
   const applyMutation = useMutation({
     mutationFn: async () => {

@@ -6,15 +6,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="manifest" href="/manifest.json" />
     <title>TalentBridge — AI-Powered Capability Matching</title>
-    <script>
-      (function () {
-        var url = new URL(window.location.href);
-        if (!url.searchParams.has("analytics-enable")) {
-          url.searchParams.set("analytics-enable", "false");
-          window.history.replaceState({}, document.title, url.toString());
-        }
-      })();
-    </script>
+    <meta name="description" content="TalentBridge matches people to roles on what they can actually do — skills, experience, and potential — not keywords. Free for job seekers and employers." />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="TalentBridge" />
+    <meta property="og:title" content="TalentBridge — AI-Powered Capability Matching" />
+    <meta property="og:description" content="Get matched to roles on what you can actually do — not keywords. Free for job seekers and employers." />
+    <meta property="og:image" content="https://talentbridge-jobboard.vercel.app/og-image.png" />
+    <meta name="twitter:card" content="summary_large_image" />
   </head>
   <body>
     <div id="root"></div>

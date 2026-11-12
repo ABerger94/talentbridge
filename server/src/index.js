@@ -23,9 +23,16 @@ const { registerMessageRoutes } = require('./messages');
 const { registerEmployerRoutes } = require('./employers');
 const { registerSignupRoutes } = require('./signups');
 const { mailStatus } = require('./mailer');
+const { registerSystemRoutes } = require('./system');
+const { registerAccountRoutes } = require('./account');
+const { registerSeoRoutes } = require('./seo');
+const { registerAlertRoutes } = require('./alerts');
+const { registerJobStatsRoutes } = require('./jobstats');
+const { securityHeaders } = require('./security');
 
 const app = express();
 app.set('trust proxy', true); // correct https host behind Vercel's proxy (OAuth redirects)
+app.use(securityHeaders);
 app.use(express.json({ limit: '2mb' }));
 
 // CORS for the separately-hosted frontend (Vercel) during transition.
@@ -58,6 +65,11 @@ registerFunctionRoutes(app);
 registerMessageRoutes(app);
 registerEmployerRoutes(app);
 registerSignupRoutes(app);
+registerSystemRoutes(app);
+registerAccountRoutes(app);
+registerAlertRoutes(app);
+registerJobStatsRoutes(app);
+registerSeoRoutes(app); // before the static app below, so job pages get their real <head>
 
 // Uploaded files are served only through files.js (access-checked); there
 // is deliberately no static route for the uploads directory.
@@ -75,6 +87,7 @@ if (fs.existsSync(DIST)) {
 
 app.use((err, req, res, next) => {
   console.error(err);
+  if (!err.status || err.status >= 500) require('./monitor').captureServerError(err, req);
   res.status(err.status || 500).json({ error: err.message || 'Server error' });
 });
 

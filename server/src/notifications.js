@@ -10,13 +10,13 @@ const { sendMail, mailConfigured, layout, appUrl } = require('./mailer');
 // Records every notification and emails it when a mail provider is set up.
 // Email failures are recorded, never thrown: the hiring action has already
 // happened and the candidate still sees it on their dashboard.
-async function notify(kind, { to, subject, text, html }, payload) {
+async function notify(kind, { to, subject, text, html, headers, attachments }, payload) {
   const id = crypto.randomUUID();
   const now = new Date().toISOString();
   let status = 'queued_no_mailer';
   let error = null;
   if (mailConfigured() && to) {
-    const result = await sendMail({ to, subject, text, html });
+    const result = await sendMail({ to, subject, text, html, headers, attachments });
     status = result.ok ? 'sent' : 'failed';
     error = result.ok ? null : result.error;
   } else if (!to) {
@@ -54,11 +54,12 @@ function applicantLabel(application) {
 }
 
 // Email the employer who owns `job`. `paragraphs` follow a greeting.
-async function notifyEmployer(kind, job, { subject, heading, paragraphs }, payload) {
+async function notifyEmployer(kind, job, { subject, heading, paragraphs, attachments }, payload) {
   const owner = getUserById(job?.created_by_id);
   return notify(kind, {
     to: owner?.email,
     subject,
+    attachments,
     ...layout({
       heading,
       paragraphs,

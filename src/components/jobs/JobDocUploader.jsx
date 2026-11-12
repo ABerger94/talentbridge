@@ -33,6 +33,10 @@ export default function JobDocUploader({ form, setForm }) {
       return;
     }
 
+    if (file.size > 4 * 1024 * 1024) {
+      toast.error("That file is over 4 MB. Try a smaller export of the document.");
+      return;
+    }
     setBusy("upload");
     let file_url;
     try {

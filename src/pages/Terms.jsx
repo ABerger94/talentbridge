@@ -71,6 +71,7 @@ const sections = [
             color, religion, sex, sexual orientation, gender identity, national origin, age, disability, genetic
             information, veteran status, or any other protected characteristic.</li>
           <li>You won’t charge candidates any fee to apply, interview, or be hired.</li>
+          <li>You’ll use applications, private notes, and role statistics only for hiring for your roles.</li>
           <li>You’ll use candidate information only to evaluate and communicate with candidates for your roles, keep it
             confidential, and not sell it, publish it, or use it for marketing.</li>
           <li>You won’t rely on {LEGAL.siteName}’s AI scores or summaries as the sole basis for any hiring decision, and
@@ -145,7 +146,8 @@ const sections = [
     title: "Suspension and termination",
     body: (
       <p>
-        You can stop using {LEGAL.siteName} and ask us to delete your account at any time by emailing {mail}. We may
+        You can stop using {LEGAL.siteName} and delete your account at any time in{" "}
+        <Link to="/settings">Account settings</Link>, or by emailing {mail}. We may
         suspend or remove accounts or content that break these terms or the law, or that put other users at risk.
         Sections that by their nature should continue (such as disclaimers, limits of liability, and governing law)
         survive termination.
