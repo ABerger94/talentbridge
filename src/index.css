@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Playfair+Display:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Playfair+Display:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -8,6 +8,7 @@
   :root {
     --font-sans: 'Inter', sans-serif;
     --font-serif: 'Playfair Display', serif;
+    --font-display: 'Space Grotesk', 'Inter', sans-serif;
 
     --background: 30 25% 98%;
     --foreground: 230 25% 12%;
@@ -88,4 +89,37 @@
   body {
     @apply bg-background text-foreground font-sans;
   }
+}
+/* --- Homepage motion (src/pages/Landing.jsx) ------------------------------ */
+@layer components {
+  .tb-strike { position: relative; }
+  .tb-strike::after {
+    content: ""; position: absolute; left: -4px; right: -4px; top: 55%; height: 0.09em; min-height: 4px;
+    border-radius: 4px; background: #D9485F; transform-origin: left; animation: tb-strike .7s ease-out .8s both;
+  }
+  .tb-rise-late { display: inline-block; animation: tb-up .8s ease-out 1.4s both; }
+  .tb-rise { animation: tb-up .7s ease-out both; }
+  .tb-edge { stroke-dasharray: 240; stroke-dashoffset: 240; animation: tb-draw 1.1s ease-out forwards; }
+  .tb-edge-adjacent { stroke-dasharray: 4 6; animation: tb-fade 1s ease-out 1.6s both; }
+  .tb-pop { animation: tb-pop .5s cubic-bezier(.2,1.4,.4,1) both; }
+  .tb-fade-late { animation: tb-fade .8s ease-out 1.7s both; }
+  .tb-pulse { animation: tb-pulse 2.6s ease-out infinite; }
+  .tb-float { animation: tb-float 5s ease-in-out infinite; }
+  .tb-bar { animation: tb-bar 1.2s ease-out both; }
+  .tb-move { animation: tb-move 7s ease-in-out infinite; }
+}
+@keyframes tb-strike { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes tb-up { from { opacity: 0; transform: translateY(22px); } to { opacity: 1; transform: none; } }
+@keyframes tb-draw { to { stroke-dashoffset: 0; } }
+@keyframes tb-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes tb-pop { from { opacity: 0; transform: translate(-50%, -50%) scale(.6); } to { opacity: 1; transform: translate(-50%, -50%) scale(1); } }
+@keyframes tb-pulse { 0% { box-shadow: 0 0 0 0 rgba(107,47,217,.35); } 70% { box-shadow: 0 0 0 26px rgba(107,47,217,0); } 100% { box-shadow: 0 0 0 0 rgba(107,47,217,0); } }
+@keyframes tb-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+@keyframes tb-bar { from { width: 0; } }
+@keyframes tb-move { 0%, 18% { transform: translate(0, 0); } 32%, 68% { transform: translate(calc(100% + 12px), 0); } 82%, 100% { transform: translate(0, 0); } }
+@media (prefers-reduced-motion: reduce) {
+  .tb-strike::after, .tb-rise-late, .tb-rise, .tb-edge, .tb-edge-adjacent, .tb-pop, .tb-fade-late,
+  .tb-pulse, .tb-float, .tb-bar, .tb-move { animation: none !important; }
+  .tb-edge { stroke-dashoffset: 0; }
+  .tb-pop { transform: translate(-50%, -50%); }
 }
