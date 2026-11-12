@@ -25,6 +25,7 @@ const { registerSignupRoutes } = require('./signups');
 const { mailStatus } = require('./mailer');
 const { registerSystemRoutes } = require('./system');
 const { registerAccountRoutes } = require('./account');
+const { registerSeoRoutes } = require('./seo');
 const { securityHeaders } = require('./security');
 
 const app = express();
@@ -64,6 +65,7 @@ registerEmployerRoutes(app);
 registerSignupRoutes(app);
 registerSystemRoutes(app);
 registerAccountRoutes(app);
+registerSeoRoutes(app); // before the static app below, so job pages get their real <head>
 
 // Uploaded files are served only through files.js (access-checked); there
 // is deliberately no static route for the uploads directory.

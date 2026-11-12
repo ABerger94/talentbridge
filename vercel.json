@@ -4,7 +4,8 @@
   "framework": "vite",
   "functions": {
     "api/index.js": {
-      "maxDuration": 60
+      "maxDuration": 60,
+      "includeFiles": "dist/index.html"
     }
   },
   "installCommand": "npm ci",
@@ -17,6 +18,14 @@
     {
       "destination": "/api",
       "source": "/uploads/(.*)"
+    },
+    {
+      "destination": "/api",
+      "source": "/jobs/:id"
+    },
+    {
+      "destination": "/api",
+      "source": "/sitemap.xml"
     },
     {
       "destination": "/index.html",
