@@ -101,6 +101,25 @@ selected). Set **one** provider (more = automatic fallback, in
   wrong guesses; AI calls `TB_AI_LIMIT_PER_HOUR` per user (cached matching
   results are free); uploads 30 per user per hour.
 
+## Messaging
+
+One conversation per job application, between the applicant and the
+employer who owns the role (no cold messages). Admins can read
+conversations (to review reports) but can't send.
+
+- Text only, up to 2,000 characters. Sending limits: 20 per 10 minutes
+  and 300 per day per user.
+- Read-only when the application is withdrawn or rejected, or when either
+  side blocks the conversation (the blocker can unblock).
+- Email alerts are batched: at most one per conversation per 20 minutes
+  while the recipient hasn't read it; reading resets that.
+- Reports are stored in `message_reports` and emailed to `TB_ADMIN_EMAILS`.
+  Review in the Turso console, e.g.
+  `SELECT * FROM message_reports ORDER BY created_date DESC;` and open the
+  conversation at `/messages?c=<application_id>` as an admin.
+- Messages are never sent to AI providers.
+- Tables: `messages`, `conversation_state`, `message_reports`.
+
 ## Notes
 
 - **Verification codes (OTP):** without an email provider, codes are

@@ -19,6 +19,7 @@ const { registerEntityRoutes } = require('./entities');
 const { registerLlmRoutes, providerStatus } = require('./llm');
 const { registerFileRoutes } = require('./files');
 const { registerFunctionRoutes } = require('./functions');
+const { registerMessageRoutes } = require('./messages');
 const { mailStatus } = require('./mailer');
 
 const app = express();
@@ -52,6 +53,7 @@ registerEntityRoutes(app);
 registerLlmRoutes(app);
 registerFileRoutes(app);
 registerFunctionRoutes(app);
+registerMessageRoutes(app);
 
 // Uploaded files are served only through files.js (access-checked); there
 // is deliberately no static route for the uploads directory.

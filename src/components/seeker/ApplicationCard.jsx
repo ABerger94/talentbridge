@@ -31,6 +31,7 @@ import {
   TrendingUp, MessageSquare, Loader2
 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
+import { Link } from "react-router-dom";
 import { toast } from "sonner";
 
 const statusConfig = {
@@ -372,8 +373,14 @@ export default function ApplicationCard({ application, job, onUpdate }) {
           </div>
         )}
 
+        <div className="flex items-center justify-between gap-2 pt-1 flex-wrap">
+          <Link to={`/messages?c=${application.id}`}>
+            <Button size="sm" variant="outline" className="text-xs gap-1.5">
+              <MessageSquare className="w-3.5 h-3.5" /> Message employer
+            </Button>
+          </Link>
         {canWithdraw && (
-          <div className="flex justify-end pt-1">
+          <div className="flex justify-end">
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button size="sm" variant="ghost" className="text-xs text-muted-foreground" disabled={loading}>
@@ -396,6 +403,7 @@ export default function ApplicationCard({ application, job, onUpdate }) {
             </AlertDialog>
           </div>
         )}
+        </div>
       </CardContent>
     </Card>
   );

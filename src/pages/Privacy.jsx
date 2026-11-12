@@ -33,6 +33,8 @@ const sections = [
         <p><strong>Applications and hiring activity.</strong> Cover letters, application status, interview times and
           your responses, offer details and your responses, invitations, and AI capability assessments an employer runs
           on your application.</p>
+        <p><strong>Messages.</strong> Messages you send to an employer or candidate about an application, and whether
+          they’ve been read. Messages are only available between the two people on that application.</p>
         <p><strong>Employer content.</strong> Job postings (including documents you upload to fill a posting), and the
           actions you take on candidates.</p>
         <p><strong>Emails we send.</strong> A record of each notification (type, recipient, and whether it was
@@ -54,7 +56,7 @@ const sections = [
         <li>To provide AI features: parsing resumes and job descriptions, matching candidates and roles, capability
           assessments, interview preparation, and resume critique.</li>
         <li>To send emails you need: verification and password-reset codes, and updates about applications,
-          invitations, interviews, and offers. We do not send marketing email.</li>
+          invitations, interviews, offers, and new messages. We do not send marketing email.</li>
         <li>To keep the service secure and prevent abuse, and to fix problems.</li>
         <li>To comply with the law.</li>
       </ul>
@@ -76,6 +78,8 @@ const sections = [
         </ul>
         <p><strong>If you’re an employer:</strong> open job postings are public, including to visitors who aren’t
           signed in. Candidates see your company name and role details on invitations, interviews, and offers.</p>
+        <p><strong>Messages</strong> can be read only by the candidate and employer on that application, and by site
+          administrators when needed to investigate a report or abuse.</p>
         <p><strong>Site administrators</strong> can access all data to operate and support the service.</p>
         <p>We do not sell your personal information, and we do not share it for advertising.</p>
       </>
@@ -103,6 +107,7 @@ const sections = [
           applications that you wouldn’t want processed this way (for example, government ID numbers, health
           information, or financial account details).
         </p>
+        <p>Messages between candidates and employers are <strong>not</strong> sent to AI providers.</p>
         <p>We may also disclose information if required by law, to protect the rights and safety of users or others,
           or as part of a transfer of the service to a new operator (in which case this policy continues to apply).</p>
       </>
@@ -131,6 +136,8 @@ const sections = [
           of an account-deletion request (except where we must keep something to comply with the law or resolve
           disputes).</li>
         <li>Verification and reset codes: up to 10 minutes. Abuse-prevention counters: up to 24 hours.</li>
+        <li>Messages: for as long as both related accounts exist; deleted with your account on request (the other
+          person’s copies of their own messages may remain).</li>
         <li>Email notification records: for as long as the related account exists.</li>
         <li>Server logs: according to our hosting provider’s retention settings.</li>
       </ul>

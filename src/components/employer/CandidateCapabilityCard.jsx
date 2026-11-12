@@ -7,9 +7,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/u
 import { Progress } from "@/components/ui/progress";
 import {
   Brain, Loader2, ChevronDown, ChevronUp, CheckCircle2,
-  TrendingUp, Zap, Star, ShieldCheck, User, FileText
+  TrendingUp, Zap, Star, ShieldCheck, User, FileText, MessageSquare
 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
+import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import InterviewScheduler from "./InterviewScheduler";
 import { normalizePercent } from "@/lib/scales";
@@ -391,7 +392,12 @@ IMPORTANT: Express "match_score" as an integer from 0 to 100. Never return it as
       )}
 
       {/* Assessment Actions */}
-      <div className="flex items-center gap-2 pt-1">
+      <div className="flex items-center gap-2 pt-1 flex-wrap">
+        <Link to={`/messages?c=${application.id}`}>
+          <Button variant="outline" size="sm" className="gap-1.5 text-xs">
+            <MessageSquare className="w-3.5 h-3.5" /> Message
+          </Button>
+        </Link>
         {!assessment ? (
           <Button size="sm" className="gap-1.5 text-xs" onClick={runCapabilityAssessment} disabled={loading}>
             {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Brain className="w-3.5 h-3.5" />}

@@ -2,7 +2,9 @@ import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Menu, Briefcase, User, Building2, Search, LogIn, LogOut } from "lucide-react";
+import { Menu, Briefcase, User, Building2, Search, LogIn, LogOut, MessageSquare } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
 import { redirectToLogin, logoutLocally } from "@/lib/auth-redirect";
 import TalentBridgeLogo from "@/components/TalentBridgeLogo";
@@ -13,12 +15,22 @@ export default function Navbar() {
   const { isAuthenticated, user } = useAuth();
 
   const role = user?.role;
+  const canMessage = isAuthenticated && ["job_seeker", "employer", "admin"].includes(role);
+
+  const { data: unread = 0 } = useQuery({
+    queryKey: ["unreadCount"],
+    queryFn: () => base44.messages.unreadCount(),
+    enabled: canMessage,
+    refetchInterval: 60000,
+    retry: false,
+  });
 
   // Build nav links based on role
   const navLinks = [
     { path: "/jobs", label: "Explore Roles", icon: Search, show: true },
     { path: "/dashboard", label: "My Profile", icon: User, show: !isAuthenticated || role === 'job_seeker' || role === 'admin' },
     { path: "/employer", label: "Employer Dashboard", icon: Building2, show: role === 'employer' || role === 'admin' },
+    { path: "/messages", label: "Messages", icon: MessageSquare, show: canMessage, badge: unread },
   ].filter(l => l.show);
 
   const handleLogin = () => redirectToLogin(window.location.href);
@@ -45,6 +57,11 @@ export default function Navbar() {
                 >
                   <link.icon className="w-4 h-4" />
                   {link.label}
+                  {link.badge > 0 && (
+                    <span className="ml-0.5 rounded-full bg-primary text-primary-foreground text-[11px] leading-none px-1.5 py-1" aria-label={`${link.badge} unread`}>
+                      {link.badge > 99 ? "99+" : link.badge}
+                    </span>
+                  )}
                 </Button>
               </Link>
             ))}
@@ -75,8 +92,9 @@ export default function Navbar() {
 
           <Sheet open={open} onOpenChange={setOpen}>
             <SheetTrigger asChild className="md:hidden">
-              <Button variant="ghost" size="icon">
+              <Button variant="ghost" size="icon" className="relative" aria-label={unread ? `Menu, ${unread} unread messages` : "Menu"}>
                 <Menu className="w-5 h-5" />
+                {unread > 0 && <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 rounded-full bg-primary ring-2 ring-background" />}
               </Button>
             </SheetTrigger>
             <SheetContent side="right" className="w-72">
@@ -95,6 +113,11 @@ export default function Navbar() {
                     >
                       <link.icon className="w-4 h-4" />
                       {link.label}
+                      {link.badge > 0 && (
+                        <span className="ml-auto rounded-full bg-primary text-primary-foreground text-[11px] leading-none px-1.5 py-1">
+                          {link.badge > 99 ? "99+" : link.badge}
+                        </span>
+                      )}
                     </Button>
                   </Link>
                 ))}
