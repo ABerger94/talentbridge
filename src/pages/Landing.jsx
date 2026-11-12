@@ -81,8 +81,11 @@ function CapabilityGraphDemo() {
           );
         })}
 
-        <span className="tb-fade-late absolute right-[3%] top-[62%] hidden whitespace-nowrap rounded-full border-[1.5px] border-dashed border-[#7CCFBD] bg-[#F2FBF8] px-3 py-1.5 text-xs font-semibold text-[#0B6E5C] md:block">Pharma QA</span>
-        <span className="tb-fade-late absolute left-[3%] top-[62%] hidden whitespace-nowrap rounded-full border-[1.5px] border-dashed border-[#7CCFBD] bg-[#F2FBF8] px-3 py-1.5 text-xs font-semibold text-[#0B6E5C] md:block">Supply-chain quality</span>
+        <span className="tb-fade-late absolute top-[62%] whitespace-nowrap rounded-full border-[1.5px] border-dashed border-[#7CCFBD] bg-[#F2FBF8] px-2 py-1 text-[10px] font-semibold text-[#0B6E5C] sm:px-3 sm:py-1.5 sm:text-xs right-[3%]">Pharma QA</span>
+        <span className="tb-fade-late absolute top-[62%] whitespace-nowrap rounded-full border-[1.5px] border-dashed border-[#7CCFBD] bg-[#F2FBF8] px-2 py-1 text-[10px] font-semibold text-[#0B6E5C] sm:px-3 sm:py-1.5 sm:text-xs left-[3%]">
+          <span className="sm:hidden">Supply chain</span>
+          <span className="hidden sm:inline">Supply-chain quality</span>
+        </span>
       </div>
 
       <div className="mt-2.5 rounded-2xl border border-[#ECE6FA] bg-[#FAF8FE] px-4 py-4 text-[#15172A]" aria-live="polite">
