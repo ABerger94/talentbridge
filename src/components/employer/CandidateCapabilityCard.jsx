@@ -16,6 +16,8 @@ import InterviewScheduler from "./InterviewScheduler";
 import { normalizePercent } from "@/lib/scales";
 import OfferDialog from "./OfferDialog";
 import { AiAssisted, IntegrityWarning } from "@/components/AiDisclosure";
+import AddToCalendar from "@/components/AddToCalendar";
+import { Textarea } from "@/components/ui/textarea";
 import ProfessionalLinks from "@/components/seeker/ProfessionalLinks";
 
 export default function CandidateCapabilityCard({ application, job, onStatusChange }) {
@@ -268,8 +270,15 @@ export default function CandidateCapabilityCard({ application, job, onStatusChan
                 <p className="text-xs font-semibold text-purple-700 mb-1">
                   {application.interview_response === "accepted" ? "Interview Confirmed" : "Interview Proposed"}
                 </p>
-                <p className="text-xs text-purple-600">{fmtTime(application.interview_proposed_time)}</p>
+                <p className="text-xs text-purple-600">
+                  {fmtTime(application.interview_proposed_time)}
+                  {application.interview_duration_minutes ? ` · ${application.interview_duration_minutes} min` : ""}
+                </p>
+                {application.interview_location && (
+                  <p className="text-xs text-purple-600 break-all">Where: {application.interview_location}</p>
+                )}
               </div>
+              {application.interview_response === "accepted" && <AddToCalendar application={application} job={job} />}
               {application.interview_response === "declined" && (
                 <p className="text-xs text-purple-700">The candidate declined this time.</p>
               )}
@@ -350,6 +359,8 @@ export default function CandidateCapabilityCard({ application, job, onStatusChan
         </div>
       )}
 
+      <PrivateNotes application={application} onSaved={refreshApplications} />
+
       {/* Assessment Actions */}
       <div className="flex items-center gap-2 pt-1 flex-wrap">
         <Link to={`/messages?c=${application.id}`}>
@@ -380,5 +391,53 @@ export default function CandidateCapabilityCard({ application, job, onStatusChan
         )}
       </div>
     </Card>
+  );
+}
+// Employer-only notes on the application (never shown to the candidate).
+function PrivateNotes({ application, onSaved }) {
+  const [text, setText] = useState(application.employer_notes || "");
+  const [saving, setSaving] = useState(false);
+  const [open, setOpen] = useState(!!application.employer_notes);
+  const dirty = text !== (application.employer_notes || "");
+
+  const save = async () => {
+    setSaving(true);
+    try {
+      await base44.entities.JobApplication.update(application.id, { employer_notes: text.slice(0, 5000) });
+      toast.success("Note saved.");
+      onSaved?.();
+    } catch (e) {
+      toast.error(e?.message || "Couldn't save the note.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (!open) {
+    return (
+      <button type="button" onClick={() => setOpen(true)} className="text-xs text-primary hover:underline">
+        + Add a private note
+      </button>
+    );
+  }
+  return (
+    <div className="space-y-1.5">
+      <label htmlFor={`notes-${application.id}`} className="text-xs font-medium text-muted-foreground">
+        Private notes <span className="font-normal">· only you see these</span>
+      </label>
+      <Textarea
+        id={`notes-${application.id}`}
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        placeholder="e.g. Strong on audits; ask about weekend availability."
+        className="text-xs min-h-[64px]"
+        maxLength={5000}
+      />
+      {dirty && (
+        <Button size="sm" className="h-7 text-xs" onClick={save} disabled={saving}>
+          {saving ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : null} Save note
+        </Button>
+      )}
+    </div>
   );
 }

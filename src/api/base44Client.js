@@ -275,6 +275,9 @@ const employer = {
   async saveProfile(company) {
     return (await request('/api/employer/profile', { method: 'PUT', body: company })).data;
   },
+  async jobStats() {
+    return (await request('/api/employer/job-stats')).data;
+  },
 };
 
 // Admin-only review endpoints.

@@ -35,9 +35,14 @@ export default function JobDetail() {
 
   const { data: job, isLoading: jobLoading } = useQuery({
     queryKey: ["job", id],
+    // The single-role endpoint also counts the visit for the employer's stats.
     queryFn: async () => {
-      const jobs = await base44.entities.Job.filter({ id });
-      return jobs[0];
+      try {
+        return await base44.entities.Job.get(id);
+      } catch (e) {
+        if (e.status === 404) return null;
+        throw e;
+      }
     },
   });
 

@@ -54,11 +54,12 @@ function applicantLabel(application) {
 }
 
 // Email the employer who owns `job`. `paragraphs` follow a greeting.
-async function notifyEmployer(kind, job, { subject, heading, paragraphs }, payload) {
+async function notifyEmployer(kind, job, { subject, heading, paragraphs, attachments }, payload) {
   const owner = getUserById(job?.created_by_id);
   return notify(kind, {
     to: owner?.email,
     subject,
+    attachments,
     ...layout({
       heading,
       paragraphs,

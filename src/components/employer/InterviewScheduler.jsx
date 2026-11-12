@@ -17,6 +17,9 @@ import { toast } from "sonner";
 export default function InterviewScheduler({ application, job, onScheduled, triggerLabel = "Schedule Interview" }) {
   const [open, setOpen] = useState(false);
   const [datetime, setDatetime] = useState("");
+  const [duration, setDuration] = useState(String(application.interview_duration_minutes || 45));
+  const [location, setLocation] = useState(application.interview_location || "");
+  const zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
   const [loading, setLoading] = useState(false);
 
   const handleSchedule = async () => {
@@ -33,6 +36,10 @@ export default function InterviewScheduler({ application, job, onScheduled, trig
         // datetime-local has no time zone; convert in the browser so the
         // server stores the moment the employer actually picked.
         proposed_time: new Date(datetime).toISOString(),
+        // Emails show the time in this zone (and UTC); calendars convert.
+        timezone: zone,
+        duration_minutes: Number(duration),
+        location: location.trim(),
       });
       toast.success("Interview invitation sent!");
       setOpen(false);
@@ -68,8 +75,29 @@ export default function InterviewScheduler({ application, job, onScheduled, trig
               onChange={(e) => setDatetime(e.target.value)}
             />
             <p className="text-xs text-muted-foreground">
-              Candidate can accept or propose alternative time
+              Your time zone: {zone}. The candidate sees it in theirs and can accept or suggest another time.
             </p>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="interview-duration">Length</Label>
+            <select
+              id="interview-duration"
+              value={duration}
+              onChange={(e) => setDuration(e.target.value)}
+              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm"
+            >
+              {[15, 30, 45, 60, 90, 120].map((m) => <option key={m} value={m}>{m} minutes</option>)}
+            </select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="interview-location">Where (optional)</Label>
+            <Input
+              id="interview-location"
+              placeholder="Video link, phone number, or address"
+              value={location}
+              maxLength={300}
+              onChange={(e) => setLocation(e.target.value)}
+            />
           </div>
         </div>
         <div className="flex gap-2 justify-end">

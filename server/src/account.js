@@ -99,6 +99,7 @@ async function deleteAccount(user, { password, confirm }) {
   // history); roles without are removed.
   for (const job of store.filter('Job', { created_by_id: uid })) {
     db.prepare('DELETE FROM match_scores WHERE job_id = ?').run(job.id);
+    db.prepare('DELETE FROM job_views WHERE job_id = ?').run(job.id);
     if (store.filter('JobApplication', { job_id: job.id }).length) {
       store.update('Job', job.id, { status: 'closed', employer_deleted: true });
       db.prepare("UPDATE records SET created_by_id = NULL WHERE entity = 'Job' AND id = ?").run(job.id);

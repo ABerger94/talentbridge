@@ -440,6 +440,7 @@ function registerEntityRoutes(app) {
         || (entity === 'SeekerProfile' && !canSeeSeeker(req.user, record))) {
       return res.status(404).json({ error: 'Not found' });
     }
+    if (entity === 'Job') require('./jobstats').recordView(req, record);
     res.json({ data: present(entity, record, req.user) });
   });
 

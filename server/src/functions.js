@@ -29,14 +29,10 @@ const {
   notify, applicantEmail, applicantLabel, firstName, roleLine, DASHBOARD, notifyEmployer,
 } = require('./notifications');
 
-// Interview times in emails: we don't know the reader's zone, so say UTC and
-// point to the dashboard, which shows local time.
-function utcText(date) {
-  return new Date(date).toLocaleString('en-US', {
-    weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit',
-    timeZone: 'UTC', timeZoneName: 'short',
-  });
-}
+// Interview times in emails are shown in the employer's time zone (saved
+// when they schedule) with UTC alongside; see calendar.js.
+const { timeText, validZone, inviteParts } = require('./calendar');
+const interviewTime = (application, when) => timeText(when || application.interview_proposed_time, application.interview_timezone);
 
 // The applicant's own application (or admin). Candidate actions go through
 // these functions so they're validated and the employer is told.
@@ -167,6 +163,32 @@ Score every seeker independently, using only the evidence present. A missing fie
     if (m && valid.has(m.seeker_id) && !byId.has(m.seeker_id)) byId.set(m.seeker_id, m);
   }
   return byId;
+}
+
+// Confirmed interview: the candidate (and, unless they just acted, the
+// employer) get the time in the employer's zone plus a calendar invite.
+async function sendInterviewConfirmations(application, job, leadLine, { skipEmployer = false } = {}) {
+  const invite = inviteParts(application, job);
+  const when = `Interview time: ${interviewTime(application)}${application.interview_duration_minutes ? `, ${application.interview_duration_minutes} minutes` : ''}.`;
+  const where = application.interview_location ? `Where: ${application.interview_location}` : '';
+  await notify('interview_confirmed', {
+    to: applicantEmail(application),
+    subject: `Interview confirmed: ${roleLine(job)}`,
+    attachments: invite.attachments,
+    ...layout({
+      heading: 'Your interview is confirmed',
+      paragraphs: [`Hi ${firstName(application)},`, leadLine, when, where, invite.calendarLine].filter(Boolean),
+      button: { label: 'View your applications', url: DASHBOARD() },
+    }),
+  }, { application_id: application.id, job_id: job.id, time: application.interview_proposed_time });
+  if (!skipEmployer) {
+    await notifyEmployer('interview_confirmed_employer', job, {
+      subject: `Interview confirmed: ${applicantLabel(application)}, ${job.title}`,
+      heading: 'Interview confirmed',
+      paragraphs: [`Your interview with ${applicantLabel(application)} for ${job.title} is confirmed.`, when, where, invite.calendarLine].filter(Boolean),
+      attachments: invite.attachments,
+    }, { application_id: application.id });
+  }
 }
 
 // --- Match score cache (shared by Explore and job alerts) -------------------
@@ -457,17 +479,23 @@ Return a concise, evidence-based summary an employer can skim.`;
     const when = parseTime(payload?.proposed_time, 'proposed_time');
     if (application?.status === 'withdrawn') throw fail(409, 'This candidate withdrew their application');
     const isReschedule = !!application?.interview_proposed_time;
+    const timezone = validZone(payload?.timezone) || application?.interview_timezone || null;
+    const duration = Math.min(240, Math.max(15, Math.round(Number(payload?.duration_minutes) || 45)));
+    const location = String(payload?.location ?? application?.interview_location ?? '').trim().slice(0, 300);
     if (application) {
       // Save the proposal on the application so both dashboards show it;
       // a new proposal clears the candidate's previous answer.
       store.update('JobApplication', application.id, {
         status: 'interview',
         interview_proposed_time: when.toISOString(),
+        interview_timezone: timezone,
+        interview_duration_minutes: duration,
+        interview_location: location || null,
         interview_response: null,
         interview_counter_time: null,
       });
     }
-    const whenText = utcText(when);
+    const whenText = timeText(when, timezone);
     await notify('interview_invitation', {
       to: applicantEmail(application),
       subject: `${isReschedule ? 'New interview time' : 'Interview invitation'}: ${roleLine(job)}`,
@@ -478,9 +506,10 @@ Return a concise, evidence-based summary an employer can skim.`;
           isReschedule
             ? `${job.company || 'The employer'} proposed a new interview time for ${job.title}.`
             : `${job.company || 'The employer'} would like to interview you for ${job.title}.`,
-          `Proposed time: ${whenText}. Your dashboard shows it in your own time zone.`,
+          `Proposed time: ${whenText} (${duration} minutes). Your dashboard shows it in your own time zone.`,
+          location ? `Where: ${location}` : '',
           'Open your dashboard to accept, decline, or suggest another time.',
-        ],
+        ].filter(Boolean),
         button: { label: 'Respond to invitation', url: DASHBOARD() },
       }),
     }, { application_id: application?.id || payload?.application_id, job_id: job.id, proposed_time: when.toISOString(), from_user_id: user.id });
@@ -565,24 +594,12 @@ Return a concise, evidence-based summary an employer can skim.`;
       throw fail(409, 'There is no suggested time to accept');
     }
     const when = parseTime(application.interview_counter_time, 'suggested time');
-    store.update('JobApplication', application.id, {
+    const confirmed = store.update('JobApplication', application.id, {
       interview_proposed_time: when.toISOString(),
       interview_response: 'accepted',
       interview_counter_time: null,
     });
-    await notify('interview_confirmed', {
-      to: applicantEmail(application),
-      subject: `Interview confirmed: ${roleLine(job)}`,
-      ...layout({
-        heading: 'Your interview is confirmed',
-        paragraphs: [
-          `Hi ${firstName(application)},`,
-          `${job.company || 'The employer'} accepted the time you suggested for ${job.title}.`,
-          `Interview time: ${utcText(when)}. Your dashboard shows it in your own time zone.`,
-        ],
-        button: { label: 'View your applications', url: DASHBOARD() },
-      }),
-    }, { application_id: application.id, job_id: job.id, time: when.toISOString() });
+    await sendInterviewConfirmations(confirmed, job, `${job.company || 'The employer'} accepted the time you suggested for ${job.title}.`);
     return { success: true };
   },
 
@@ -599,14 +616,19 @@ Return a concise, evidence-based summary an employer can skim.`;
       counter = parseTime(counter_time, 'suggested time');
       changes.interview_counter_time = counter.toISOString();
     }
-    store.update('JobApplication', application.id, changes);
+    const updated = store.update('JobApplication', application.id, changes);
     const who = applicantLabel(application);
+    if (response === 'accepted') {
+      await sendInterviewConfirmations(updated, job, `You accepted the interview for ${job.title}.`, { skipEmployer: true });
+    }
+    const invite = response === 'accepted' ? inviteParts(updated, job) : null;
     const lines = {
-      accepted: `${who} accepted the interview for ${job.title} on ${utcText(application.interview_proposed_time)}.`,
+      accepted: `${who} accepted the interview for ${job.title} on ${interviewTime(application)}.${invite ? `\n${invite.calendarLine}` : ''}`,
       declined: `${who} declined the interview for ${job.title}.`,
-      counter_proposed: `${who} can't make the proposed interview time for ${job.title} and suggested ${counter ? utcText(counter) : 'another time'} instead. You can accept it or propose a new time from the candidate's card.`,
+      counter_proposed: `${who} can't make the proposed interview time for ${job.title} and suggested ${counter ? interviewTime(application, counter) : 'another time'} instead. You can accept it or propose a new time from the candidate's card.`,
     };
     await notifyEmployer(`interview_${response}`, job, {
+      attachments: invite?.attachments,
       subject: `${who} ${response === 'counter_proposed' ? 'suggested a new interview time' : `${response} the interview`}: ${job.title}`,
       heading: response === 'counter_proposed' ? 'New interview time suggested' : `Interview ${response}`,
       paragraphs: [lines[response]],

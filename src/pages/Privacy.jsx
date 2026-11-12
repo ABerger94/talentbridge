@@ -39,10 +39,13 @@ const sections = [
           page, and your job title), which we use to verify employers and show with your postings; job postings (including documents you upload to fill a posting), and the
           actions you take on candidates.</p>
         <p><strong>Emails we send.</strong> A record of each notification (type, recipient, and whether it was
-          delivered).</p>
+          delivered), and your job alert settings if you turn alerts on.</p>
         <p><strong>Technical information.</strong> Our hosting provider records standard server logs (such as IP
           address, browser type, and the pages requested). We keep short-lived counters keyed to your account or IP
-          address to limit abuse (for example, too many sign-in attempts).</p>
+          address to limit abuse (for example, too many sign-in attempts). When something breaks, we record the error
+          message, the page it happened on, and your account ID if you're signed in, so we can fix it. We count visits
+          to job postings for the employer as anonymous daily counts (a one-way hash, not your IP address or account).
+          We keep a log of security-relevant account actions (such as password changes) and administrator actions.</p>
         <p>We do not use advertising or analytics trackers, and we do not use cookies for tracking. Your browser’s
           local storage keeps your sign-in token so you stay signed in.</p>
       </>
@@ -57,7 +60,9 @@ const sections = [
         <li>To provide AI features: parsing resumes and job descriptions, matching candidates and roles, capability
           assessments, interview preparation, and resume critique.</li>
         <li>To send emails you need: verification and password-reset codes, and updates about applications,
-          invitations, interviews, offers, and new messages. We do not send marketing email.</li>
+          invitations, interviews (including calendar invites), offers, and new messages; and, only if you turn them
+          on, job alert emails about new roles that match your profile (turn them off in Settings or with the link in
+          any alert). We do not send marketing email.</li>
         <li>To keep the service secure and prevent abuse, and to fix problems.</li>
         <li>To comply with the law.</li>
       </ul>
@@ -95,7 +100,8 @@ const sections = [
         <p>We rely on these companies to run {LEGAL.siteName}. They process your information on our behalf:</p>
         <ul>
           <li><strong>Hosting and database:</strong> Vercel (website and servers) and Turso (database, including
-            uploaded files).</li>
+            uploaded files). Where configured, uploaded files are stored privately with an S3-compatible storage
+            provider (such as Cloudflare R2) instead.</li>
           <li><strong>Sign-in:</strong> Google, if you choose “Continue with Google”.</li>
           <li><strong>Email delivery:</strong> Brevo, and where configured, Google Gmail or Resend.</li>
           <li><strong>AI providers:</strong> to power AI features we send the relevant text (for example, profile
@@ -125,6 +131,12 @@ const sections = [
           meant to help people, not to replace them. {LEGAL.siteName} does not make hiring decisions and does not
           automatically reject anyone; employers decide whom to contact, interview, and hire.
         </p>
+        <p>
+          When AI scores how a candidate fits a role, it receives their skills, experience, and application text, but
+          not their name, email address, location, or links, and it is instructed not to consider characteristics
+          such as gender, race, age, religion, or disability. We periodically test it by scoring otherwise identical
+          made-up candidates that differ only in such details. Scores are labeled as AI-assisted.
+        </p>
         <p>If you think an AI-generated summary about you is inaccurate, update your profile or contact us at {mail}.</p>
       </>
     ),
@@ -134,9 +146,12 @@ const sections = [
     title: "How long we keep information",
     body: (
       <ul>
-        <li>Account, profile, job, and application data: for as long as your account exists, and deleted within 30 days
-          of an account-deletion request (except where we must keep something to comply with the law or resolve
-          disputes).</li>
+        <li>Account, profile, job, and application data: for as long as your account exists. Deleting your account in
+          Settings removes it right away; requests by email are completed within 30 days (except where we must keep
+          something to comply with the law or resolve disputes). Employers you applied to keep an anonymous record that
+          a deleted user applied, without your name, contact details, resume, or cover letter.</li>
+        <li>Error reports: up to the most recent 500 distinct problems. Job posting visit counts: anonymous, kept while
+          the posting exists.</li>
         <li>Verification and reset codes: up to 10 minutes. Abuse-prevention counters: up to 24 hours.</li>
         <li>Messages: for as long as both related accounts exist; deleted with your account on request (the other
           person’s copies of their own messages may remain).</li>
@@ -151,12 +166,14 @@ const sections = [
     body: (
       <>
         <p>You can view and edit your profile at any time, withdraw applications, and decline invitations or offers in
-          the app. You can also email {mail} to:</p>
+          the app. In <Link to="/settings">Account settings</Link> you can also:</p>
         <ul>
-          <li>get a copy of your personal information;</li>
-          <li>correct information you can’t edit yourself;</li>
-          <li>delete your account and personal information.</li>
+          <li>download a copy of your personal information;</li>
+          <li>delete your account and personal information (this happens right away);</li>
+          <li>turn job alert emails on or off, and sign out of other devices.</li>
         </ul>
+        <p>You can also email {mail} to make any of these requests, or to correct information you can’t edit
+          yourself.</p>
         <p>We’ll respond within 30 days and may need to confirm your identity first. Depending on where you live (for
           example, California), you may have additional rights under local law; we’ll honor them as required. We won’t
           treat you differently for exercising your rights.</p>
@@ -169,7 +186,8 @@ const sections = [
     body: (
       <p>
         We protect your information with measures such as hashed passwords, encrypted connections (HTTPS), private
-        file links that expire, access controls on resumes and applications, and limits on repeated sign-in attempts.
+        file links that expire, access controls on resumes and applications, limits on repeated sign-in attempts,
+        ending all other sessions when a password is changed or reset, and browser security protections.
         No system is perfectly secure, so we can’t guarantee absolute security. If you believe your account has been
         compromised, contact us right away.
       </p>
