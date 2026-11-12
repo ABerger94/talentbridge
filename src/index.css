@@ -97,6 +97,8 @@
     text-decoration-line: line-through; text-decoration-thickness: max(2px, 0.055em);
     text-decoration-color: transparent; animation: tb-strike .5s ease-out .8s both;
   }
+  /* The hero's struck word: a bolder line (~6px at full headline size). */
+  .tb-strike-bold { text-decoration-thickness: max(4px, 0.08em); }
   .tb-rise-late { display: inline-block; animation: tb-up .8s ease-out 1.4s both; }
   .tb-rise { animation: tb-up .7s ease-out both; }
   .tb-edge { stroke-dasharray: 240; stroke-dashoffset: 240; animation: tb-draw 1.1s ease-out forwards; }
