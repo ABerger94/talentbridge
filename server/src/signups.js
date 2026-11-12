@@ -75,7 +75,7 @@ async function sendReminder(userId) {
     const next = new Date(Date.parse(data.last_reminder_at) + REMINDER_GAP_MS);
     throw fail(429, `Already reminded on ${new Date(data.last_reminder_at).toLocaleDateString('en-US')}. Next reminder possible ${next.toLocaleDateString('en-US')}.`);
   }
-  const profile = store.all('SeekerProfile').find((p) => p.created_by_id === row.id) || null;
+  const profile = store.filter('SeekerProfile', { created_by_id: row.id })[0] || null;
   const progress = progressFor(row, profile);
   // Same rule as the list: verified seekers with a complete profile are done.
   const complete = row.role === 'job_seeker' && row.email_verified && profile && profileCompleteness(profile).complete;
