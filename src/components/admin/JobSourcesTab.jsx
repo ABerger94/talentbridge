@@ -35,13 +35,13 @@ const STATUS = {
 
 function AddSource({ kinds, onAdded }) {
   const [kind, setKind] = useState("greenhouse");
-  const [form, setForm] = useState({ max_jobs: 30 });
+  const [form, setForm] = useState({ max_jobs: 100 });
   const k = kinds.find((x) => x.id === kind);
   const add = useMutation({
     mutationFn: () => base44.admin.addJobSource({ kind, ...form }),
     onSuccess: (src) => {
       toast.success(`Added ${src.name}${src.preview != null ? ` (${src.preview} US roles on the board)` : ""}. Run it to import its jobs.`);
-      setForm({ max_jobs: 30 });
+      setForm({ max_jobs: 100 });
       onAdded();
     },
     onError: (e) => toast.error(e?.message || "Couldn't add that source."),
@@ -52,7 +52,7 @@ function AddSource({ kinds, onAdded }) {
       <div className="grid gap-3 sm:grid-cols-[180px_minmax(0,1fr)_minmax(0,1fr)_110px]">
         <div className="space-y-1.5">
           <Label htmlFor="src-kind">Type</Label>
-          <Select value={kind} onValueChange={(v) => { setKind(v); setForm({ max_jobs: 30 }); }}>
+          <Select value={kind} onValueChange={(v) => { setKind(v); setForm({ max_jobs: 100 }); }}>
             <SelectTrigger id="src-kind"><SelectValue /></SelectTrigger>
             <SelectContent>
               {kinds.map((x) => <SelectItem key={x.id} value={x.id}>{x.label}{x.company ? " board" : ""}</SelectItem>)}

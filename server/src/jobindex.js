@@ -179,8 +179,14 @@ function suggestFor(profile, { limit = 25, since = null, excludeIds = [] } = {})
   const { strong, weak } = profileTokens(profile);
   if (!strong.size && !weak.size) return [];
   const args = [];
-  let sql = "SELECT * FROM job_index WHERE status = 'active'";
+  // Narrow in the database first: TalentBridge-posted roles, plus imported
+  // ones that mention at least one of the profile's key words. Keeps this
+  // cheap with thousands of listings.
+  const keys = [...strong, ...weak].slice(0, 12);
+  let sql = "SELECT job_id, imported, title, posted, text FROM job_index WHERE status = 'active'";
   if (since) { sql += ' AND posted > ?'; args.push(since); }
+  sql += ` AND (imported = 0 OR ${keys.map(() => 'text LIKE ?').join(' OR ')})`;
+  args.push(...keys.map((k) => `%${k}%`));
   const skip = new Set(excludeIds);
   const scored = [];
   for (const r of db.prepare(sql).all(...args)) {
@@ -194,7 +200,11 @@ function suggestFor(profile, { limit = 25, since = null, excludeIds = [] } = {})
     if (score > 0) scored.push({ r, score });
   }
   scored.sort((a, b) => b.score - a.score || String(b.r.posted).localeCompare(String(a.r.posted)));
-  return scored.slice(0, limit).map(({ r, score }) => ({ ...publicRow(r), relevance: score }));
+  const top = scored.slice(0, limit);
+  if (!top.length) return [];
+  const full = new Map(db.prepare(`SELECT * FROM job_index WHERE job_id IN (${top.map(() => '?').join(', ')})`)
+    .all(...top.map(({ r }) => r.job_id)).map((row) => [row.job_id, row]));
+  return top.filter(({ r }) => full.has(r.job_id)).map(({ r, score }) => ({ ...publicRow(full.get(r.job_id)), relevance: score }));
 }
 
 function counts() {

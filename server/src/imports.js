@@ -30,38 +30,41 @@ const KINDS = {
 // Starting set: real boards checked to be live, picked for a spread of work
 // (clinical, food service, retail and auto, nonprofit, aerospace technicians,
 // logistics, finance, media, software). Admins add or remove them in Admin.
+// Jobs kept per source (newest, local first). Admins can change it per source.
+const MAX_PER_SOURCE = 100;
+
 const DEFAULT_SOURCES = [
-  ['greenhouse', 'onemedical', 'One Medical', 40], ['greenhouse', 'oscar', 'Oscar Health', 30],
-  ['lever', 'lyrahealth', 'Lyra Health', 40], ['lever', 'ro', 'Ro', 25], ['greenhouse', 'talkspace', 'Talkspace', 20],
-  ['greenhouse', 'zocdoc', 'Zocdoc', 25], ['greenhouse', 'mavenclinic', 'Maven Clinic', 20], ['greenhouse', 'honor', 'Honor', 15],
-  ['greenhouse', 'omadahealth', 'Omada Health', 15], ['greenhouse', 'twinhealth', 'Twin Health', 20], ['greenhouse', 'tia', 'Tia', 20],
-  ['greenhouse', 'galileo', 'Galileo', 10], ['ashby', 'benchling', 'Benchling', 20],
-  ['greenhouse', 'sweetgreen', 'sweetgreen', 40], ['greenhouse', 'toast', 'Toast', 40], ['greenhouse', 'instacart', 'Instacart', 30],
-  ['greenhouse', 'carvana', 'Carvana', 60], ['greenhouse', 'glossier', 'Glossier', 20], ['greenhouse', 'peloton', 'Peloton', 20],
-  ['greenhouse', 'codeforamerica', 'Code for America', 10], ['greenhouse', 'khanacademy', 'Khan Academy', 10],
-  ['greenhouse', 'wikimedia', 'Wikimedia Foundation', 16], ['greenhouse', 'mozilla', 'Mozilla', 25], ['greenhouse', 'duolingo', 'Duolingo', 25],
-  ['greenhouse', 'rocketlab', 'Rocket Lab', 50], ['greenhouse', 'relativity', 'Relativity Space', 40], ['greenhouse', 'astranis', 'Astranis', 30],
-  ['lever', 'zoox', 'Zoox', 40], ['greenhouse', 'samsara', 'Samsara', 30], ['greenhouse', 'flexport', 'Flexport', 30],
-  ['greenhouse', 'affirm', 'Affirm', 25], ['greenhouse', 'sofi', 'SoFi', 25], ['greenhouse', 'betterment', 'Betterment', 15],
-  ['greenhouse', 'gusto', 'Gusto', 25], ['greenhouse', 'mercury', 'Mercury', 20], ['greenhouse', 'chime', 'Chime', 25],
-  ['greenhouse', 'robinhood', 'Robinhood', 25], ['ashby', 'ramp', 'Ramp', 25],
-  ['greenhouse', 'gitlab', 'GitLab', 25], ['greenhouse', 'reddit', 'Reddit', 25], ['greenhouse', 'pinterest', 'Pinterest', 25],
-  ['greenhouse', 'figma', 'Figma', 20], ['greenhouse', 'axios', 'Axios', 20], ['greenhouse', 'twilio', 'Twilio', 20],
-  ['greenhouse', 'datadog', 'Datadog', 25], ['greenhouse', 'dropbox', 'Dropbox', 20], ['greenhouse', 'asana', 'Asana', 20],
-  ['greenhouse', 'everlaw', 'Everlaw', 15], ['greenhouse', 'nextdoor', 'Nextdoor', 15], ['greenhouse', 'taskrabbit', 'Taskrabbit', 15],
-  ['ashby', 'notion', 'Notion', 20], ['ashby', 'openai', 'OpenAI', 30], ['ashby', 'harvey', 'Harvey', 20], ['ashby', 'vanta', 'Vanta', 20],
-  ['ashby', 'replit', 'Replit', 15], ['ashby', 'supabase', 'Supabase', 15], ['lever', 'palantir', 'Palantir', 30], ['lever', 'greenlight', 'Greenlight', 10],
+  ['greenhouse', 'onemedical', 'One Medical', MAX_PER_SOURCE], ['greenhouse', 'oscar', 'Oscar Health', MAX_PER_SOURCE],
+  ['lever', 'lyrahealth', 'Lyra Health', MAX_PER_SOURCE], ['lever', 'ro', 'Ro', MAX_PER_SOURCE], ['greenhouse', 'talkspace', 'Talkspace', MAX_PER_SOURCE],
+  ['greenhouse', 'zocdoc', 'Zocdoc', MAX_PER_SOURCE], ['greenhouse', 'mavenclinic', 'Maven Clinic', MAX_PER_SOURCE], ['greenhouse', 'honor', 'Honor', MAX_PER_SOURCE],
+  ['greenhouse', 'omadahealth', 'Omada Health', MAX_PER_SOURCE], ['greenhouse', 'twinhealth', 'Twin Health', MAX_PER_SOURCE], ['greenhouse', 'tia', 'Tia', MAX_PER_SOURCE],
+  ['greenhouse', 'galileo', 'Galileo', MAX_PER_SOURCE], ['ashby', 'benchling', 'Benchling', MAX_PER_SOURCE],
+  ['greenhouse', 'sweetgreen', 'sweetgreen', MAX_PER_SOURCE], ['greenhouse', 'toast', 'Toast', MAX_PER_SOURCE], ['greenhouse', 'instacart', 'Instacart', MAX_PER_SOURCE],
+  ['greenhouse', 'carvana', 'Carvana', MAX_PER_SOURCE], ['greenhouse', 'glossier', 'Glossier', MAX_PER_SOURCE], ['greenhouse', 'peloton', 'Peloton', MAX_PER_SOURCE],
+  ['greenhouse', 'codeforamerica', 'Code for America', MAX_PER_SOURCE], ['greenhouse', 'khanacademy', 'Khan Academy', MAX_PER_SOURCE],
+  ['greenhouse', 'wikimedia', 'Wikimedia Foundation', MAX_PER_SOURCE], ['greenhouse', 'mozilla', 'Mozilla', MAX_PER_SOURCE], ['greenhouse', 'duolingo', 'Duolingo', MAX_PER_SOURCE],
+  ['greenhouse', 'rocketlab', 'Rocket Lab', MAX_PER_SOURCE], ['greenhouse', 'relativity', 'Relativity Space', MAX_PER_SOURCE], ['greenhouse', 'astranis', 'Astranis', MAX_PER_SOURCE],
+  ['lever', 'zoox', 'Zoox', MAX_PER_SOURCE], ['greenhouse', 'samsara', 'Samsara', MAX_PER_SOURCE], ['greenhouse', 'flexport', 'Flexport', MAX_PER_SOURCE],
+  ['greenhouse', 'affirm', 'Affirm', MAX_PER_SOURCE], ['greenhouse', 'sofi', 'SoFi', MAX_PER_SOURCE], ['greenhouse', 'betterment', 'Betterment', MAX_PER_SOURCE],
+  ['greenhouse', 'gusto', 'Gusto', MAX_PER_SOURCE], ['greenhouse', 'mercury', 'Mercury', MAX_PER_SOURCE], ['greenhouse', 'chime', 'Chime', MAX_PER_SOURCE],
+  ['greenhouse', 'robinhood', 'Robinhood', MAX_PER_SOURCE], ['ashby', 'ramp', 'Ramp', MAX_PER_SOURCE],
+  ['greenhouse', 'gitlab', 'GitLab', MAX_PER_SOURCE], ['greenhouse', 'reddit', 'Reddit', MAX_PER_SOURCE], ['greenhouse', 'pinterest', 'Pinterest', MAX_PER_SOURCE],
+  ['greenhouse', 'figma', 'Figma', MAX_PER_SOURCE], ['greenhouse', 'axios', 'Axios', MAX_PER_SOURCE], ['greenhouse', 'twilio', 'Twilio', MAX_PER_SOURCE],
+  ['greenhouse', 'datadog', 'Datadog', MAX_PER_SOURCE], ['greenhouse', 'dropbox', 'Dropbox', MAX_PER_SOURCE], ['greenhouse', 'asana', 'Asana', MAX_PER_SOURCE],
+  ['greenhouse', 'everlaw', 'Everlaw', MAX_PER_SOURCE], ['greenhouse', 'nextdoor', 'Nextdoor', MAX_PER_SOURCE], ['greenhouse', 'taskrabbit', 'Taskrabbit', MAX_PER_SOURCE],
+  ['ashby', 'notion', 'Notion', MAX_PER_SOURCE], ['ashby', 'openai', 'OpenAI', MAX_PER_SOURCE], ['ashby', 'harvey', 'Harvey', MAX_PER_SOURCE], ['ashby', 'vanta', 'Vanta', MAX_PER_SOURCE],
+  ['ashby', 'replit', 'Replit', MAX_PER_SOURCE], ['ashby', 'supabase', 'Supabase', MAX_PER_SOURCE], ['lever', 'palantir', 'Palantir', MAX_PER_SOURCE], ['lever', 'greenlight', 'Greenlight', MAX_PER_SOURCE],
   // Maryland / DC / Virginia employers.
-  ['greenhouse', 'appian', 'Appian', 60], ['lever', 'aledade', 'Aledade', 35], ['greenhouse', 'aclu', 'ACLU', 17],
-  ['greenhouse', 'huntress', 'Huntress', 30], ['greenhouse', 'dragos', 'Dragos', 30], ['greenhouse', 'navapbc', 'Nava PBC', 21],
-  ['ashby', 'socure', 'Socure', 30], ['greenhouse', 'oddball', 'Oddball', 12], ['greenhouse', 'civisanalytics', 'Civis Analytics', 5],
-  ['remotive', '', 'Remotive (remote jobs)', 120],
-  ['usajobs', JSON.stringify({ location: 'Maryland' }), 'USAJOBS: Maryland', 80],
-  ['usajobs', JSON.stringify({ location: 'Washington, District of Columbia' }), 'USAJOBS: Washington, DC', 60],
-  ['usajobs', JSON.stringify({ location: 'Virginia' }), 'USAJOBS: Virginia', 60],
-  ['adzuna', JSON.stringify({ where: 'Maryland' }), 'Adzuna: Maryland', 100],
-  ['adzuna', JSON.stringify({ where: 'Washington, DC' }), 'Adzuna: Washington, DC', 60],
-  ['jooble', JSON.stringify({ location: 'Maryland' }), 'Jooble: Maryland', 80],
+  ['greenhouse', 'appian', 'Appian', MAX_PER_SOURCE], ['lever', 'aledade', 'Aledade', MAX_PER_SOURCE], ['greenhouse', 'aclu', 'ACLU', MAX_PER_SOURCE],
+  ['greenhouse', 'huntress', 'Huntress', MAX_PER_SOURCE], ['greenhouse', 'dragos', 'Dragos', MAX_PER_SOURCE], ['greenhouse', 'navapbc', 'Nava PBC', MAX_PER_SOURCE],
+  ['ashby', 'socure', 'Socure', MAX_PER_SOURCE], ['greenhouse', 'oddball', 'Oddball', MAX_PER_SOURCE], ['greenhouse', 'civisanalytics', 'Civis Analytics', MAX_PER_SOURCE],
+  ['remotive', '', 'Remotive (remote jobs)', MAX_PER_SOURCE],
+  ['usajobs', JSON.stringify({ location: 'Maryland' }), 'USAJOBS: Maryland', MAX_PER_SOURCE],
+  ['usajobs', JSON.stringify({ location: 'Washington, District of Columbia' }), 'USAJOBS: Washington, DC', MAX_PER_SOURCE],
+  ['usajobs', JSON.stringify({ location: 'Virginia' }), 'USAJOBS: Virginia', MAX_PER_SOURCE],
+  ['adzuna', JSON.stringify({ where: 'Maryland' }), 'Adzuna: Maryland', MAX_PER_SOURCE],
+  ['adzuna', JSON.stringify({ where: 'Washington, DC' }), 'Adzuna: Washington, DC', MAX_PER_SOURCE],
+  ['jooble', JSON.stringify({ location: 'Maryland' }), 'Jooble: Maryland', MAX_PER_SOURCE],
 ];
 
 db.exec(`
@@ -71,7 +74,7 @@ CREATE TABLE IF NOT EXISTS job_sources (
   token TEXT NOT NULL DEFAULT '',
   name TEXT NOT NULL,
   enabled INTEGER NOT NULL DEFAULT 1,
-  max_jobs INTEGER NOT NULL DEFAULT 30,
+  max_jobs INTEGER NOT NULL DEFAULT 100,
   last_run_at TEXT,
   last_status TEXT,
   last_error TEXT,
@@ -104,6 +107,12 @@ function seedDefaults() {
   }
 }
 seedDefaults();
+
+// One-time: sources saved with the old caps all move to MAX_PER_SOURCE.
+if (!db.prepare("SELECT 1 FROM app_flags WHERE key = 'job_sources_max_100'").get()) {
+  db.prepare('UPDATE job_sources SET max_jobs = ?').run(MAX_PER_SOURCE);
+  db.prepare("INSERT OR REPLACE INTO app_flags (key, value) VALUES ('job_sources_max_100', ?)").run(new Date().toISOString());
+}
 
 function fail(status, message) {
   return Object.assign(new Error(message), { status });
@@ -579,7 +588,7 @@ async function addSource(body) {
     kind,
     token,
     name: String(body.name || '').trim().slice(0, 80) || (KINDS[kind].company ? token : `${KINDS[kind].label}${token && token !== '{}' ? `: ${Object.values(parseQuery(token)).join(', ')}` : ''}`),
-    max_jobs: Math.min(Math.max(parseInt(body.max_jobs, 10) || 30, 1), 200),
+    max_jobs: Math.min(Math.max(parseInt(body.max_jobs, 10) || MAX_PER_SOURCE, 1), 200),
   };
   // Company boards: check the board exists before saving it.
   if (KINDS[kind].company) {
@@ -598,7 +607,7 @@ function updateSource(id, body) {
     db.prepare('UPDATE job_sources SET enabled = ? WHERE id = ?').run(body.enabled ? 1 : 0, id);
     if (!body.enabled) closeSourceJobs(id);
   }
-  if ('max_jobs' in body) db.prepare('UPDATE job_sources SET max_jobs = ? WHERE id = ?').run(Math.min(Math.max(parseInt(body.max_jobs, 10) || 30, 1), 200), id);
+  if ('max_jobs' in body) db.prepare('UPDATE job_sources SET max_jobs = ? WHERE id = ?').run(Math.min(Math.max(parseInt(body.max_jobs, 10) || MAX_PER_SOURCE, 1), 200), id);
   if ('name' in body && String(body.name).trim()) db.prepare('UPDATE job_sources SET name = ? WHERE id = ?').run(String(body.name).trim().slice(0, 80), id);
   return listSources().find((s) => s.id === id);
 }
