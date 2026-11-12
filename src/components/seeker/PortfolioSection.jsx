@@ -1,144 +1,160 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Github, Globe, CheckCircle2, AlertCircle } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Loader2, Link2, Plus, Trash2, Sparkles, CheckCircle2, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
+import ProfessionalLinks, { LINK_TYPES, linksOf } from "./ProfessionalLinks";
+
+const MAX = 8;
+
+function guessType(url) {
+  const u = url.toLowerCase();
+  if (u.includes("linkedin.com")) return "linkedin";
+  if (u.includes("github.com") || u.includes("gitlab.com")) return "github";
+  if (/behance\.net|dribbble\.com|artstation\.com|vimeo\.com|youtube\.com|medium\.com|substack\.com/.test(u)) return "portfolio";
+  return "website";
+}
 
 export default function PortfolioSection({ seeker, onUpdate }) {
-  const [githubUrl, setGithubUrl] = useState(seeker?.github_url || "");
-  const [portfolioUrl, setPortfolioUrl] = useState(seeker?.portfolio_url || "");
-  const [loading, setLoading] = useState(false);
+  const [rows, setRows] = useState(() => linksOf(seeker).map((l) => ({ ...l, touched: true })));
+  const [saving, setSaving] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
-  const handleSaveUrls = async () => {
-    setLoading(true);
-    try {
-      await base44.entities.SeekerProfile.update(seeker.id, {
-        github_url: githubUrl || undefined,
-        portfolio_url: portfolioUrl || undefined
-      });
-      toast.success("Portfolio URLs saved!");
-      onUpdate?.();
-    } catch (error) {
-      toast.error("Failed to save URLs");
-    }
-    setLoading(false);
-  };
+  // Reload from the saved profile (e.g. after saving, links come back cleaned
+  // of tracking parameters).
+  const savedKey = JSON.stringify(linksOf(seeker));
+  useEffect(() => {
+    setRows(JSON.parse(savedKey).map((l) => ({ ...l, touched: true })));
+  }, [savedKey]);
 
-  const handleAnalyze = async () => {
-    if (!githubUrl && !portfolioUrl) {
-      setErrorMessage("Please add at least one portfolio URL.");
-      return;
-    }
+  const update = (i, patch) => setRows((r) => r.map((row, j) => (j === i ? { ...row, ...patch } : row)));
+  const filled = rows.filter((r) => r.url.trim());
 
+  const save = async () => {
+    setSaving(true);
     setErrorMessage("");
-    setAnalyzing(true);
     try {
-      // A brand-new seeker has no saved profile yet — create it so there is something to analyze into
+      const professional_links = filled.map(({ url, type, label }) => ({ url: url.trim(), type, label }));
       let profileId = seeker?.id;
       if (!profileId) {
-        const created = await base44.entities.SeekerProfile.create({
-          headline: "",
-          github_url: githubUrl || undefined,
-          portfolio_url: portfolioUrl || undefined
-        });
+        const created = await base44.entities.SeekerProfile.create({ professional_links });
         profileId = created.id;
+      } else {
+        await base44.entities.SeekerProfile.update(profileId, { professional_links });
       }
-
-      await base44.functions.invoke("analyzePortfolio", {
-        seeker_profile_id: profileId,
-        github_url: githubUrl,
-        portfolio_url: portfolioUrl
-      });
-      toast.success("Portfolio analyzed! Employers can now see your strengths.");
+      toast.success("Links saved. Employers will see them on your profile.");
       onUpdate?.();
+      return profileId;
     } catch (error) {
-      const message =
-        error?.response?.data?.error ||
-        error?.data?.error ||
-        error?.message ||
-        "Failed to analyze portfolio";
+      const message = error?.message || "Couldn't save your links.";
       setErrorMessage(message);
       toast.error(message);
+      return null;
+    } finally {
+      setSaving(false);
     }
-    setAnalyzing(false);
+  };
+
+  const analyze = async () => {
+    if (!filled.length) {
+      setErrorMessage("Add at least one link first.");
+      return;
+    }
+    const profileId = await save(); // analyze what's saved
+    if (!profileId) return;
+    setAnalyzing(true);
+    try {
+      await base44.functions.invoke("analyzePortfolio", { seeker_profile_id: profileId });
+      toast.success("Links analyzed! Employers can now see what your pages show.");
+      onUpdate?.();
+    } catch (error) {
+      const message = error?.message || "Couldn't analyze your links.";
+      setErrorMessage(message);
+      toast.error(message);
+    } finally {
+      setAnalyzing(false);
+    }
   };
 
   const analysis = seeker?.portfolio_analysis;
+  // Older analyses used developer-specific fields; show whichever exists.
+  const strengths = analysis?.strengths || analysis?.technical_strengths || [];
+  const overview = analysis?.overview || analysis?.github_analysis || "";
+  const highlights = analysis?.highlights || (analysis?.project_highlights || []).map((p) => ({ title: p.name, detail: p.impact }));
 
   return (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <Globe className="w-5 h-5" /> Your Portfolio
+          <Link2 className="w-5 h-5" /> Professional Links
         </CardTitle>
         <p className="text-xs text-muted-foreground mt-1">
-          Connect your GitHub and portfolio so employers see your real capabilities beyond the resume.
+          Add the pages that show your work: your website, LinkedIn, a practice or booking page, a portfolio, GitHub,
+          or anything else. Employers see these on your profile and applications.
         </p>
       </CardHeader>
 
       <CardContent className="space-y-4">
-        {/* URL Inputs */}
         <div className="space-y-3">
-          <div>
-            <Label htmlFor="github" className="text-sm flex items-center gap-2 mb-2">
-              <Github className="w-4 h-4" /> GitHub Profile
-            </Label>
-            <Input
-              id="github"
-              placeholder="https://github.com/yourname"
-              value={githubUrl}
-              onChange={(e) => setGithubUrl(e.target.value)}
-              className="text-sm"
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="portfolio" className="text-sm flex items-center gap-2 mb-2">
-              <Globe className="w-4 h-4" /> Portfolio Website
-            </Label>
-            <Input
-              id="portfolio"
-              placeholder="https://yourportfolio.com"
-              value={portfolioUrl}
-              onChange={(e) => setPortfolioUrl(e.target.value)}
-              className="text-sm"
-            />
-          </div>
+          {rows.map((row, i) => (
+            <div key={i} className="rounded-lg border p-3 space-y-2 sm:space-y-0 sm:flex sm:items-center sm:gap-2">
+              <Select value={row.type} onValueChange={(type) => update(i, { type, touched: true })}>
+                <SelectTrigger className="sm:w-[130px] text-sm" aria-label="Link type"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {LINK_TYPES.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <Input
+                value={row.url}
+                onChange={(e) => {
+                  const url = e.target.value;
+                  update(i, { url, ...(row.touched ? {} : { type: guessType(url) }) });
+                }}
+                placeholder="https://…"
+                inputMode="url"
+                className="text-sm sm:flex-1"
+                aria-label="Link address"
+              />
+              <div className="flex gap-2">
+                <Input
+                  value={row.label}
+                  onChange={(e) => update(i, { label: e.target.value })}
+                  placeholder="Label (optional)"
+                  maxLength={60}
+                  className="text-sm sm:w-[150px]"
+                  aria-label="Link label"
+                />
+                <Button type="button" variant="ghost" size="icon" onClick={() => setRows((r) => r.filter((_, j) => j !== i))} aria-label="Remove link">
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+          ))}
+          {rows.length < MAX && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="gap-1.5 text-xs"
+              onClick={() => setRows((r) => [...r, { url: "", type: "website", label: "", touched: false }])}
+            >
+              <Plus className="w-3.5 h-3.5" /> Add a link
+            </Button>
+          )}
         </div>
 
-        {/* Save & Analyze */}
-        <div className="flex gap-2 pt-2">
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={handleSaveUrls}
-            disabled={loading}
-            className="text-xs"
-          >
-            {loading ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : null}
-            Save URLs
+        <div className="flex gap-2 pt-1 flex-wrap">
+          <Button size="sm" variant="outline" onClick={save} disabled={saving || analyzing} className="text-xs">
+            {saving && !analyzing ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : null}
+            Save links
           </Button>
-          <Button
-            size="sm"
-            onClick={handleAnalyze}
-            disabled={analyzing || (!githubUrl && !portfolioUrl)}
-            className="text-xs gap-1"
-          >
-            {analyzing ? (
-              <>
-                <Loader2 className="w-3 h-3 animate-spin" /> Analyzing...
-              </>
-            ) : (
-              <>
-                <Globe className="w-3 h-3" /> Analyze Portfolio
-              </>
-            )}
+          <Button size="sm" onClick={analyze} disabled={analyzing || saving || !filled.length} className="text-xs gap-1">
+            {analyzing ? <><Loader2 className="w-3 h-3 animate-spin" /> Analyzing…</> : <><Sparkles className="w-3 h-3" /> Analyze my links</>}
           </Button>
         </div>
 
@@ -149,86 +165,56 @@ export default function PortfolioSection({ seeker, onUpdate }) {
           </div>
         )}
 
-        {/* Analysis Results */}
+        {linksOf(seeker).length > 0 && (
+          <div className="space-y-1.5">
+            <p className="text-xs font-semibold text-muted-foreground">What employers see</p>
+            <ProfessionalLinks links={linksOf(seeker)} />
+          </div>
+        )}
+
         {analysis && (
           <div className="rounded-lg bg-accent/5 border border-accent/20 p-4 space-y-3">
             <div className="flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4 text-accent" />
-              <span className="text-xs font-semibold text-accent">Portfolio Analyzed</span>
+              <span className="text-xs font-semibold text-accent">Links analyzed</span>
               {analysis.last_analyzed && (
-                <span className="text-xs text-muted-foreground ml-auto">
-                  {new Date(analysis.last_analyzed).toLocaleDateString()}
-                </span>
+                <span className="text-xs text-muted-foreground ml-auto">{new Date(analysis.last_analyzed).toLocaleDateString()}</span>
               )}
             </div>
-
-            {analysis.technical_strengths && analysis.technical_strengths.length > 0 && (
+            {overview && <p className="text-sm text-foreground/90 leading-relaxed">{overview}</p>}
+            {strengths.length > 0 && (
               <div>
-                <p className="text-xs font-semibold text-foreground mb-2">Key Strengths</p>
+                <p className="text-xs font-semibold mb-1.5">Strengths</p>
                 <div className="flex flex-wrap gap-1">
-                  {analysis.technical_strengths.map((strength, idx) => (
-                    <Badge key={idx} variant="secondary" className="text-xs">
-                      {strength}
-                    </Badge>
-                  ))}
+                  {strengths.map((s, i) => <Badge key={i} variant="secondary" className="text-xs">{s}</Badge>)}
                 </div>
               </div>
             )}
-
-            {analysis.github_analysis && (
+            {analysis.credentials?.length > 0 && (
               <div>
-                <p className="text-xs font-semibold text-foreground mb-1">GitHub Profile</p>
-                <p className="text-xs text-muted-foreground leading-relaxed">{analysis.github_analysis}</p>
-              </div>
-            )}
-
-            {analysis.collaboration_signals && (
-              <div>
-                <p className="text-xs font-semibold text-foreground mb-1">Collaboration</p>
-                <p className="text-xs text-muted-foreground leading-relaxed">{analysis.collaboration_signals}</p>
-              </div>
-            )}
-
-            {analysis.architectural_patterns && (
-              <div>
-                <p className="text-xs font-semibold text-foreground mb-1">Architecture & Design</p>
-                <p className="text-xs text-muted-foreground leading-relaxed">{analysis.architectural_patterns}</p>
-              </div>
-            )}
-
-            {analysis.project_highlights && analysis.project_highlights.length > 0 && (
-              <div>
-                <p className="text-xs font-semibold text-foreground mb-2">Notable Projects</p>
-                <div className="space-y-2">
-                  {analysis.project_highlights.slice(0, 3).map((proj, idx) => (
-                    <div key={idx} className="text-xs p-2 rounded bg-background/50 border border-border/40">
-                      <p className="font-medium text-foreground">{proj.name}</p>
-                      {proj.tech_stack && proj.tech_stack.length > 0 && (
-                        <div className="flex flex-wrap gap-1 mt-1">
-                          {proj.tech_stack.map((tech, i) => (
-                            <Badge key={i} variant="outline" className="text-xs h-5 px-1">
-                              {tech}
-                            </Badge>
-                          ))}
-                        </div>
-                      )}
-                      {proj.impact && (
-                        <p className="text-muted-foreground mt-1 italic">{proj.impact}</p>
-                      )}
-                    </div>
-                  ))}
+                <p className="text-xs font-semibold mb-1.5">Credentials</p>
+                <div className="flex flex-wrap gap-1">
+                  {analysis.credentials.map((c, i) => <Badge key={i} variant="outline" className="text-xs">{c}</Badge>)}
                 </div>
               </div>
             )}
-          </div>
-        )}
-
-        {!analysis && (githubUrl || portfolioUrl) && (
-          <div className="rounded-lg bg-yellow-50 border border-yellow-200 p-3 flex gap-2">
-            <AlertCircle className="w-4 h-4 text-yellow-700 flex-shrink-0 mt-0.5" />
-            <p className="text-xs text-yellow-700">
-              Click "Analyze Portfolio" to let employers see your real capabilities and project quality.
-            </p>
+            {highlights.length > 0 && (
+              <div className="space-y-1.5">
+                <p className="text-xs font-semibold">Highlights</p>
+                {highlights.slice(0, 4).map((h, i) => (
+                  <div key={i} className="text-xs p-2 rounded bg-background/60 border border-border/40">
+                    <p className="font-medium">{h.title}</p>
+                    {h.detail && <p className="text-muted-foreground mt-0.5">{h.detail}</p>}
+                  </div>
+                ))}
+              </div>
+            )}
+            {analysis.unreadable?.length > 0 && (
+              <p className="text-[11px] text-muted-foreground">
+                Couldn’t read: {analysis.unreadable.map((u) => `${new URL(u.url).hostname} (${u.reason})`).join("; ")}.
+                Employers still see the link.
+              </p>
+            )}
           </div>
         )}
       </CardContent>

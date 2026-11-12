@@ -308,7 +308,7 @@ Return the top matches with specific reasoning.`,
         <TabsList className="mb-6 flex-wrap h-auto gap-1">
           <TabsTrigger value="profile" className="gap-1 text-xs sm:text-sm"><User className="w-3 h-3 sm:w-4 sm:h-4" /> <span className="hidden sm:inline">Profile</span></TabsTrigger>
           <TabsTrigger value="resume" className="gap-1 text-xs sm:text-sm"><FileText className="w-3 h-3 sm:w-4 sm:h-4" /> <span className="hidden sm:inline">Resume</span></TabsTrigger>
-          <TabsTrigger value="portfolio" className="gap-1 text-xs sm:text-sm"><Globe className="w-3 h-3 sm:w-4 sm:h-4" /> <span className="hidden sm:inline">Portfolio</span></TabsTrigger>
+          <TabsTrigger value="portfolio" className="gap-1 text-xs sm:text-sm"><Globe className="w-3 h-3 sm:w-4 sm:h-4" /> <span className="hidden sm:inline">Links</span></TabsTrigger>
           <TabsTrigger value="capability" className="gap-1 text-xs sm:text-sm"><Network className="w-3 h-3 sm:w-4 sm:h-4" /> <span className="hidden sm:inline">Graph</span></TabsTrigger>
           <TabsTrigger value="matches" className="gap-1 text-xs sm:text-sm"><Brain className="w-3 h-3 sm:w-4 sm:h-4" /> <span className="hidden sm:inline">Matches</span></TabsTrigger>
           <TabsTrigger value="applications" className="gap-1 text-xs sm:text-sm"><Briefcase className="w-3 h-3 sm:w-4 sm:h-4" /> <span className="hidden sm:inline">Apps</span></TabsTrigger>

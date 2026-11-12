@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import InterviewScheduler from "./InterviewScheduler";
 import { normalizePercent } from "@/lib/scales";
 import OfferDialog from "./OfferDialog";
+import ProfessionalLinks from "@/components/seeker/ProfessionalLinks";
 
 export default function CandidateCapabilityCard({ application, job, onStatusChange }) {
   const queryClient = useQueryClient();
@@ -201,6 +202,8 @@ IMPORTANT: Express "match_score" as an integer from 0 to 100. Never return it as
           </Select>
         </div>
       </div>
+
+      {application.seeker_links?.length > 0 && <ProfessionalLinks links={application.seeker_links} />}
 
       {/* Match Score Bar */}
       {assessment?.match_score && (

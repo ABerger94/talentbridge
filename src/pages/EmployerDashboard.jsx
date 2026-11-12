@@ -16,6 +16,7 @@ import {
 import { formatDistanceToNow } from "date-fns";
 import CandidateCapabilityCard from "@/components/employer/CandidateCapabilityCard";
 import EmployerStatusBanner from "@/components/employer/EmployerStatusBanner";
+import ProfessionalLinks, { linksOf } from "@/components/seeker/ProfessionalLinks";
 import { useAuth } from "@/lib/AuthContext";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
@@ -439,6 +440,7 @@ export default function EmployerDashboard() {
                       <h3 className="font-semibold text-sm">{seeker.full_name || "Name not provided"}</h3>
                       {seeker.headline && <p className="text-sm text-foreground/80 mt-0.5">{seeker.headline}</p>}
                       {seeker.bio && <p className="text-xs text-muted-foreground mt-1">{seeker.bio.substring(0, 140)}{seeker.bio.length > 140 ? "…" : ""}</p>}
+                      {linksOf(seeker).length > 0 && <div className="mt-2"><ProfessionalLinks links={linksOf(seeker)} /></div>}
                     </div>
                     <Badge variant="outline" className={`text-xs shrink-0 ${scoreTone(seeker.best_score)}`}>
                       Best {seeker.best_score}%
