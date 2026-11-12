@@ -205,15 +205,17 @@ export default function EmployerDashboard() {
       </div>
 
       <Tabs value={tab} onValueChange={setTab}>
-        <TabsList className="mb-6">
-          <TabsTrigger value="jobs" className="gap-2">
-            <Briefcase className="w-4 h-4" /> My Roles ({myJobs.length})
+        {/* On phones the three tabs must fit the screen width (they used to
+            overflow and make the whole page scroll sideways). */}
+        <TabsList className="mb-6 w-full sm:w-auto max-w-full justify-start overflow-x-auto">
+          <TabsTrigger value="jobs" className="gap-1.5 sm:gap-2 text-xs sm:text-sm">
+            <Briefcase className="w-4 h-4 shrink-0" /> <span className="hidden sm:inline">My </span>Roles ({myJobs.length})
           </TabsTrigger>
-          <TabsTrigger value="candidates" className="gap-2">
-            <Users className="w-4 h-4" /> Candidates ({allApplications.length})
+          <TabsTrigger value="candidates" className="gap-1.5 sm:gap-2 text-xs sm:text-sm">
+            <Users className="w-4 h-4 shrink-0" /> Candidates ({allApplications.length})
           </TabsTrigger>
-          <TabsTrigger value="explore" className="gap-2">
-            <Users className="w-4 h-4" /> Explore Seekers ({exploreSeekers.length})
+          <TabsTrigger value="explore" className="gap-1.5 sm:gap-2 text-xs sm:text-sm">
+            <Users className="w-4 h-4 shrink-0" /> <span className="hidden sm:inline">Explore </span>Seekers ({exploreSeekers.length})
           </TabsTrigger>
         </TabsList>
 
