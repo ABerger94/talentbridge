@@ -127,7 +127,7 @@ function Hero() {
         {seekers ? (
           <div key="seekers">
             <h1 className="font-display text-[46px] font-bold leading-none tracking-[-0.025em] sm:text-6xl lg:text-[80px]">
-              Hired for your <span className="tb-strike text-muted-foreground/80">keywords</span>
+              Hired for your <span className="tb-strike tb-strike-bold text-muted-foreground/80">keywords</span>
               <br />
               <span className="tb-rise-late text-primary">capabilities.</span>
             </h1>
