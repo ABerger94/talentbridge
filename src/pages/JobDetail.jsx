@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import {
   ArrowLeft, MapPin, Building2, Clock, DollarSign,
   Send, CheckCircle2, Loader2, TrendingUp, Heart,
-  Network, BookOpen, Layers
+  Network, BookOpen, Layers, BadgeCheck
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
@@ -137,7 +137,14 @@ export default function JobDetail() {
               </div>
               <div className="flex-1">
                 <h1 className="text-2xl sm:text-3xl font-bold">{job.title}</h1>
-                <p className="text-lg text-muted-foreground mt-0.5">{job.company}</p>
+                <p className="text-lg text-muted-foreground mt-0.5 flex items-center gap-2 flex-wrap">
+                  {job.company}
+                  {job.company_profile?.verified && (
+                    <Badge variant="outline" className="gap-1 text-xs bg-emerald-50 text-emerald-700 border-emerald-200" title="TalentBridge reviewed this employer">
+                      <BadgeCheck className="w-3.5 h-3.5" /> Verified employer
+                    </Badge>
+                  )}
+                </p>
               </div>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -290,6 +297,30 @@ export default function JobDetail() {
 
           {activePanel === "prep" && (
             <InterviewPrepEngine job={job} profile={profile} />
+          )}
+
+          {job.company_profile && (
+            <Card className="p-4 space-y-2">
+              <h3 className="font-semibold text-xs uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                <Building2 className="w-3.5 h-3.5" /> About {job.company_profile.name}
+              </h3>
+              {job.company_profile.verified && (
+                <p className="text-xs text-emerald-700 flex items-center gap-1"><BadgeCheck className="w-3.5 h-3.5" /> Reviewed by TalentBridge</p>
+              )}
+              {job.company_profile.about && <p className="text-sm text-foreground/80 leading-relaxed">{job.company_profile.about}</p>}
+              <div className="text-xs text-muted-foreground space-y-0.5">
+                {job.company_profile.size && <p>{job.company_profile.size} employees</p>}
+                {job.company_profile.location && <p>{job.company_profile.location}</p>}
+              </div>
+              <div className="flex gap-3 text-sm">
+                {job.company_profile.website && (
+                  <a href={job.company_profile.website} target="_blank" rel="noreferrer noopener" className="text-primary hover:underline">Website</a>
+                )}
+                {job.company_profile.linkedin && (
+                  <a href={job.company_profile.linkedin} target="_blank" rel="noreferrer noopener" className="text-primary hover:underline">LinkedIn</a>
+                )}
+              </div>
+            </Card>
           )}
 
           {job.skills?.length > 0 && (

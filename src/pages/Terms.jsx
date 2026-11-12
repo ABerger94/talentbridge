@@ -59,6 +59,10 @@ const sections = [
     title: "Employers",
     body: (
       <>
+        <p>
+          We review employer accounts before they can see candidates or publish roles. We may ask for more information,
+          and we may decline, suspend, or revoke approval at our discretion, for example if we can’t verify the company.
+        </p>
         <p>If you post roles or contact candidates, you agree that:</p>
         <ul>
           <li>Your postings describe real, currently available positions and are accurate, including pay where you

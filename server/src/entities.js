@@ -174,7 +174,16 @@ function checkUpdate(entity, record, changes, user) {
   if (user.role === 'admin') return null;
   const keys = Object.keys(changes);
   if (entity === 'Job') {
-    if ('status' in changes && !JOB_STATUSES.includes(changes.status)) return 'Invalid job status';
+    if ('status' in changes) {
+      if (!JOB_STATUSES.includes(changes.status)) return 'Invalid job status';
+      const { isApprovedEmployer } = require('./employers');
+      if (!isApprovedEmployer(user) && changes.status !== 'closed') {
+        return 'Your roles go live once your employer account is approved.';
+      }
+      if (record.status === 'pending_review' && changes.status !== 'closed') {
+        return 'This role goes live once your employer account is approved.';
+      }
+    }
     return null;
   }
   if (entity === 'JobApplication') {
@@ -207,6 +216,12 @@ function checkUpdate(entity, record, changes, user) {
   return null;
 }
 
+// Employers see seeker profiles only once approved.
+function hidesSeekers(user) {
+  if (!user || user.role !== 'employer') return false;
+  return !require('./employers').isApprovedEmployer(user);
+}
+
 // Short job summary attached to applications and invitations, so a seeker
 // still sees what they applied to after the role is closed (closed jobs are
 // otherwise hidden from them).
@@ -225,6 +240,11 @@ function present(entity, record, user, cache = new Map()) {
   let out = entity === 'JobApplication' ? withApplicantName(record, cache) : { ...record };
   if ((entity === 'JobApplication' || entity === 'Invitation') && out.job_id) {
     out.job = jobSummary(out.job_id, cache);
+  }
+  if (entity === 'Job') {
+    const key = `company:${out.created_by_id}`;
+    if (!cache.has(key)) cache.set(key, require('./employers').publicCompany(out.created_by_id));
+    out.company_profile = cache.get(key);
   }
   if (out.resume_url) {
     const { signFileUrl } = filesApi();
@@ -261,6 +281,11 @@ function registerEntityRoutes(app) {
       return res.status(403).json({ error: `Permission denied for create operation on ${entity} entity` });
     }
     const body = { ...(req.body || {}) };
+    if (entity === 'Job') {
+      const { isApprovedEmployer } = require('./employers');
+      if (!isApprovedEmployer(req.user)) body.status = 'pending_review'; // goes live on approval
+      else if (!JOB_STATUSES.includes(body.status)) body.status = 'active';
+    }
     if (entity === 'JobApplication') {
       // employer_user_id drives the employer's RLS read/update branch; derive
       // it from the job's owner server-side rather than trusting the client.
@@ -330,6 +355,9 @@ function registerEntityRoutes(app) {
       .filter(entity, criteria)
       .filter((r) => can(entity, 'read', req.user, r))
       .slice(0, limit);
+    if (entity === 'SeekerProfile' && hidesSeekers(req.user)) {
+      visible = visible.filter((r) => r.created_by_id === req.user.id);
+    }
     const cache = new Map();
     visible = visible.map((r) => present(entity, r, req.user, cache));
     res.json({ data: visible });
@@ -339,7 +367,8 @@ function registerEntityRoutes(app) {
     const { entity, id } = req.params;
     if (!ENTITIES.includes(entity)) return res.status(404).json({ error: 'Unknown entity' });
     const record = getRecord(entity, id);
-    if (!record || !can(entity, 'read', req.user, record)) {
+    if (!record || !can(entity, 'read', req.user, record)
+        || (entity === 'SeekerProfile' && hidesSeekers(req.user) && record.created_by_id !== req.user?.id)) {
       return res.status(404).json({ error: 'Not found' });
     }
     res.json({ data: present(entity, record, req.user) });

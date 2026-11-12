@@ -50,6 +50,10 @@ function publicUser(row) {
     role: effectiveRole(row),
     email_verified: !!row.email_verified,
     full_name: userData(row).full_name || null,
+    // Employers: 'approved' | 'pending' | 'rejected' (pre-verification employers
+    // count as approved); admins 'approved'; others null. See employers.js.
+    employer_status: effectiveRole(row) === 'admin' ? 'approved'
+      : row.role === 'employer' ? (userData(row).employer_status || 'approved') : null,
     data: userData(row),
     created_date: row.created_date,
   };
@@ -269,7 +273,12 @@ function registerAuthRoutes(app) {
     const { role } = req.body || {};
     if (!['employer', 'job_seeker'].includes(role)) return res.status(400).json({ error: 'Invalid role' });
     if (req.user.role === 'admin') return res.json({ success: true, user: req.user }); // admins keep admin
-    db.prepare('UPDATE users SET role = ? WHERE id = ?').run(role, req.user.id);
+    if (req.user.role === role) return res.json({ success: true, user: req.user });
+    // The account type is chosen once, during onboarding.
+    if (req.user.role !== 'user') return res.status(403).json({ error: 'Your account type is already set' });
+    const data = userData(getUserById(req.user.id));
+    if (role === 'employer') data.employer_status = 'pending';
+    db.prepare('UPDATE users SET role = ?, data = ? WHERE id = ?').run(role, JSON.stringify(data), req.user.id);
     res.json({ success: true, user: publicUser(getUserById(req.user.id)) });
   });
 

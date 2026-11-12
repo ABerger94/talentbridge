@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Sparkles, Loader2, X, Plus, Briefcase } from "lucide-react";
 import { toast } from "sonner";
 import JobDocUploader from "@/components/jobs/JobDocUploader";
+import { useAuth } from "@/lib/AuthContext";
 
 export default function PostJob() {
   const navigate = useNavigate();
@@ -19,6 +20,8 @@ export default function PostJob() {
   const [searchParams] = useSearchParams();
   const editId = searchParams.get("edit");
   const isEdit = !!editId;
+  const { user } = useAuth();
+  const approved = user?.employer_status === "approved";
   const [form, setForm] = useState({
     title: "", company: "", location: "", work_type: "remote", employment_type: "full_time",
     salary_min: "", salary_max: "", description: "", responsibilities: "", qualifications: "",
@@ -30,6 +33,12 @@ export default function PostJob() {
   const [aiLoading, setAiLoading] = useState(false);
 
   const update = (key, value) => setForm((p) => ({ ...p, [key]: value }));
+
+  // New postings start with the employer's company name.
+  useEffect(() => {
+    const name = user?.data?.company?.name;
+    if (!isEdit && name) setForm((p) => (p.company ? p : { ...p, company: name }));
+  }, [isEdit, user]);
 
   // Edit mode: load the role into the form once.
   const { data: editingJob, isLoading: editLoading, error: editError } = useQuery({
@@ -130,7 +139,7 @@ Return ONLY a JSON object.`,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["myJobs"] });
       queryClient.invalidateQueries({ queryKey: ["job", editId] });
-      toast.success(isEdit ? "Changes saved." : "Job posted successfully!");
+      toast.success(isEdit ? "Changes saved." : approved ? "Job posted successfully!" : "Role saved. It goes live once your account is approved.");
       navigate("/employer");
     },
     onError: (err) => toast.error(err?.message || "Couldn't save the role. Please try again."),
@@ -164,6 +173,11 @@ Return ONLY a JSON object.`,
       </div>
 
       <div className="space-y-6">
+        {!approved && !isEdit && (
+          <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+            Your employer account is under review. You can post this role now; it goes live on the job board as soon as you’re approved.
+          </div>
+        )}
         <JobDocUploader form={form} setForm={setForm} />
 
         <Card className="p-6 space-y-5">
