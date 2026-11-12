@@ -1,7 +1,7 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -15,6 +15,10 @@ import JobDocUploader from "@/components/jobs/JobDocUploader";
 
 export default function PostJob() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const [searchParams] = useSearchParams();
+  const editId = searchParams.get("edit");
+  const isEdit = !!editId;
   const [form, setForm] = useState({
     title: "", company: "", location: "", work_type: "remote", employment_type: "full_time",
     salary_min: "", salary_max: "", description: "", responsibilities: "", qualifications: "",
@@ -26,6 +30,25 @@ export default function PostJob() {
   const [aiLoading, setAiLoading] = useState(false);
 
   const update = (key, value) => setForm((p) => ({ ...p, [key]: value }));
+
+  // Edit mode: load the role into the form once.
+  const { data: editingJob, isLoading: editLoading, error: editError } = useQuery({
+    queryKey: ["editJob", editId],
+    enabled: isEdit,
+    queryFn: () => base44.entities.Job.read(editId),
+  });
+  useEffect(() => {
+    if (!editingJob) return;
+    setForm((p) => {
+      const next = { ...p };
+      for (const key of Object.keys(p)) {
+        const v = editingJob[key];
+        if (v === undefined || v === null) continue;
+        next[key] = key === "salary_min" || key === "salary_max" ? String(v) : v;
+      }
+      return next;
+    });
+  }, [editingJob]);
 
   const addSkill = () => {
     if (skillInput.trim() && !form.skills.includes(skillInput.trim())) {
@@ -102,20 +125,38 @@ Return ONLY a JSON object.`,
       const data = { ...form };
       if (data.salary_min) data.salary_min = Number(data.salary_min);
       if (data.salary_max) data.salary_max = Number(data.salary_max);
-      return base44.entities.Job.create(data);
+      return isEdit ? base44.entities.Job.update(editId, data) : base44.entities.Job.create(data);
     },
     onSuccess: () => {
-      toast.success("Job posted successfully!");
+      queryClient.invalidateQueries({ queryKey: ["myJobs"] });
+      queryClient.invalidateQueries({ queryKey: ["job", editId] });
+      toast.success(isEdit ? "Changes saved." : "Job posted successfully!");
       navigate("/employer");
     },
+    onError: (err) => toast.error(err?.message || "Couldn't save the role. Please try again."),
   });
+
+  if (isEdit && (editLoading || editError)) {
+    return (
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-10 text-center text-muted-foreground">
+        {editLoading ? (
+          <Loader2 className="w-6 h-6 animate-spin mx-auto" />
+        ) : (
+          <>
+            <p>That role couldn’t be loaded. It may have been deleted, or it belongs to another employer.</p>
+            <Button className="mt-4" variant="outline" onClick={() => navigate("/employer")}>Back to dashboard</Button>
+          </>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2 flex items-center gap-3">
           <Briefcase className="w-8 h-8 text-primary" />
-          Post a Role
+          {isEdit ? "Edit Role" : "Post a Role"}
         </h1>
         <p className="text-muted-foreground">
           Write a capability-first job posting. Our AI helps you describe the <strong>problems to be solved</strong>, not just a checklist of credentials.
@@ -271,14 +312,14 @@ Return ONLY a JSON object.`,
         </Card>
 
         <div className="flex justify-end gap-3">
-          <Button variant="outline" onClick={() => navigate("/jobs")}>Cancel</Button>
+          <Button variant="outline" onClick={() => navigate(isEdit ? "/employer" : "/jobs")}>Cancel</Button>
           <Button
             className="gap-2 px-8 shadow-lg shadow-primary/20"
             onClick={() => postMutation.mutate()}
             disabled={postMutation.isPending || !form.title || !form.company || !form.description}
           >
             {postMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Briefcase className="w-4 h-4" />}
-            Post Job
+            {isEdit ? "Save Changes" : "Post Job"}
           </Button>
         </div>
       </div>

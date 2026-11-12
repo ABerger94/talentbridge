@@ -49,6 +49,19 @@ export default function JobDetail() {
 
   const profile = profiles[0] || null;
 
+  // The visitor's own active application to this role, if any.
+  const { data: myApplication } = useQuery({
+    queryKey: ["myApplicationForJob", id],
+    queryFn: async () => {
+      const user = await base44.auth.me();
+      const mine = await base44.entities.JobApplication.filter({ job_id: id, created_by_id: user.id });
+      return mine.find((a) => a.status !== "withdrawn") || null;
+    },
+    retry: false,
+  });
+  const alreadyApplied = applied || !!myApplication;
+  const jobOpen = !job?.status || job.status === "active";
+
   const applyMutation = useMutation({
     mutationFn: async () => {
       const user = await base44.auth.me();
@@ -62,9 +75,12 @@ export default function JobDetail() {
         resume_url: profile?.resume_url || null,
       });
     },
+    onError: (err) => toast.error(err?.message || "Couldn't submit your application. Please try again."),
     onSuccess: () => {
       setApplied(true);
       setApplyOpen(false);
+      queryClient.invalidateQueries({ queryKey: ["myApplicationForJob", id] });
+      queryClient.invalidateQueries({ queryKey: ["myApplications"] });
       toast.success("Application submitted. The employer will receive your Capability Profile.");
       if (!profile?.full_name) {
         toast.info("Add your full name to your profile (My Profile) so the employer sees who applied.");
@@ -192,13 +208,22 @@ export default function JobDetail() {
 
         {/* Sidebar */}
         <div className="space-y-4">
-          {applied ? (
+          {!jobOpen ? (
+            <Card className="p-5 bg-secondary/60">
+              <h3 className="font-semibold text-sm">This role is {job.status === "paused" ? "paused" : "closed"}</h3>
+              <p className="text-xs text-muted-foreground mt-1">
+                It’s hidden from the job board and isn’t accepting applications. Reopen it from your Employer Dashboard.
+              </p>
+            </Card>
+          ) : alreadyApplied ? (
             <Card className="p-5 bg-accent/8 border-accent/25">
               <div className="flex items-center gap-3">
                 <CheckCircle2 className="w-6 h-6 text-accent" />
                 <div>
-                  <h3 className="font-semibold text-sm text-accent">Application Submitted</h3>
-                  <p className="text-xs text-muted-foreground mt-0.5">Your Capability Profile has been sent.</p>
+                  <h3 className="font-semibold text-sm text-accent">You’ve applied</h3>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Track it under My Profile → Applications.
+                  </p>
                 </div>
               </div>
             </Card>

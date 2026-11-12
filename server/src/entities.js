@@ -153,10 +153,79 @@ function checkResumeWrite(entity, data, user, existing) {
   return null;
 }
 
+// --- Write rules beyond RLS ---------------------------------------------------
+const JOB_STATUSES = ['active', 'paused', 'closed'];
+const EMPLOYER_APP_STATUSES = ['applied', 'reviewed', 'shortlisted', 'interview', 'offered', 'rejected'];
+// Fields each party may change directly on an application. Candidate
+// responses, withdrawal, offers and interviews go through /api/functions so
+// they're validated and the other side is notified.
+const APPLICANT_FIELDS = ['cover_letter'];
+const EMPLOYER_FIELDS = ['status', 'ai_match_score', 'ai_match_summary', 'ai_growth_potential', 'employer_notes'];
+// Base44-era metadata the client may echo back unchanged.
+const IGNORED_FIELDS = ['id', 'created_by_id', 'created_date', 'updated_date', 'created_by', 'job'];
+
+// Returns an error message, or null when the change is allowed. Mutates
+// `changes` to drop echoed fields that didn't actually change.
+function checkUpdate(entity, record, changes, user) {
+  for (const k of IGNORED_FIELDS) delete changes[k];
+  for (const k of Object.keys(changes)) {
+    if (JSON.stringify(changes[k]) === JSON.stringify(record[k])) delete changes[k];
+  }
+  if (user.role === 'admin') return null;
+  const keys = Object.keys(changes);
+  if (entity === 'Job') {
+    if ('status' in changes && !JOB_STATUSES.includes(changes.status)) return 'Invalid job status';
+    return null;
+  }
+  if (entity === 'JobApplication') {
+    const isEmployer = record.employer_user_id === user.id;
+    const isApplicant = record.created_by_id === user.id;
+    const allowed = isEmployer ? EMPLOYER_FIELDS : isApplicant ? APPLICANT_FIELDS : [];
+    const extra = keys.filter((k) => !allowed.includes(k));
+    if (extra.length) {
+      return isApplicant
+        ? 'Use the buttons on your dashboard to respond, accept, or withdraw.'
+        : `These fields can't be changed here: ${extra.join(', ')}`;
+    }
+    if (isEmployer && 'status' in changes) {
+      if (record.status === 'withdrawn') return 'This candidate withdrew their application.';
+      if (!EMPLOYER_APP_STATUSES.includes(changes.status)) return 'Invalid status';
+    }
+    return null;
+  }
+  if (entity === 'Invitation') {
+    const isInvitee = record.seeker_profile_id && record.seeker_profile_id === user.data?.seeker_profile_id;
+    if (isInvitee) {
+      if (keys.some((k) => k !== 'status') || !['accepted', 'declined'].includes(changes.status)) {
+        return 'You can only accept or decline an invitation.';
+      }
+      return null;
+    }
+    if (keys.length) return 'Invitations can only be answered by the invited seeker.';
+    return null;
+  }
+  return null;
+}
+
+// Short job summary attached to applications and invitations, so a seeker
+// still sees what they applied to after the role is closed (closed jobs are
+// otherwise hidden from them).
+function jobSummary(jobId, cache) {
+  const key = `job:${jobId}`;
+  if (!cache.has(key)) {
+    const j = jobId ? getRecord('Job', jobId) : null;
+    cache.set(key, j ? { id: j.id, title: j.title, company: j.company, location: j.location, status: j.status } : null);
+  }
+  return cache.get(key);
+}
+
 // What `user` gets to see of a record (after RLS already allowed the read).
 function present(entity, record, user, cache = new Map()) {
   if (!record) return record;
   let out = entity === 'JobApplication' ? withApplicantName(record, cache) : { ...record };
+  if ((entity === 'JobApplication' || entity === 'Invitation') && out.job_id) {
+    out.job = jobSummary(out.job_id, cache);
+  }
   if (out.resume_url) {
     const { signFileUrl } = filesApi();
     const isOwner = user && out.created_by_id === user.id;
@@ -184,7 +253,7 @@ function registerEntityRoutes(app) {
     return authRequired(req, res, next);
   });
 
-  app.post('/api/entities/:entity', (req, res) => {
+  app.post('/api/entities/:entity', async (req, res) => {
     const { entity } = req.params;
     if (!ENTITIES.includes(entity)) return res.status(404).json({ error: 'Unknown entity' });
     const probe = { ...(req.body || {}), created_by_id: req.user.id };
@@ -197,7 +266,15 @@ function registerEntityRoutes(app) {
       // it from the job's owner server-side rather than trusting the client.
       const job = body.job_id ? getRecord('Job', body.job_id) : null;
       if (!job) return res.status(400).json({ error: 'job_id must reference an existing job' });
+      if (job.status !== 'active' && req.user.role !== 'admin') {
+        return res.status(409).json({ error: 'This role is no longer accepting applications.' });
+      }
+      const already = allRecords('JobApplication').find(
+        (a) => a.job_id === job.id && a.created_by_id === req.user.id && a.status !== 'withdrawn'
+      );
+      if (already) return res.status(409).json({ error: 'You’ve already applied to this role.' });
       body.employer_user_id = job.created_by_id || null;
+      body.status = 'applied';
       // Identity comes from the applicant's own account and profile, never
       // from another seeker's profile id.
       const profile = ownSeekerProfile(req.user.id, body.seeker_profile_id);
@@ -222,6 +299,19 @@ function registerEntityRoutes(app) {
       data.seeker_profile_id = record.id;
       db.prepare('UPDATE users SET data = ? WHERE id = ?').run(JSON.stringify(data), req.user.id);
       syncUserFullName(req.user.id, record.full_name);
+    }
+    if (entity === 'JobApplication') {
+      const job = getRecord('Job', record.job_id);
+      const { notifyEmployer, applicantLabel } = require('./notifications');
+      const who = applicantLabel(record);
+      await notifyEmployer('new_application', job, {
+        subject: `New applicant for ${job.title}: ${who}`,
+        heading: 'You have a new applicant',
+        paragraphs: [
+          `${who} applied for ${job.title}.`,
+          'Open your dashboard to review their profile, resume, and AI capability assessment.',
+        ],
+      }, { application_id: record.id });
     }
     res.json({ data: present(entity, record, req.user) });
   });
@@ -255,7 +345,7 @@ function registerEntityRoutes(app) {
     res.json({ data: present(entity, record, req.user) });
   });
 
-  app.put('/api/entities/:entity/:id', (req, res) => {
+  app.put('/api/entities/:entity/:id', async (req, res) => {
     const { entity, id } = req.params;
     if (!ENTITIES.includes(entity)) return res.status(404).json({ error: 'Unknown entity' });
     const record = getRecord(entity, id);
@@ -264,6 +354,8 @@ function registerEntityRoutes(app) {
       return res.status(403).json({ error: `Permission denied for update operation on ${entity} entity` });
     }
     const changes = { ...(req.body || {}) };
+    const denied = checkUpdate(entity, record, changes, req.user);
+    if (denied) return res.status(403).json({ error: denied });
     const bad = checkResumeWrite(entity, changes, req.user, record);
     if (bad) return res.status(400).json({ error: bad });
     if (entity === 'SeekerProfile' && typeof changes.full_name === 'string') {
@@ -272,6 +364,19 @@ function registerEntityRoutes(app) {
     const updated = store.update(entity, id, changes);
     if (entity === 'SeekerProfile' && updated.created_by_id === req.user.id) {
       syncUserFullName(req.user.id, updated.full_name);
+    }
+    if (entity === 'Invitation' && changes.status === 'declined' && record.status !== 'declined') {
+      const job = getRecord('Job', record.job_id);
+      const profile = getRecord('SeekerProfile', record.seeker_profile_id);
+      const { notifyEmployer } = require('./notifications');
+      const who = String(profile?.full_name || '').trim() || 'A candidate';
+      if (job) {
+        await notifyEmployer('invitation_declined', job, {
+          subject: `${who} declined your invitation: ${job.title}`,
+          heading: 'Invitation declined',
+          paragraphs: [`${who} declined your invitation to apply for ${job.title}.`],
+        }, { invitation_id: record.id });
+      }
     }
     res.json({ data: present(entity, updated, req.user) });
   });
@@ -283,6 +388,12 @@ function registerEntityRoutes(app) {
     if (!record) return res.status(404).json({ error: 'Not found' });
     if (!can(entity, 'delete', req.user, record)) {
       return res.status(403).json({ error: `Permission denied for delete operation on ${entity} entity` });
+    }
+    if (entity === 'Job' && req.user.role !== 'admin') {
+      const hasApplicants = allRecords('JobApplication').some((a) => a.job_id === id);
+      if (hasApplicants) {
+        return res.status(409).json({ error: 'This role has applicants, so it can’t be deleted. Close it instead.' });
+      }
     }
     store.remove(entity, id);
     res.json({ success: true });

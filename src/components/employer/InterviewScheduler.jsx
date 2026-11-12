@@ -14,7 +14,7 @@ import {
 import { Calendar, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
-export default function InterviewScheduler({ application, job, onScheduled }) {
+export default function InterviewScheduler({ application, job, onScheduled, triggerLabel = "Schedule Interview" }) {
   const [open, setOpen] = useState(false);
   const [datetime, setDatetime] = useState("");
   const [loading, setLoading] = useState(false);
@@ -39,7 +39,7 @@ export default function InterviewScheduler({ application, job, onScheduled }) {
       setDatetime("");
       onScheduled?.();  
     } catch (error) {
-      toast.error("Failed to schedule interview");
+      toast.error(error?.message || "Failed to schedule interview");
     }
     setLoading(false);
   };
@@ -48,7 +48,7 @@ export default function InterviewScheduler({ application, job, onScheduled }) {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button size="sm" variant="outline" className="gap-1.5 text-xs">
-          <Calendar className="w-3.5 h-3.5" /> Schedule Interview
+          <Calendar className="w-3.5 h-3.5" /> {triggerLabel}
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[400px]">

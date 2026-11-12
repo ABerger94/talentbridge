@@ -15,12 +15,12 @@ import {
 import { Send, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
-export default function OfferDialog({ application, job, onOfferSent }) {
+export default function OfferDialog({ application, job, onOfferSent, triggerLabel = "Send Offer" }) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [offer, setOffer] = useState({
-    title: job?.title || "",
-    salary: "",
+    title: application?.offer_details?.title || job?.title || "",
+    salary: application?.offer_details?.salary ? String(application.offer_details.salary) : "",
     salary_currency: "USD",
     start_date: "",
     benefits: "",
@@ -47,7 +47,7 @@ export default function OfferDialog({ application, job, onOfferSent }) {
       setOpen(false);
       onOfferSent?.();
     } catch (error) {
-      toast.error("Failed to send offer");
+      toast.error(error?.message || "Failed to send offer");
     }
     setLoading(false);
   };
@@ -56,7 +56,7 @@ export default function OfferDialog({ application, job, onOfferSent }) {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button size="sm" className="gap-1.5 text-xs bg-emerald-600 hover:bg-emerald-700">
-          <Send className="w-3.5 h-3.5" /> Send Offer
+          <Send className="w-3.5 h-3.5" /> {triggerLabel}
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[500px]">

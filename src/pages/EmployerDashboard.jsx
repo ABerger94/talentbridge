@@ -11,13 +11,31 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import {
-  Briefcase, Users, Plus, Eye, Clock, Layers, Send
+  Briefcase, Users, Plus, Eye, Clock, Layers, Send, Pencil, Trash2
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import CandidateCapabilityCard from "@/components/employer/CandidateCapabilityCard";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 // AI match score (0-100) that counts as a strong match ("Strong matches only").
 const MATCH_THRESHOLD = 60;
+
+const JOB_STATUS = {
+  active: { label: "Open", badge: "default" },
+  paused: { label: "Paused", badge: "secondary" },
+  closed: { label: "Closed", badge: "outline" },
+};
 
 const scoreTone = (score) =>
   score >= MATCH_THRESHOLD
@@ -95,6 +113,31 @@ export default function EmployerDashboard() {
         .filter((sk) => sk.roles.length > 0)
     : explore.seekers;
   const hiddenByFilter = explore.seekers.length - exploreSeekers.length;
+
+  const jobStatusMutation = useMutation({
+    mutationFn: ({ id, status }) => base44.entities.Job.update(id, { status }),
+    onSuccess: (_, { status }) => {
+      queryClient.invalidateQueries({ queryKey: ["myJobs"] });
+      toast.success(
+        status === "active" ? "Role reopened — it's back on the job board."
+          : status === "paused" ? "Role paused — hidden from the job board, no new applications."
+            : "Role closed — hidden from the job board, no new applications."
+      );
+    },
+    onError: (err) => toast.error(err?.message || "Couldn't update the role."),
+  });
+
+  const deleteJobMutation = useMutation({
+    mutationFn: (id) => base44.entities.Job.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["myJobs"] });
+      setSelectedJob(null);
+      toast.success("Role deleted.");
+    },
+    onError: (err) => toast.error(err?.message || "Couldn't delete the role."),
+  });
+
+  const applicantCount = (jobId) => allApplications.filter((a) => a.job_id === jobId && a.status !== "withdrawn").length;
 
   const updateAppMutation = useMutation({
     mutationFn: ({ id, status }) => base44.entities.JobApplication.update(id, { status }),
@@ -197,9 +240,12 @@ export default function EmployerDashboard() {
                   <div className="flex-1">
                     <div className="flex items-center gap-3 flex-wrap">
                       <h3 className="font-semibold text-sm">{job.title}</h3>
-                      <Badge variant={job.status === "active" ? "default" : "secondary"} className="text-xs">
-                        {job.status === "active" ? "Active" : job.status}
+                      <Badge variant={(JOB_STATUS[job.status] || JOB_STATUS.active).badge} className="text-xs">
+                        {(JOB_STATUS[job.status] || { label: job.status }).label}
                       </Badge>
+                      <span className="text-xs text-muted-foreground">
+                        {applicantCount(job.id)} applicant{applicantCount(job.id) === 1 ? "" : "s"}
+                      </span>
                       {selectedJob === job.id && (
                         <Badge className="text-xs bg-primary/10 text-primary border-primary/20">Viewing</Badge>
                       )}
@@ -214,8 +260,48 @@ export default function EmployerDashboard() {
                       </span>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Link to={`/jobs/${job.id}`} onClick={e => e.stopPropagation()}>
+                  <div className="flex items-center gap-2 flex-wrap justify-end" onClick={e => e.stopPropagation()}>
+                    <Select
+                      value={job.status || "active"}
+                      onValueChange={(status) => jobStatusMutation.mutate({ id: job.id, status })}
+                      disabled={jobStatusMutation.isPending}
+                    >
+                      <SelectTrigger className="h-8 w-[110px] text-xs" aria-label="Role status">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="active">Open</SelectItem>
+                        <SelectItem value="paused">Paused</SelectItem>
+                        <SelectItem value="closed">Closed</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Link to={`/post-job?edit=${job.id}`}>
+                      <Button variant="ghost" size="sm" className="gap-1 text-xs">
+                        <Pencil className="w-3.5 h-3.5" /> Edit
+                      </Button>
+                    </Link>
+                    {applicantCount(job.id) === 0 && !allApplications.some((a) => a.job_id === job.id) && (
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="ghost" size="sm" className="gap-1 text-xs text-muted-foreground" aria-label="Delete role">
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Delete “{job.title}”?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              This permanently removes the role. Roles with applicants can only be closed, not deleted.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => deleteJobMutation.mutate(job.id)}>Delete</AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    )}
+                    <Link to={`/jobs/${job.id}`}>
                       <Button variant="ghost" size="sm" className="gap-1 text-xs">
                         <Eye className="w-3.5 h-3.5" /> View
                       </Button>
@@ -224,7 +310,7 @@ export default function EmployerDashboard() {
                       variant="outline"
                       size="sm"
                       className="gap-1 text-xs"
-                      onClick={(e) => { e.stopPropagation(); setSelectedJob(job.id); setTab("candidates"); }}
+                      onClick={() => { setSelectedJob(job.id); setTab("candidates"); }}
                     >
                       <Users className="w-3.5 h-3.5" /> Candidates
                     </Button>
