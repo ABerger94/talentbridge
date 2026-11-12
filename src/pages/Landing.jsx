@@ -12,12 +12,12 @@ import { useAuth } from "@/lib/AuthContext";
 const SAMPLE_VECTORS = [
   { vector: "Root-cause investigation", strength: 94, evidence: "Closed 120+ non-conformances with documented corrective actions across two plants.", pos: { left: "50%", top: "13%" } },
   { vector: "Audit readiness", strength: 88, evidence: "Led three SQF audits with zero major findings.", pos: { left: "80%", top: "36%" } },
-  { vector: "Lab method validation", strength: 81, evidence: "Validated six microbiology methods to ISO 17025.", pos: { left: "71%", top: "83%" } },
-  { vector: "Process systems", strength: 86, evidence: "Rebuilt release testing so batch holds dropped by about a third.", pos: { left: "28%", top: "83%" } },
+  { vector: "Lab method validation", strength: 81, evidence: "Validated six microbiology methods to ISO 17025.", pos: { left: "75%", top: "83%" } },
+  { vector: "Process systems", strength: 86, evidence: "Rebuilt release testing so batch holds dropped by about a third.", pos: { left: "25%", top: "83%" } },
   { vector: "Team training", strength: 74, evidence: "Trained 40+ line staff on HACCP and sanitation SOPs.", pos: { left: "19%", top: "36%" } },
 ];
 // Edge end points in the SVG's 560×470 space, matching the node positions.
-const EDGES = [[280, 62], [468, 170], [410, 388], [150, 388], [92, 170]];
+const EDGES = [[280, 62], [468, 170], [420, 388], [140, 388], [92, 170]];
 
 const btnPrimary = "inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-6 text-base font-semibold text-primary-foreground shadow-lg shadow-primary/25 transition-colors hover:bg-primary/90 min-h-[48px]";
 const btnSecondary = "inline-flex items-center justify-center gap-2 rounded-xl border-[1.5px] border-border bg-card px-6 text-base font-semibold text-foreground transition-colors hover:border-foreground min-h-[48px]";
@@ -52,8 +52,8 @@ function CapabilityGraphDemo() {
           {EDGES.map(([x, y], i) => (
             <line key={i} x1="280" y1="235" x2={x} y2={y} className="tb-edge" stroke="#C9B8F2" strokeWidth="2" style={{ animationDelay: `${0.25 + i * 0.15}s` }} />
           ))}
-          <line x1="468" y1="170" x2="520" y2="300" className="tb-edge-adjacent" stroke="#9FDCCD" strokeWidth="2" />
-          <line x1="92" y1="170" x2="44" y2="300" className="tb-edge-adjacent" stroke="#9FDCCD" strokeWidth="2" />
+          <line x1="468" y1="170" x2="460" y2="291" className="tb-edge-adjacent" stroke="#9FDCCD" strokeWidth="2" />
+          <line x1="92" y1="170" x2="100" y2="291" className="tb-edge-adjacent" stroke="#9FDCCD" strokeWidth="2" />
         </svg>
 
         <div className="tb-pulse absolute left-1/2 top-1/2 flex h-[22%] w-[22%] min-h-[72px] min-w-[72px] max-h-[118px] max-w-[118px] -translate-x-1/2 -translate-y-1/2 flex-col items-center justify-center rounded-full bg-primary text-center text-primary-foreground">
@@ -81,8 +81,8 @@ function CapabilityGraphDemo() {
           );
         })}
 
-        <span className="tb-fade-late absolute left-[92%] top-[64%] hidden -translate-x-1/2 -translate-y-1/2 whitespace-nowrap rounded-full border-[1.5px] border-dashed border-[#7CCFBD] bg-[#F2FBF8] px-3 py-1.5 text-xs font-semibold text-[#0B6E5C] md:block">Pharma QA</span>
-        <span className="tb-fade-late absolute left-[8%] top-[64%] hidden -translate-x-1/2 -translate-y-1/2 whitespace-nowrap rounded-full border-[1.5px] border-dashed border-[#7CCFBD] bg-[#F2FBF8] px-3 py-1.5 text-xs font-semibold text-[#0B6E5C] md:block">Supply-chain quality</span>
+        <span className="tb-fade-late absolute right-[3%] top-[62%] hidden whitespace-nowrap rounded-full border-[1.5px] border-dashed border-[#7CCFBD] bg-[#F2FBF8] px-3 py-1.5 text-xs font-semibold text-[#0B6E5C] md:block">Pharma QA</span>
+        <span className="tb-fade-late absolute left-[3%] top-[62%] hidden whitespace-nowrap rounded-full border-[1.5px] border-dashed border-[#7CCFBD] bg-[#F2FBF8] px-3 py-1.5 text-xs font-semibold text-[#0B6E5C] md:block">Supply-chain quality</span>
       </div>
 
       <div className="mt-2.5 rounded-2xl border border-[#ECE6FA] bg-[#FAF8FE] px-4 py-4 text-[#15172A]" aria-live="polite">
@@ -247,7 +247,7 @@ function TwoReads() {
             {["HACCP", "GMP", "QA"].map((k) => <span key={k} className="rounded-md bg-[#FFF1D6] px-2 py-1 font-semibold text-[#7A4B00]">{k}</span>)}
             {["Bachelor’s in Chemistry", "5+ yrs pharma", "LIMS certification"].map((k) => <span key={k} className="rounded-md bg-[#FDE3E7] px-2 py-1 font-semibold text-[#9E1F36]">{k}</span>)}
           </p>
-          <div className="mt-6 rounded-2xl bg-[#FDF3F5] p-4 text-[15px] font-semibold text-[#7E1A2E]">3 of 6 keywords · <span className="tb-strike inline-block">Moved to “Not a fit”</span></div>
+          <div className="mt-6 rounded-2xl bg-[#FDF3F5] p-4 text-[15px] font-semibold text-[#7E1A2E]">3 of 6 keywords · <span className="tb-strike text-[#8D90A3]">Moved to “Not a fit”</span></div>
           <p className="mt-3.5 text-sm leading-relaxed text-muted-foreground">Seven years of hands-on QA work, rejected for missing three phrases.</p>
         </div>
         <div className="rounded-3xl border-[1.5px] border-[#CDBDF4] bg-[#FCFAFF] p-7 text-[#15172A]">

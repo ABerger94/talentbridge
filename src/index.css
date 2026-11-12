@@ -92,10 +92,10 @@
 }
 /* --- Homepage motion (src/pages/Landing.jsx) ------------------------------ */
 @layer components {
-  .tb-strike { position: relative; }
-  .tb-strike::after {
-    content: ""; position: absolute; left: -4px; right: -4px; top: 55%; height: 0.09em; min-height: 4px;
-    border-radius: 4px; background: #D9485F; transform-origin: left; animation: tb-strike .7s ease-out .8s both;
+  /* A real line-through (centered by the font), faded in red. */
+  .tb-strike {
+    text-decoration-line: line-through; text-decoration-thickness: max(2px, 0.055em);
+    text-decoration-color: transparent; animation: tb-strike .5s ease-out .8s both;
   }
   .tb-rise-late { display: inline-block; animation: tb-up .8s ease-out 1.4s both; }
   .tb-rise { animation: tb-up .7s ease-out both; }
@@ -108,7 +108,7 @@
   .tb-bar { animation: tb-bar 1.2s ease-out both; }
   .tb-move { animation: tb-move 7s ease-in-out infinite; }
 }
-@keyframes tb-strike { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes tb-strike { from { text-decoration-color: transparent; } to { text-decoration-color: #D9485F; } }
 @keyframes tb-up { from { opacity: 0; transform: translateY(22px); } to { opacity: 1; transform: none; } }
 @keyframes tb-draw { to { stroke-dashoffset: 0; } }
 @keyframes tb-fade { from { opacity: 0; } to { opacity: 1; } }
@@ -118,8 +118,9 @@
 @keyframes tb-bar { from { width: 0; } }
 @keyframes tb-move { 0%, 18% { transform: translate(0, 0); } 32%, 68% { transform: translate(calc(100% + 12px), 0); } 82%, 100% { transform: translate(0, 0); } }
 @media (prefers-reduced-motion: reduce) {
-  .tb-strike::after, .tb-rise-late, .tb-rise, .tb-edge, .tb-edge-adjacent, .tb-pop, .tb-fade-late,
+  .tb-strike, .tb-rise-late, .tb-rise, .tb-edge, .tb-edge-adjacent, .tb-pop, .tb-fade-late,
   .tb-pulse, .tb-float, .tb-bar, .tb-move { animation: none !important; }
   .tb-edge { stroke-dashoffset: 0; }
+  .tb-strike { text-decoration-color: #D9485F; }
   .tb-pop { transform: translate(-50%, -50%); }
 }
