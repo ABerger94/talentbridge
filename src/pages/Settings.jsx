@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { KeyRound, MonitorSmartphone, Download, Trash2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import JobAlertSettings from "@/components/seeker/JobAlertSettings";
 
 function Section({ icon: Icon, title, children, danger }) {
   return (
@@ -123,6 +124,8 @@ export default function Settings() {
         <h1 className="text-2xl sm:text-3xl font-bold mb-1">Account settings</h1>
         <p className="text-muted-foreground break-all">Signed in as {user?.email}</p>
       </div>
+
+      {(user?.role === "job_seeker" || user?.role === "admin") && <JobAlertSettings />}
 
       <Section icon={KeyRound} title={hasPassword ? "Change password" : "Set a password"}>
         <PasswordForm hasPassword={hasPassword} onDone={checkUserAuth} />

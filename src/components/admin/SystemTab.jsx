@@ -61,6 +61,14 @@ export default function SystemTab() {
     onError: (e) => toast.error(e?.message || "Couldn't move files."),
   });
 
+  const runAlerts = useMutation({
+    mutationFn: () => base44.admin.runJobAlerts(),
+    onSuccess: (r) => {
+      toast.success(`Job alerts: ${r.due} due, ${r.emailed} emailed, ${r.no_new_matches} with no new matches${r.deferred ? `, ${r.deferred} left for the next run` : ""}.`);
+      queryClient.invalidateQueries({ queryKey: ["adminSystem"] });
+    },
+    onError: (e) => toast.error(e?.message || "Couldn't run job alerts."),
+  });
   const fairness = useMutation({
     mutationFn: () => base44.admin.fairnessCheck(),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["adminSystem"] }),
@@ -111,6 +119,15 @@ export default function SystemTab() {
           Accounts: {users.job_seeker || 0} seekers · {users.employer || 0} employers · {users.user || 0} without a role yet · {users.admin || 0} admins.
           Active roles: {counts.jobs_active}{counts.jobs_pending_review ? ` (+${counts.jobs_pending_review} awaiting approval)` : ""}.
         </p>
+        <div className="flex items-center gap-2 flex-wrap text-xs text-muted-foreground">
+          <span>
+            Job alerts: {counts.alert_subscribers || 0} subscriber{counts.alert_subscribers === 1 ? "" : "s"} · sent automatically every day
+            {health.cron ? "" : " once CRON_SECRET is set"}.
+          </span>
+          <Button size="sm" variant="ghost" className="h-7 gap-1.5" onClick={() => runAlerts.mutate()} disabled={runAlerts.isPending}>
+            {runAlerts.isPending && <Loader2 className="w-3 h-3 animate-spin" />} Send due alerts now
+          </Button>
+        </div>
         {(mail.failed || 0) > 0 && (
           <div className="rounded-md bg-amber-50 border border-amber-200 p-3 text-sm space-y-1">
             <p className="font-medium text-amber-900">{mail.failed} email{mail.failed === 1 ? "" : "s"} failed to send</p>

@@ -40,6 +40,7 @@ function overview() {
       mail: mailStatus(),
       storage: require('./storage').storageStatus(),
       database: process.env.TURSO_DATABASE_URL ? 'turso' : 'local file',
+      cron: !!process.env.CRON_SECRET,
     },
     counts: {
       users: roles,
@@ -50,6 +51,7 @@ function overview() {
       messages_7d: count('SELECT COUNT(*) AS n FROM messages WHERE created_date >= ?', since7),
       files: files.n,
       file_bytes: files.bytes,
+      alert_subscribers: count("SELECT COUNT(*) AS n FROM users WHERE role = 'job_seeker' AND json_extract(data, '$.job_alerts.frequency') IN ('daily', 'weekly')"),
       files_in_database: count("SELECT COUNT(*) AS n FROM files WHERE storage = 'database'"),
     },
     email_7d: mail,

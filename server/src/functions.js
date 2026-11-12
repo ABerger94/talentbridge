@@ -169,6 +169,41 @@ Score every seeker independently, using only the evidence present. A missing fie
   return byId;
 }
 
+// --- Match score cache (shared by Explore and job alerts) -------------------
+function matchJobKey(job) {
+  return crypto.createHash('sha256').update(JSON.stringify([
+    job.title, job.description, job.skills, job.experience_level, MATCH_PROMPT_VERSION,
+  ])).digest('hex').slice(0, 16);
+}
+
+// The cached score row for (job, seeker) if still valid, else null.
+function cachedMatch(jobId, sp, jobKey) {
+  const row = db.prepare('SELECT * FROM match_scores WHERE job_id = ? AND seeker_id = ?').get(jobId, sp.id);
+  if (!row || row.job_key !== jobKey || row.seeker_updated !== sp.updated_date) return null;
+  if (Date.now() - Date.parse(row.created_date) > MATCH_CACHE_TTL_MS) return null;
+  return row;
+}
+
+// Scores `seekers` against `job` in parallel batches and caches the results.
+// Returns the Promise.allSettled results (one per batch).
+async function scoreAndCache(job, seekers, jobKey = matchJobKey(job)) {
+  const { normalizePercent } = require('./scales-server');
+  const chunks = [];
+  for (let i = 0; i < seekers.length; i += MATCH_BATCH_SIZE) chunks.push(seekers.slice(i, i + MATCH_BATCH_SIZE));
+  const settled = await Promise.allSettled(chunks.map((chunk) => scoreSeekerBatch(job, chunk)));
+  const now = new Date().toISOString();
+  settled.forEach((r, i) => {
+    if (r.status !== 'fulfilled') return;
+    for (const sp of chunks[i]) {
+      const scored = r.value.get(sp.id);
+      if (!scored) continue;
+      db.prepare(`INSERT OR REPLACE INTO match_scores (job_id, seeker_id, job_key, seeker_updated, score, summary, created_date)
+        VALUES (?, ?, ?, ?, ?, ?, ?)`).run(job.id, sp.id, jobKey, sp.updated_date, normalizePercent(scored.match_score, 0), scored.match_summary || '', now);
+    }
+  });
+  return settled;
+}
+
 const FUNCTIONS = {
   // Employer's capability assessment of one application. Runs on the server
   // so the prompt is blind (no name, email, location) and fenced, the score
@@ -338,16 +373,8 @@ Return a concise, evidence-based summary an employer can skim.`;
     if (!listed.length) return { matches: [], unscored: 0, ...base };
 
     // One cached score per (job, seeker): re-scored only when either changes.
-    const jobKey = crypto.createHash('sha256').update(JSON.stringify([
-      jobData.title, jobData.description, jobData.skills, jobData.experience_level, MATCH_PROMPT_VERSION,
-    ])).digest('hex').slice(0, 16);
-    const cachedFor = (sp) => {
-      if (force) return null;
-      const row = db.prepare('SELECT * FROM match_scores WHERE job_id = ? AND seeker_id = ?').get(job_id, sp.id);
-      if (!row || row.job_key !== jobKey || row.seeker_updated !== sp.updated_date) return null;
-      if (Date.now() - Date.parse(row.created_date) > MATCH_CACHE_TTL_MS) return null;
-      return row;
-    };
+    const jobKey = matchJobKey(jobData);
+    const cachedFor = (sp) => (force ? null : cachedMatch(job_id, sp, jobKey));
 
     let candidates = scorable.filter((sp) => !cachedFor(sp));
     // Past MATCH_MAX_SEEKERS, shortlist by skill overlap so the AI calls stay
@@ -361,22 +388,9 @@ Return a concise, evidence-based summary an employer can skim.`;
         .map((x) => x.sp);
     }
 
-    const { normalizePercent } = require('./scales-server');
     if (candidates.length) {
       spendAiAllowance(user);
-      const chunks = [];
-      for (let i = 0; i < candidates.length; i += MATCH_BATCH_SIZE) chunks.push(candidates.slice(i, i + MATCH_BATCH_SIZE));
-      const settled = await Promise.allSettled(chunks.map((chunk) => scoreSeekerBatch(jobData, chunk)));
-      const now = new Date().toISOString();
-      settled.forEach((r, i) => {
-        if (r.status !== 'fulfilled') return;
-        for (const sp of chunks[i]) {
-          const scored = r.value.get(sp.id);
-          if (!scored) continue;
-          db.prepare(`INSERT OR REPLACE INTO match_scores (job_id, seeker_id, job_key, seeker_updated, score, summary, created_date)
-            VALUES (?, ?, ?, ?, ?, ?, ?)`).run(job_id, sp.id, jobKey, sp.updated_date, normalizePercent(scored.match_score, 0), scored.match_summary || '', now);
-        }
-      });
+      const settled = await scoreAndCache(jobData, candidates, jobKey);
       if (settled.every((r) => r.status === 'rejected') && !scorable.some(cachedFor)) {
         const e = settled[0].reason;
         throw fail(e?.status || 502, e?.message || 'AI matching failed');
@@ -655,4 +669,4 @@ function registerFunctionRoutes(app) {
   });
 }
 
-module.exports = { registerFunctionRoutes, scoreSeekerBatch, FUNCTIONS };
+module.exports = { registerFunctionRoutes, scoreSeekerBatch, scoreAndCache, cachedMatch, matchJobKey, FUNCTIONS };

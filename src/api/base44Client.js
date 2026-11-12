@@ -145,6 +145,16 @@ const account = {
   },
 };
 
+// Job alert emails (server/src/alerts.js).
+const alerts = {
+  async preferences() {
+    return (await request('/api/alerts/preferences')).data;
+  },
+  async save(changes) {
+    return (await request('/api/alerts/preferences', { method: 'PUT', body: changes })).data;
+  },
+};
+
 // Reports browser errors to the server (admin System tab). Fire-and-forget.
 export function reportClientError(message, stack) {
   try {
@@ -293,9 +303,12 @@ const admin = {
   async fairnessCheck(jobId) {
     return (await request('/api/admin/ai/fairness', { method: 'POST', body: jobId ? { job_id: jobId } : {} })).data;
   },
+  async runJobAlerts() {
+    return (await request('/api/admin/alerts/run', { method: 'POST' })).data;
+  },
   async migrateStorage() {
     return (await request('/api/admin/storage/migrate', { method: 'POST' })).data;
   },
 };
 
-export const base44 = { auth, account, entities, functions, integrations, messages, employer, admin };
+export const base44 = { auth, account, alerts, entities, functions, integrations, messages, employer, admin };
