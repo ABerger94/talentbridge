@@ -18,6 +18,8 @@ import AuthBridge from './pages/AuthBridge';
 import LogoutBridge from './pages/LogoutBridge';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
+import Privacy from './pages/Privacy';
+import Terms from './pages/Terms';
 
 // Wraps protected routes — redirects to login if not authenticated, optionally checks role
 const ProtectedRoute = ({ children, allowedRoles }) => {
@@ -71,6 +73,8 @@ const AuthenticatedApp = () => {
         <Route path="/" element={<Landing />} />
         <Route path="/jobs" element={<JobBoard />} />
         <Route path="/jobs/:id" element={<JobDetail />} />
+        <Route path="/privacy" element={<Privacy />} />
+        <Route path="/terms" element={<Terms />} />
 
         {/* Protected routes — login + role required */}
         <Route path="/post-job" element={<ProtectedRoute allowedRoles={['employer', 'admin']}><PostJob /></ProtectedRoute>} />

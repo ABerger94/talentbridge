@@ -43,7 +43,13 @@ export default function Footer() {
           </div>
         </div>
         <div className="border-t border-background/10 mt-12 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p className="text-sm opacity-40">© 2026 TalentBridge. All rights reserved.</p>
+          <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-5">
+            <p className="text-sm opacity-40">© 2026 TalentBridge. All rights reserved.</p>
+            <div className="flex gap-4 text-sm">
+              <Link to="/privacy" className="opacity-60 hover:opacity-100 transition-opacity">Privacy</Link>
+              <Link to="/terms" className="opacity-60 hover:opacity-100 transition-opacity">Terms</Link>
+            </div>
+          </div>
           <p className="text-sm opacity-40 flex items-center gap-1">
             Built with <Heart className="w-3.5 h-3.5 text-accent fill-accent" /> for humans who deserve better hiring
           </p>
