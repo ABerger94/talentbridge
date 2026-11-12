@@ -135,10 +135,33 @@ IMPORTANT: Express "match_score" as an integer from 0 to 100. Never return it as
     interview: { label: "Interview", color: "bg-purple-100 text-purple-700 border-purple-200" },
     offered: { label: "Offer Sent", color: "bg-emerald-100 text-emerald-700 border-emerald-200" },
     rejected: { label: "Passed", color: "bg-gray-100 text-gray-500 border-gray-200" },
-    withdrawn: { label: "Withdrawn", color: "bg-gray-100 text-gray-400 border-gray-200" },
+    withdrawn: { label: "Withdrawn by candidate", color: "bg-gray-100 text-gray-500 border-gray-200" },
   };
 
   const cfg = statusConfig[application.status] || statusConfig.applied;
+  const [counterLoading, setCounterLoading] = useState(false);
+
+  const refreshApplications = () => {
+    queryClient.invalidateQueries({ queryKey: ["allApplications"] });
+  };
+
+  const fmtTime = (iso) =>
+    new Date(iso).toLocaleString("en-US", {
+      weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZoneName: "short",
+    });
+
+  const acceptCounter = async () => {
+    setCounterLoading(true);
+    try {
+      await base44.functions.invoke("acceptInterviewCounter", { application_id: application.id, job_id: job?.id });
+      toast.success("Interview confirmed — the candidate has been emailed.");
+      refreshApplications();
+    } catch (error) {
+      toast.error(error?.message || "Couldn't confirm the interview.");
+    } finally {
+      setCounterLoading(false);
+    }
+  };
 
   return (
     <Card className="p-5 space-y-4">
@@ -162,8 +185,8 @@ IMPORTANT: Express "match_score" as an integer from 0 to 100. Never return it as
         </div>
         <div className="flex items-center gap-2">
           <Badge variant="outline" className={`text-xs ${cfg.color}`}>{cfg.label}</Badge>
-          <Select value={application.status} onValueChange={handleStatusChange}>
-            <SelectTrigger className="w-8 h-8 p-0 border-0 bg-transparent hover:bg-secondary">
+          <Select value={application.status} onValueChange={handleStatusChange} disabled={application.status === "withdrawn"}>
+            <SelectTrigger className="w-8 h-8 p-0 border-0 bg-transparent hover:bg-secondary" aria-label="Change status">
               <ChevronDown className="w-4 h-4 text-muted-foreground" />
             </SelectTrigger>
             <SelectContent>
@@ -280,31 +303,39 @@ IMPORTANT: Express "match_score" as an integer from 0 to 100. Never return it as
       {application.status === "interview" && (
         <div className="rounded-lg bg-purple-50 border border-purple-200 p-3 space-y-2">
           {application.interview_proposed_time ? (
-            <div>
-              <p className="text-xs font-semibold text-purple-700 mb-1">Interview Scheduled</p>
-              <p className="text-xs text-purple-600">
-                {new Date(application.interview_proposed_time).toLocaleString()}
-              </p>
-              {application.interview_response && (
-                <p className="text-xs text-purple-600 mt-1">
-                  Candidate Response: <span className="font-semibold capitalize">{application.interview_response}</span>
+            <div className="space-y-2">
+              <div>
+                <p className="text-xs font-semibold text-purple-700 mb-1">
+                  {application.interview_response === "accepted" ? "Interview Confirmed" : "Interview Proposed"}
                 </p>
+                <p className="text-xs text-purple-600">{fmtTime(application.interview_proposed_time)}</p>
+              </div>
+              {application.interview_response === "declined" && (
+                <p className="text-xs text-purple-700">The candidate declined this time.</p>
               )}
-              {application.interview_counter_time && (
-                <p className="text-xs text-purple-600">
-                  Counter Proposal: {new Date(application.interview_counter_time).toLocaleString()}
-                </p>
+              {(!application.interview_response || application.interview_response === "pending") && (
+                <p className="text-xs text-purple-600">Waiting for the candidate to respond.</p>
               )}
+              {application.interview_response === "counter_proposed" && application.interview_counter_time && (
+                <div className="rounded bg-white border border-purple-200 p-2 space-y-2">
+                  <p className="text-xs text-purple-700">
+                    The candidate suggested <span className="font-semibold">{fmtTime(application.interview_counter_time)}</span>
+                  </p>
+                  <Button size="sm" className="text-xs h-7" onClick={acceptCounter} disabled={counterLoading}>
+                    {counterLoading ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : null}
+                    Accept this time
+                  </Button>
+                </div>
+              )}
+              <InterviewScheduler
+                application={application}
+                job={job}
+                onScheduled={refreshApplications}
+                triggerLabel={application.interview_response === "counter_proposed" ? "Propose a different time" : "Reschedule"}
+              />
             </div>
           ) : (
-            <InterviewScheduler
-             application={application}
-             job={job}
-             onScheduled={() => {
-               queryClient.invalidateQueries({ queryKey: ["allApplications"] });
-               queryClient.refetchQueries({ queryKey: ["allApplications"] });
-             }}
-            />
+            <InterviewScheduler application={application} job={job} onScheduled={refreshApplications} />
           )}
         </div>
       )}
@@ -327,6 +358,16 @@ IMPORTANT: Express "match_score" as an integer from 0 to 100. Never return it as
                   "{application.offer_negotiation_notes}"
                 </p>
               )}
+              {["negotiating", "declined"].includes(application.offer_response) && (
+                <div className="mt-2">
+                  <OfferDialog
+                    application={application}
+                    job={job}
+                    onOfferSent={refreshApplications}
+                    triggerLabel="Send revised offer"
+                  />
+                </div>
+              )}
             </div>
           ) : (
             <OfferDialog
@@ -338,6 +379,14 @@ IMPORTANT: Express "match_score" as an integer from 0 to 100. Never return it as
                }}
              />
           )}
+        </div>
+      )}
+
+      {application.status === "withdrawn" && (
+        <div className="rounded-lg bg-gray-50 border border-gray-200 p-3">
+          <p className="text-xs text-gray-600">
+            The candidate withdrew this application{application.withdrawn_date ? ` on ${new Date(application.withdrawn_date).toLocaleDateString()}` : ""}.
+          </p>
         </div>
       )}
 

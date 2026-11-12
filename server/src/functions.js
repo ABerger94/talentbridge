@@ -7,7 +7,7 @@ const { db } = require('./db');
 const { store } = require('./entities');
 const { invokeLLM } = require('./llm');
 const { authRequired, getUserById } = require('./auth');
-const { sendMail, mailConfigured, layout, appUrl } = require('./mailer');
+const { layout, appUrl } = require('./mailer');
 const { hit } = require('./ratelimit');
 
 // Counts one AI-backed call against the caller's hourly AI allowance (the
@@ -24,45 +24,37 @@ function fail(status, message) {
   return e;
 }
 
-// Records every notification and emails it when a mail provider is set up.
-// Email failures are recorded, never thrown: the hiring action has already
-// happened and the candidate still sees it on their dashboard.
-async function notify(kind, { to, subject, text, html }, payload) {
-  const id = crypto.randomUUID();
-  const now = new Date().toISOString();
-  let status = 'queued_no_mailer';
-  let error = null;
-  if (mailConfigured() && to) {
-    const result = await sendMail({ to, subject, text, html });
-    status = result.ok ? 'sent' : 'failed';
-    error = result.ok ? null : result.error;
-  } else if (!to) {
-    status = 'failed';
-    error = 'no recipient email';
+const {
+  notify, applicantEmail, applicantLabel, firstName, roleLine, DASHBOARD, notifyEmployer,
+} = require('./notifications');
+
+// Interview times in emails: we don't know the reader's zone, so say UTC and
+// point to the dashboard, which shows local time.
+function utcText(date) {
+  return new Date(date).toLocaleString('en-US', {
+    weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit',
+    timeZone: 'UTC', timeZoneName: 'short',
+  });
+}
+
+// The applicant's own application (or admin). Candidate actions go through
+// these functions so they're validated and the employer is told.
+function requireOwnApplication(user, applicationId) {
+  if (!applicationId) throw fail(400, 'application_id is required');
+  const application = store.get('JobApplication', applicationId);
+  if (!application) throw fail(404, 'Application not found');
+  if (application.created_by_id !== user.id && user.role !== 'admin') {
+    throw fail(403, 'Forbidden: this is not your application');
   }
-  db.prepare(
-    'INSERT INTO notifications (id, kind, payload, status, created_date, recipient, error, sent_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
-  ).run(id, kind, JSON.stringify(payload || {}), status, now, to || null, error, status === 'sent' ? now : null);
-  console.log(`[notify] ${kind} -> ${status}${error ? ` (${error})` : ''}`);
-  return status;
+  const job = store.get('Job', application.job_id) || { id: application.job_id, title: 'the role' };
+  return { application, job };
 }
 
-// Where to reach the candidate behind an application.
-function applicantEmail(application) {
-  if (application?.applicant_email) return application.applicant_email;
-  return getUserById(application?.created_by_id)?.email || null;
+function parseTime(value, label) {
+  const d = value ? new Date(value) : null;
+  if (!d || Number.isNaN(d.getTime())) throw fail(400, `A valid ${label} is required`);
+  return d;
 }
-
-function firstName(application) {
-  const name = String(application?.applicant_name || '').trim();
-  return name && name !== 'Anonymous' ? name.split(/\s+/)[0] : 'there';
-}
-
-function roleLine(job) {
-  return job.company ? `${job.title} at ${job.company}` : job.title;
-}
-
-const DASHBOARD = () => appUrl('/dashboard');
 
 // Same guard inviteSeekerToJob applies: only the employer who owns the job
 // (or an admin) may act on it. The job is resolved from the application when
@@ -313,6 +305,7 @@ const FUNCTIONS = {
     if (job.created_by_id !== user.id && user.role !== 'admin') {
       throw fail(403, 'Forbidden: You can only invite seekers for your own jobs');
     }
+    if (job.status !== 'active') throw fail(409, 'Reopen this role before inviting candidates');
     const seeker = store.get('SeekerProfile', seeker_profile_id);
     if (!seeker) throw fail(404, 'Seeker profile not found');
     store.create('Invitation', {
@@ -340,8 +333,9 @@ const FUNCTIONS = {
 
   async sendInterviewInvitation(user, payload) {
     const { application, job } = requireOwnedApplication(user, payload, 'schedule interviews');
-    const when = payload?.proposed_time ? new Date(payload.proposed_time) : null;
-    if (!when || Number.isNaN(when.getTime())) throw fail(400, 'A valid proposed_time is required');
+    const when = parseTime(payload?.proposed_time, 'proposed_time');
+    if (application?.status === 'withdrawn') throw fail(409, 'This candidate withdrew their application');
+    const isReschedule = !!application?.interview_proposed_time;
     if (application) {
       // Save the proposal on the application so both dashboards show it;
       // a new proposal clears the candidate's previous answer.
@@ -352,18 +346,17 @@ const FUNCTIONS = {
         interview_counter_time: null,
       });
     }
-    const whenText = when.toLocaleString('en-US', {
-      weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit',
-      timeZone: 'UTC', timeZoneName: 'short',
-    });
+    const whenText = utcText(when);
     await notify('interview_invitation', {
       to: applicantEmail(application),
-      subject: `Interview invitation: ${roleLine(job)}`,
+      subject: `${isReschedule ? 'New interview time' : 'Interview invitation'}: ${roleLine(job)}`,
       ...layout({
-        heading: 'You’re invited to interview',
+        heading: isReschedule ? 'Your interview has a new proposed time' : 'You’re invited to interview',
         paragraphs: [
           `Hi ${firstName(application)},`,
-          `${job.company || 'The employer'} would like to interview you for ${job.title}.`,
+          isReschedule
+            ? `${job.company || 'The employer'} proposed a new interview time for ${job.title}.`
+            : `${job.company || 'The employer'} would like to interview you for ${job.title}.`,
           `Proposed time: ${whenText}. Your dashboard shows it in your own time zone.`,
           'Open your dashboard to accept, decline, or suggest another time.',
         ],
@@ -376,6 +369,7 @@ const FUNCTIONS = {
   async sendOfferEmail(user, payload) {
     const { application_id, offer_details } = payload || {};
     const { application, job } = requireOwnedApplication(user, payload, 'send offers');
+    if (application?.status === 'withdrawn') throw fail(409, 'This candidate withdrew their application');
     if (application) {
       store.update('JobApplication', application.id, { status: 'offered', offer_details, offer_response: null });
     }
@@ -402,6 +396,7 @@ const FUNCTIONS = {
 
   async sendRejectionEmail(user, payload) {
     const { application, job } = requireOwnedApplication(user, payload, 'reject applicants');
+    if (application?.status === 'withdrawn') throw fail(409, 'This candidate withdrew their application');
     if (application) {
       store.update('JobApplication', application.id, { status: 'rejected' });
     }
@@ -423,6 +418,7 @@ const FUNCTIONS = {
 
   async sendShortlistNotification(user, payload) {
     const { application, job } = requireOwnedApplication(user, payload, 'shortlist applicants');
+    if (application?.status === 'withdrawn') throw fail(409, 'This candidate withdrew their application');
     if (application) {
       store.update('JobApplication', application.id, { status: 'shortlisted' });
     }
@@ -438,6 +434,102 @@ const FUNCTIONS = {
         button: { label: 'View your applications', url: DASHBOARD() },
       }),
     }, { application_id: application?.id, job_id: job.id, from_user_id: user.id });
+    return { success: true };
+  },
+
+  // --- Employer: accept the candidate's suggested interview time -------------
+  async acceptInterviewCounter(user, payload) {
+    const { application, job } = requireOwnedApplication(user, payload, 'schedule interviews');
+    if (!application || application.interview_response !== 'counter_proposed' || !application.interview_counter_time) {
+      throw fail(409, 'There is no suggested time to accept');
+    }
+    const when = parseTime(application.interview_counter_time, 'suggested time');
+    store.update('JobApplication', application.id, {
+      interview_proposed_time: when.toISOString(),
+      interview_response: 'accepted',
+      interview_counter_time: null,
+    });
+    await notify('interview_confirmed', {
+      to: applicantEmail(application),
+      subject: `Interview confirmed: ${roleLine(job)}`,
+      ...layout({
+        heading: 'Your interview is confirmed',
+        paragraphs: [
+          `Hi ${firstName(application)},`,
+          `${job.company || 'The employer'} accepted the time you suggested for ${job.title}.`,
+          `Interview time: ${utcText(when)}. Your dashboard shows it in your own time zone.`,
+        ],
+        button: { label: 'View your applications', url: DASHBOARD() },
+      }),
+    }, { application_id: application.id, job_id: job.id, time: when.toISOString() });
+    return { success: true };
+  },
+
+  // --- Candidate actions (each emails the employer) ---------------------------
+  async respondToInterview(user, { application_id, response, counter_time }) {
+    const { application, job } = requireOwnApplication(user, application_id);
+    if (application.status !== 'interview' || !application.interview_proposed_time) {
+      throw fail(409, 'There is no interview to respond to');
+    }
+    if (!['accepted', 'declined', 'counter_proposed'].includes(response)) throw fail(400, 'Invalid response');
+    const changes = { interview_response: response, interview_counter_time: null };
+    let counter = null;
+    if (response === 'counter_proposed') {
+      counter = parseTime(counter_time, 'suggested time');
+      changes.interview_counter_time = counter.toISOString();
+    }
+    store.update('JobApplication', application.id, changes);
+    const who = applicantLabel(application);
+    const lines = {
+      accepted: `${who} accepted the interview for ${job.title} on ${utcText(application.interview_proposed_time)}.`,
+      declined: `${who} declined the interview for ${job.title}.`,
+      counter_proposed: `${who} can't make the proposed interview time for ${job.title} and suggested ${counter ? utcText(counter) : 'another time'} instead. You can accept it or propose a new time from the candidate's card.`,
+    };
+    await notifyEmployer(`interview_${response}`, job, {
+      subject: `${who} ${response === 'counter_proposed' ? 'suggested a new interview time' : `${response} the interview`}: ${job.title}`,
+      heading: response === 'counter_proposed' ? 'New interview time suggested' : `Interview ${response}`,
+      paragraphs: [lines[response]],
+    }, { application_id: application.id });
+    return { success: true };
+  },
+
+  async respondToOffer(user, { application_id, response, notes }) {
+    const { application, job } = requireOwnApplication(user, application_id);
+    if (application.status !== 'offered') throw fail(409, 'There is no offer to respond to');
+    if (!['accepted', 'declined', 'negotiating'].includes(response)) throw fail(400, 'Invalid response');
+    const text = String(notes || '').trim().slice(0, 2000);
+    if (response === 'negotiating' && !text) throw fail(400, 'Please add a note for the employer');
+    store.update('JobApplication', application.id, {
+      offer_response: response,
+      offer_negotiation_notes: response === 'negotiating' ? text : null,
+    });
+    const who = applicantLabel(application);
+    await notifyEmployer(`offer_${response}`, job, {
+      subject: `${who} ${response === 'negotiating' ? 'wants to discuss the offer' : `${response} your offer`}: ${job.title}`,
+      heading: response === 'accepted' ? 'Offer accepted 🎉' : response === 'declined' ? 'Offer declined' : 'Offer: candidate wants to talk',
+      paragraphs: [
+        response === 'accepted' ? `${who} accepted your offer for ${job.title}.`
+          : response === 'declined' ? `${who} declined your offer for ${job.title}.`
+            : `${who} replied to your offer for ${job.title}:`,
+        response === 'negotiating' ? `“${text}”` : '',
+      ].filter(Boolean),
+    }, { application_id: application.id });
+    return { success: true };
+  },
+
+  async withdrawApplication(user, { application_id }) {
+    const { application, job } = requireOwnApplication(user, application_id);
+    if (application.status === 'withdrawn') return { success: true };
+    if (application.status === 'rejected') throw fail(409, 'This application is already closed');
+    if (application.status === 'offered' && application.offer_response === 'accepted') {
+      throw fail(409, 'You accepted this offer — contact the employer directly to change that');
+    }
+    store.update('JobApplication', application.id, { status: 'withdrawn', withdrawn_date: new Date().toISOString() });
+    await notifyEmployer('application_withdrawn', job, {
+      subject: `${applicantLabel(application)} withdrew their application: ${job.title}`,
+      heading: 'Application withdrawn',
+      paragraphs: [`${applicantLabel(application)} withdrew their application for ${job.title}. No action is needed.`],
+    }, { application_id: application.id });
     return { success: true };
   },
 };

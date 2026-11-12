@@ -16,6 +16,17 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import {
   CheckCircle2, Clock, AlertCircle, Briefcase, Calendar,
   TrendingUp, MessageSquare, Loader2
 } from "lucide-react";
@@ -43,47 +54,57 @@ export default function ApplicationCard({ application, job, onUpdate }) {
   const cfg = statusConfig[application.status] || statusConfig.applied;
   const StatusIcon = cfg.icon;
 
-  const handleInterviewResponse = async (response, proposedTime = null) => {
+  const run = async (fn, args, success) => {
     setLoading(true);
     try {
-      const updateData = {
-        interview_response: response,
-      };
-      if (proposedTime) {
-        updateData.interview_counter_time = proposedTime;
-      }
-      await base44.entities.JobApplication.update(application.id, updateData);
-      toast.success(`Interview ${response}!`);
-      setInterviewDialogOpen(false);
-      setCounterTime("");
+      await base44.functions.invoke(fn, { application_id: application.id, ...args });
+      toast.success(success);
       queryClient.invalidateQueries({ queryKey: ["myApplications"] });
       onUpdate?.();
+      return true;
     } catch (error) {
-      toast.error("Failed to respond to interview");
+      toast.error(error?.message || "Something went wrong. Please try again.");
+      return false;
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
+  };
+
+  const handleInterviewResponse = async (response, proposedTime = null) => {
+    const ok = await run(
+      "respondToInterview",
+      {
+        response,
+        // datetime-local has no zone; send the moment the candidate picked.
+        ...(proposedTime ? { counter_time: new Date(proposedTime).toISOString() } : {}),
+      },
+      response === "counter_proposed" ? "Suggested time sent to the employer." : `Interview ${response}.`
+    );
+    if (ok) {
+      setInterviewDialogOpen(false);
+      setCounterTime("");
+    }
   };
 
   const handleOfferResponse = async (response, notes = null) => {
-    setLoading(true);
-    try {
-      const updateData = {
-        offer_response: response,
-      };
-      if (notes) {
-        updateData.offer_negotiation_notes = notes;
-      }
-      await base44.entities.JobApplication.update(application.id, updateData);
-      toast.success(`Offer ${response}!`);
+    const ok = await run(
+      "respondToOffer",
+      { response, ...(notes ? { notes } : {}) },
+      response === "negotiating" ? "Your note was sent to the employer." : `Offer ${response}.`
+    );
+    if (ok) {
       setOfferDialogOpen(false);
       setNegotiationNotes("");
-      queryClient.invalidateQueries({ queryKey: ["myApplications"] });
-      onUpdate?.();
-    } catch (error) {
-      toast.error("Failed to respond to offer");
     }
-    setLoading(false);
   };
+
+  const handleWithdraw = () => run("withdrawApplication", {}, "Application withdrawn.");
+
+  const canWithdraw =
+    !["withdrawn", "rejected"].includes(application.status) &&
+    !(application.status === "offered" && application.offer_response === "accepted");
+  const role = job || application.job;
+  const roleClosed = role && role.status && role.status !== "active";
 
   return (
     <Card className="overflow-hidden">
@@ -91,15 +112,18 @@ export default function ApplicationCard({ application, job, onUpdate }) {
         <div className="flex items-start justify-between">
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-2">
-              <h3 className="font-semibold text-sm">{job?.title || "Unknown Role"}</h3>
+              <h3 className="font-semibold text-sm">{role?.title || "Unknown Role"}</h3>
               <Badge className={`text-xs ${cfg.color}`}>
                 <StatusIcon className="w-3 h-3 mr-1" />
                 {cfg.label}
               </Badge>
             </div>
-            <p className="text-xs text-muted-foreground">{job?.company || "Unknown Company"}</p>
-            {job?.location && (
-              <p className="text-xs text-muted-foreground">{job.location}</p>
+            <p className="text-xs text-muted-foreground">{role?.company || ""}</p>
+            {role?.location && (
+              <p className="text-xs text-muted-foreground">{role.location}</p>
+            )}
+            {roleClosed && (
+              <p className="text-xs text-muted-foreground mt-1">This role is no longer open.</p>
             )}
           </div>
         </div>
@@ -125,7 +149,7 @@ export default function ApplicationCard({ application, job, onUpdate }) {
           <div className="rounded-lg bg-purple-50 border border-purple-200 p-3 space-y-3">
             <div>
               <p className="text-xs font-semibold text-purple-700 mb-1 flex items-center gap-1">
-                <Calendar className="w-3 h-3" /> Proposed Interview Time
+                <Calendar className="w-3 h-3" /> {application.interview_response === "accepted" ? "Interview Time" : "Proposed Interview Time"}
               </p>
               <p className="text-sm font-medium text-purple-900">
                 {new Date(application.interview_proposed_time).toLocaleString('en-US', {
@@ -141,9 +165,11 @@ export default function ApplicationCard({ application, job, onUpdate }) {
 
             {application.interview_response === "counter_proposed" && application.interview_counter_time && (
               <div>
-                <p className="text-xs font-semibold text-purple-700 mb-1">Your Counter Proposal</p>
+                <p className="text-xs font-semibold text-purple-700 mb-1">Your Suggested Time</p>
                 <p className="text-sm text-purple-900">
-                  {new Date(application.interview_counter_time).toLocaleString()}
+                  {new Date(application.interview_counter_time).toLocaleString('en-US', {
+                    weekday: 'long', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', timeZoneName: 'short',
+                  })}
                 </p>
               </div>
             )}
@@ -171,7 +197,7 @@ export default function ApplicationCard({ application, job, onUpdate }) {
                 <Dialog open={interviewDialogOpen} onOpenChange={setInterviewDialogOpen}>
                   <DialogTrigger asChild>
                     <Button size="sm" variant="outline" className="text-xs gap-1">
-                      <MessageSquare className="w-3 h-3" /> Counter Propose
+                      <MessageSquare className="w-3 h-3" /> Suggest Another Time
                     </Button>
                   </DialogTrigger>
                   <DialogContent className="sm:max-w-[400px]">
@@ -208,10 +234,12 @@ export default function ApplicationCard({ application, job, onUpdate }) {
                 </Dialog>
               </div>
             ) : (
-              <Badge variant="secondary" className="text-xs w-full text-center py-1 capitalize">
+              <Badge variant="secondary" className="text-xs w-full text-center py-1">
                 {application.interview_response === "counter_proposed"
-                  ? "Waiting for Response"
-                  : `You ${application.interview_response} this interview`}
+                  ? "Waiting for the employer to answer your suggested time"
+                  : application.interview_response === "accepted"
+                    ? "Confirmed — see you then!"
+                    : "You declined this interview"}
               </Badge>
             )}
           </div>
@@ -318,10 +346,12 @@ export default function ApplicationCard({ application, job, onUpdate }) {
                 </Dialog>
               </div>
             ) : (
-              <Badge variant="secondary" className="text-xs w-full text-center py-1 capitalize">
+              <Badge variant="secondary" className="text-xs w-full text-center py-1">
                 {application.offer_response === "negotiating"
-                  ? "Negotiation in Progress"
-                  : `You ${application.offer_response} this offer`}
+                  ? "Waiting for the employer to reply to your note"
+                  : application.offer_response === "accepted"
+                    ? "You accepted this offer 🎉"
+                    : "You declined this offer"}
               </Badge>
             )}
           </div>
@@ -333,6 +363,37 @@ export default function ApplicationCard({ application, job, onUpdate }) {
             <p className="text-xs text-gray-700">
               Thank you for your interest. We've decided to move forward with other candidates. We encourage you to apply for future positions.
             </p>
+          </div>
+        )}
+
+        {application.status === "withdrawn" && (
+          <div className="rounded-lg bg-gray-50 border border-gray-200 p-3">
+            <p className="text-xs text-gray-700">You withdrew this application. The employer has been notified.</p>
+          </div>
+        )}
+
+        {canWithdraw && (
+          <div className="flex justify-end pt-1">
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button size="sm" variant="ghost" className="text-xs text-muted-foreground" disabled={loading}>
+                  Withdraw application
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Withdraw this application?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    {role?.title ? `${role.title}${role.company ? ` at ${role.company}` : ""}: ` : ""}
+                    the employer will be told you’re no longer interested, and any interview or offer is cancelled. You can apply again later if the role is still open.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Keep application</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleWithdraw}>Withdraw</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         )}
       </CardContent>

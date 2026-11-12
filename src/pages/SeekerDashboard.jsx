@@ -254,21 +254,24 @@ Return the top matches with specific reasoning.`,
 
   const updateInvitationMutation = useMutation({
     mutationFn: async ({ id, status, job_id, seeker_profile_id }) => {
-      await base44.entities.Invitation.update(id, { status });
-      // If accepting, automatically apply for the job
+      // Accepting applies first, so a closed role or duplicate application
+      // fails before the invitation is marked accepted.
       if (status === "accepted") {
         await base44.entities.JobApplication.create({
           job_id,
           seeker_profile_id,
           cover_letter: "Accepted invitation from employer",
-          status: "applied",
         });
       }
+      await base44.entities.Invitation.update(id, { status });
     },
     onSuccess: (_, { status }) => {
       queryClient.invalidateQueries({ queryKey: ["myInvitations"] });
       queryClient.invalidateQueries({ queryKey: ["myApplications"] });
       toast.success(status === "accepted" ? "Applied to job!" : "Invitation updated!");
+    },
+    onError: (err) => {
+      toast.error(err?.message || "Couldn't update the invitation. Please try again.");
     },
   });
 
@@ -638,7 +641,7 @@ Return the top matches with specific reasoning.`,
                 <ApplicationCard
                   key={app.id}
                   application={app}
-                  job={job}
+                  job={job || app.job}
                   onUpdate={() => queryClient.invalidateQueries({ queryKey: ["myApplications"] })}
                 />
               );
@@ -656,7 +659,8 @@ Return the top matches with specific reasoning.`,
            </Card>
           ) : (
            invitations.map(invitation => {
-           const job = jobs.find(j => j.id === invitation.job_id);
+           const job = jobs.find(j => j.id === invitation.job_id) || invitation.job;
+           const jobOpen = !job?.status || job.status === "active";
            return (
              <Card key={invitation.id} className="p-4 sm:p-5">
                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
@@ -672,14 +676,17 @@ Return the top matches with specific reasoning.`,
                  </Badge>
                </div>
                <div className="flex flex-col sm:flex-row gap-2 mt-3 sm:mt-4">
-                 {job && (
+                 {invitation.status === "pending" && !jobOpen && (
+                   <p className="text-xs text-muted-foreground self-center">This role is no longer open.</p>
+                 )}
+                 {job && jobOpen && (
                    <Link to={`/jobs/${job.id}`} className="w-full sm:w-auto">
                      <Button size="sm" variant="ghost" className="gap-1 w-full sm:w-auto">
                        <Eye className="w-3.5 h-3.5" /> View Job
                      </Button>
                    </Link>
                  )}
-                 {invitation.status === "pending" && (
+                 {invitation.status === "pending" && jobOpen && (
                    <>
                      <Button size="sm" className="flex-1 sm:flex-none" onClick={() => updateInvitationMutation.mutate({ id: invitation.id, status: "accepted", job_id: invitation.job_id, seeker_profile_id: invitation.seeker_profile_id })} disabled={updateInvitationMutation.isPending}>
                        Accept & Apply
