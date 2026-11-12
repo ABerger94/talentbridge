@@ -23,6 +23,8 @@ import ResumeCritique from "@/components/resume/ResumeCritique";
 import ApplicationCard from "@/components/seeker/ApplicationCard";
 import PortfolioSection from "@/components/seeker/PortfolioSection";
 import { useAuth } from "@/lib/AuthContext";
+import { Switch } from "@/components/ui/switch";
+import { profileCompleteness } from "@/lib/completeness";
 
 export default function SeekerDashboard() {
   const { user } = useAuth();
@@ -330,6 +332,39 @@ Return the top matches with specific reasoning.`,
               {profileScore < 60 ? "Complete your profile to improve match quality." : profileScore < 90 ? "Strong profile — add more context to maximize AI matching." : "Excellent profile — your Capability Graph is rich with signal."}
             </p>
           </Card>
+
+          {/* Visibility to employers */}
+          {(() => {
+            const saved = profiles[0];
+            const status = profileCompleteness(saved || {});
+            const visibleOn = (saved?.open_to_opportunities ?? profile.open_to_opportunities) !== false;
+            const toggle = async (on) => {
+              update("open_to_opportunities", on);
+              if (!saved) return; // saved with the profile
+              try {
+                await base44.entities.SeekerProfile.update(saved.id, { open_to_opportunities: on });
+                queryClient.invalidateQueries({ queryKey: ["seekerProfile"] });
+                toast.success(on ? "Employers can find you once your profile is complete." : "You're hidden from employer search.");
+              } catch (err) {
+                toast.error(err?.message || "Couldn't update your visibility.");
+              }
+            };
+            return (
+              <Card className="p-4 sm:p-5 space-y-2">
+                <div className="flex items-center justify-between gap-3">
+                  <label htmlFor="visible-to-employers" className="text-sm font-medium cursor-pointer">Visible to employers</label>
+                  <Switch id="visible-to-employers" checked={visibleOn} onCheckedChange={toggle} />
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {!visibleOn
+                    ? "You're hidden from employer search. Employers you apply to can still see your application."
+                    : saved && status.complete
+                      ? "Approved employers can find your profile and invite you to apply."
+                      : `Not visible yet. To appear in employer search (and to apply), add ${status.missing.join(", ")}, then save.`}
+                </p>
+              </Card>
+            );
+          })()}
 
           <Card className="p-4 sm:p-6 space-y-5">
             <h2 className="text-sm sm:text-base font-semibold">About You</h2>

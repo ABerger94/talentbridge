@@ -122,6 +122,26 @@ profiles, run matching, invite, message, or act on applications.
 - Status lives in `users.data.employer_status` (`pending`/`approved`/
   `rejected`); the company profile in `users.data.company`.
 
+## Seeker directory (Explore Seekers)
+
+A seeker profile is **listed** (Explore Seekers, matching, invitations, and
+employer profile reads) only when complete — full name AND (a skill OR a
+built Capability Graph) AND (headline OR bio) — and its "Visible to
+employers" switch (`open_to_opportunities`) is on. Applying requires the
+same completeness. Owners and admins always see their own/all profiles; an
+employer can also open a profile that applied to one of their roles.
+
+- Incomplete profiles are never sent to the AI and never get a score.
+- Scores are cached per (job, seeker) in `match_scores` and recomputed only
+  when the job's content or that seeker's profile changes (7-day TTL).
+- Rules live in `server/src/completeness.js` (mirrored for the UI in
+  `src/lib/completeness.js`).
+
+## Tests
+
+`npm test` (repo root) runs the server acceptance tests in `server/test/`
+with Node's built-in runner (no extra dependencies; the AI is stubbed).
+
 ## Messaging
 
 One conversation per job application, between the applicant and the

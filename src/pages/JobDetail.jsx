@@ -15,6 +15,8 @@ import {
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
+import { profileCompleteness } from "@/lib/completeness";
+import { useAuth } from "@/lib/AuthContext";
 import ReactMarkdown from "react-markdown";
 import HiddenVectorsPanel from "@/components/jobs/HiddenVectorsPanel";
 import InterviewPrepEngine from "@/components/jobs/InterviewPrepEngine";
@@ -39,7 +41,7 @@ export default function JobDetail() {
     },
   });
 
-  const { data: profiles = [] } = useQuery({
+  const { data: profiles = [], isSuccess: profilesLoaded } = useQuery({
     queryKey: ["seekerProfileForDetail"],
     queryFn: async () => {
       const user = await base44.auth.me();
@@ -60,6 +62,9 @@ export default function JobDetail() {
     retry: false,
   });
   const alreadyApplied = applied || !!myApplication;
+  // Signed-in seekers must meet the same minimum employers see before applying.
+  const { user: viewer } = useAuth();
+  const profileGate = profilesLoaded && viewer?.role === "job_seeker" ? profileCompleteness(profile || {}) : null;
   const jobOpen = !job?.status || job.status === "active";
 
   const applyMutation = useMutation({
@@ -233,6 +238,16 @@ export default function JobDetail() {
                   </p>
                 </div>
               </div>
+            </Card>
+          ) : profileGate && !profileGate.complete ? (
+            <Card className="p-5 space-y-2 border-primary/25 bg-primary/5">
+              <h3 className="font-semibold text-sm">Finish your profile to apply</h3>
+              <p className="text-xs text-muted-foreground">
+                Employers see your Capability Profile when you apply. Add {profileGate.missing.join(", ")} first.
+              </p>
+              <Link to="/dashboard">
+                <Button size="sm" className="w-full mt-1">Complete my profile</Button>
+              </Link>
             </Card>
           ) : (
             <Dialog open={applyOpen} onOpenChange={setApplyOpen}>

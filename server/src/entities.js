@@ -222,6 +222,17 @@ function hidesSeekers(user) {
   return !require('./employers').isApprovedEmployer(user);
 }
 
+// Whether `user` may see someone else's seeker profile: admins always;
+// approved employers only when it's complete and visible (listable), or the
+// seeker applied to one of their jobs. Owners always see their own.
+function canSeeSeeker(user, profile) {
+  if (!user || !profile) return false;
+  if (profile.created_by_id === user.id || user.role === 'admin') return true;
+  if (user.role !== 'employer' || hidesSeekers(user)) return false;
+  if (require('./completeness').isListable(profile)) return true;
+  return allRecords('JobApplication').some((a) => a.seeker_profile_id === profile.id && a.employer_user_id === user.id);
+}
+
 // Short job summary attached to applications and invitations, so a seeker
 // still sees what they applied to after the role is closed (closed jobs are
 // otherwise hidden from them).
@@ -308,6 +319,18 @@ function registerEntityRoutes(app) {
       // Identity comes from the applicant's own account and profile, never
       // from another seeker's profile id.
       const profile = ownSeekerProfile(req.user.id, body.seeker_profile_id);
+      if (req.user.role !== 'admin') {
+        const { profileCompleteness } = require('./completeness');
+        const c = profileCompleteness(profile || {});
+        if (!profile || !c.complete) {
+          const missing = profile ? c.missing : ['your profile'];
+          return res.status(409).json({
+            error: `Finish your profile to apply: add ${missing.join(', ')}.`,
+            code: 'profile_incomplete',
+            missing,
+          });
+        }
+      }
       body.seeker_profile_id = profile ? profile.id : null;
       body.applicant_name = applicantName(profile, req.user.id) || String(body.applicant_name || '').trim() || 'Anonymous';
       body.applicant_email = req.user.email;
@@ -317,8 +340,9 @@ function registerEntityRoutes(app) {
       const bad = checkResumeWrite(entity, body, req.user, null);
       if (bad) return res.status(400).json({ error: bad });
     }
-    if (entity === 'SeekerProfile' && typeof body.full_name === 'string') {
-      body.full_name = body.full_name.trim().slice(0, 120);
+    if (entity === 'SeekerProfile') {
+      // New profiles take the account's name (e.g. from Google) unless given one.
+      body.full_name = String(body.full_name || '').trim().slice(0, 120) || userFullName(req.user.id);
     }
     if (entity === 'SeekerProfile' && 'professional_links' in body) {
       try {
@@ -367,8 +391,8 @@ function registerEntityRoutes(app) {
       .filter(entity, criteria)
       .filter((r) => can(entity, 'read', req.user, r))
       .slice(0, limit);
-    if (entity === 'SeekerProfile' && hidesSeekers(req.user)) {
-      visible = visible.filter((r) => r.created_by_id === req.user.id);
+    if (entity === 'SeekerProfile') {
+      visible = visible.filter((r) => canSeeSeeker(req.user, r));
     }
     const cache = new Map();
     visible = visible.map((r) => present(entity, r, req.user, cache));
@@ -380,7 +404,7 @@ function registerEntityRoutes(app) {
     if (!ENTITIES.includes(entity)) return res.status(404).json({ error: 'Unknown entity' });
     const record = getRecord(entity, id);
     if (!record || !can(entity, 'read', req.user, record)
-        || (entity === 'SeekerProfile' && hidesSeekers(req.user) && record.created_by_id !== req.user?.id)) {
+        || (entity === 'SeekerProfile' && !canSeeSeeker(req.user, record))) {
       return res.status(404).json({ error: 'Not found' });
     }
     res.json({ data: present(entity, record, req.user) });
@@ -399,8 +423,9 @@ function registerEntityRoutes(app) {
     if (denied) return res.status(403).json({ error: denied });
     const bad = checkResumeWrite(entity, changes, req.user, record);
     if (bad) return res.status(400).json({ error: bad });
-    if (entity === 'SeekerProfile' && typeof changes.full_name === 'string') {
-      changes.full_name = changes.full_name.trim().slice(0, 120);
+    if (entity === 'SeekerProfile' && 'full_name' in changes) {
+      changes.full_name = String(changes.full_name || '').trim().slice(0, 120);
+      if (!changes.full_name) return res.status(400).json({ error: 'Your full name is required' });
     }
     if (entity === 'SeekerProfile' && 'professional_links' in changes) {
       try {

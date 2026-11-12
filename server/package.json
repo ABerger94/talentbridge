@@ -16,7 +16,8 @@
   "private": true,
   "scripts": {
     "dev": "node --watch src/index.js",
-    "start": "node src/index.js"
+    "start": "node src/index.js",
+    "test": "node --test test/*.test.js"
   },
   "type": "commonjs",
   "version": "1.0.0"
