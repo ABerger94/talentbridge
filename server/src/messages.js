@@ -90,6 +90,7 @@ function otherParty(c) {
 
 function readOnlyReason(c) {
   if (!c.participant) return 'Admins can read conversations but not send messages.';
+  if (c.app.account_deleted || c.app.employer_deleted) return 'The other person deleted their account.';
   const employerRow = getUserById(c.app.employer_user_id);
   if (employerRow && !require('./employers').isApprovedEmployer(require('./auth').publicUser(employerRow))) {
     return 'Messaging opens once the employer account is approved.';
@@ -157,7 +158,7 @@ function registerMessageRoutes(app) {
     try {
       res.json({ data: await fn(req) });
     } catch (e) {
-      if (!e.status) console.error('[messages]', e);
+      if (!e.status) { console.error('[messages]', e); require('./monitor').captureServerError(e, req); }
       res.status(e.status || 500).json({ error: e.status ? e.message : 'Something went wrong' });
     }
   };

@@ -112,12 +112,16 @@ function registerSignupRoutes(app) {
     try {
       res.json({ data: await fn(req) });
     } catch (e) {
-      if (!e.status) console.error('[signups]', e);
+      if (!e.status) { console.error('[signups]', e); require('./monitor').captureServerError(e, req); }
       res.status(e.status || 500).json({ error: e.status ? e.message : 'Something went wrong' });
     }
   };
   app.get('/api/admin/incomplete-signups', authRequired, admin, wrap(() => incompleteSignups()));
-  app.post('/api/admin/incomplete-signups/:id/remind', authRequired, admin, wrap((req) => sendReminder(req.params.id)));
+  app.post('/api/admin/incomplete-signups/:id/remind', authRequired, admin, wrap(async (req) => {
+    const out = await sendReminder(req.params.id);
+    require('./audit').audit(req.user, 'signup.reminder_sent', { type: 'user', id: req.params.id });
+    return out;
+  }));
 }
 
 module.exports = { registerSignupRoutes, incompleteSignups, progressFor };

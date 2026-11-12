@@ -15,10 +15,15 @@ const UPLOAD_DIR = path.join(DATA_DIR, 'uploads');
 // instance can serve them — the old per-instance memory copy vanished between
 // requests on Vercel. Files written to disk by older standalone builds are
 // still served from UPLOAD_DIR as a fallback.
+// Vercel rejects request bodies over ~4.5 MB before they reach us, so the
+// default cap stays under it (raise TB_MAX_UPLOAD_MB when self-hosting).
+const MAX_UPLOAD_MB = Math.max(1, parseFloat(process.env.TB_MAX_UPLOAD_MB || '') || 4);
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 15 * 1024 * 1024 },
+  limits: { fileSize: Math.round(MAX_UPLOAD_MB * 1024 * 1024) },
 });
+const storage = require('./storage');
+try { db.exec("ALTER TABLE files ADD COLUMN storage TEXT NOT NULL DEFAULT 'database'"); } catch { /* exists */ }
 
 const SAFE_NAME = /^[A-Za-z0-9._-]+$/;
 
@@ -102,7 +107,8 @@ function userFromRequest(req) {
   try {
     const payload = jwt.verify(header.slice(7), jwtSecret());
     const row = getUserById(payload.sub);
-    return row ? publicUser(row) : null;
+    if (!row || (Number(payload.tv) || 0) !== (Number(publicUser(row).data.token_version) || 0)) return null;
+    return publicUser(row);
   } catch {
     return null;
   }
@@ -123,13 +129,15 @@ function nameFromUrl(fileUrl) {
   return SAFE_NAME.test(name) ? name : null;
 }
 
-function loadFile(name) {
+async function loadFile(name) {
   const row = db
-    .prepare('SELECT name, content_type, original_name, data FROM files WHERE name = ?')
+    .prepare('SELECT name, content_type, original_name, data, storage FROM files WHERE name = ?')
     .get(name);
   if (row) {
+    const buffer = await storage.getBytes(row);
+    if (!buffer) return null;
     return {
-      buffer: Buffer.from(row.data),
+      buffer,
       contentType: row.content_type,
       originalName: row.original_name || name,
     };
@@ -166,12 +174,12 @@ async function extractTextFromBuffer(buffer, name) {
 async function readUploadText(fileUrl) {
   const name = nameFromUrl(fileUrl);
   if (!name) return null;
-  const file = loadFile(name);
+  const file = await loadFile(name);
   if (!file) return null;
   return extractTextFromBuffer(file.buffer, file.originalName || name);
 }
 
-function serveFile(req, res) {
+async function serveFile(req, res) {
   const name = nameFromUrl(req.params.name);
   if (!name) return res.status(404).json({ error: 'File not found' });
   const signed = req.query.sig && validSignature(name, req.query.exp, req.query.sig);
@@ -182,7 +190,13 @@ function serveFile(req, res) {
     }
     if (!canAccessFile(user, name)) return res.status(404).json({ error: 'File not found' });
   }
-  const file = loadFile(name);
+  let file;
+  try {
+    file = await loadFile(name);
+  } catch (e) {
+    require('./monitor').captureServerError(e, req);
+    return res.status(502).json({ error: 'The file couldn’t be loaded from storage. Please try again.' });
+  }
   if (!file) return res.status(404).json({ error: 'File not found' });
   const type = INLINE_TYPES[path.extname(name).toLowerCase()];
   const safeOriginal = String(file.originalName || name).replace(/[^\w.\- ]/g, '_');
@@ -195,20 +209,38 @@ function serveFile(req, res) {
 }
 
 function registerFileRoutes(app) {
-  app.post('/api/files/upload', authRequired, limits.uploads, upload.single('file'), (req, res) => {
+  const receive = (req, res, next) => upload.single('file')(req, res, (err) => {
+    if (err?.code === 'LIMIT_FILE_SIZE') {
+      return res.status(413).json({ error: `That file is too large. Files can be up to ${MAX_UPLOAD_MB} MB.` });
+    }
+    if (err) return next(err);
+    next();
+  });
+
+  app.post('/api/files/upload', authRequired, limits.uploads, receive, async (req, res) => {
     if (!req.file) return res.status(400).json({ error: 'No file received' });
-    const ext = path.extname(req.file.originalname || '').replace(/[^A-Za-z0-9.]/g, '').slice(0, 10);
+    const bad = storage.checkContent(req.file.originalname, req.file.buffer);
+    if (bad) return res.status(415).json({ error: bad });
+    const ext = path.extname(req.file.originalname || '').toLowerCase().replace(/[^a-z0-9.]/g, '').slice(0, 10);
     const name = `${Date.now()}-${crypto.randomUUID()}${ext}`;
+    let stored;
+    try {
+      stored = await storage.putBytes(name, req.file.buffer);
+    } catch (e) {
+      require('./monitor').captureServerError(e, req);
+      return res.status(502).json({ error: 'The file couldn’t be stored. Please try again.' });
+    }
     db.prepare(
-      'INSERT INTO files (name, content_type, original_name, size, data, created_by_id, created_date) VALUES (?, ?, ?, ?, ?, ?, ?)'
+      'INSERT INTO files (name, content_type, original_name, size, data, created_by_id, created_date, storage) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
     ).run(
       name,
       req.file.mimetype || 'application/octet-stream',
-      req.file.originalname || name,
+      String(req.file.originalname || name).slice(0, 200),
       req.file.size,
-      req.file.buffer,
+      stored.data,
       req.user.id,
-      new Date().toISOString()
+      new Date().toISOString(),
+      stored.storage
     );
     // /api/files/... is always routed to the server (vercel.json rewrites /api/*).
     // Signed so the uploader can open it right away; stored copies are
@@ -239,9 +271,33 @@ function registerFileRoutes(app) {
       });
       res.json({ data: result });
     } catch (e) {
+      if (!e.status || e.status >= 500) require('./monitor').captureServerError(e, req);
       res.status(e.status || 500).json({ error: e.message });
     }
   });
 }
 
-module.exports = { registerFileRoutes, readUploadText, canAccessFile, canAttachFile, signFileUrl, canonicalFileUrl };
+// Removes a file's metadata and bytes (account deletion).
+async function deleteFile(name) {
+  const row = db.prepare('SELECT name, storage FROM files WHERE name = ?').get(name);
+  if (!row) return;
+  await storage.deleteBytes(row);
+  db.prepare('DELETE FROM files WHERE name = ?').run(name);
+}
+
+// Moves up to `batch` database-stored files into the S3 bucket. Called from
+// the admin System tab until nothing is left.
+async function migrateToBucket(batch = 20) {
+  if (storage.backend() !== 's3') throw Object.assign(new Error('Set the TB_S3_* settings first'), { status: 400 });
+  const rows = db.prepare("SELECT name, data FROM files WHERE storage = 'database' LIMIT ?").all(batch);
+  let moved = 0;
+  for (const row of rows) {
+    const { storage: where, data } = await storage.putBytes(row.name, Buffer.from(row.data));
+    db.prepare('UPDATE files SET storage = ?, data = ? WHERE name = ?').run(where, data, row.name);
+    moved += 1;
+  }
+  const remaining = db.prepare("SELECT COUNT(*) AS n FROM files WHERE storage = 'database'").get().n;
+  return { moved, remaining };
+}
+
+module.exports = { deleteFile, migrateToBucket, MAX_UPLOAD_MB, registerFileRoutes, readUploadText, canAccessFile, canAttachFile, signFileUrl, canonicalFileUrl };

@@ -41,6 +41,10 @@ const PROVIDERS = {
           text: msg.text,
           html: msg.html,
           ...(env('TB_MAIL_REPLY_TO') ? { reply_to: env('TB_MAIL_REPLY_TO') } : {}),
+          ...(msg.headers ? { headers: msg.headers } : {}),
+          ...(msg.attachments?.length ? {
+            attachments: msg.attachments.map((a) => ({ filename: a.filename, content: Buffer.from(a.content).toString('base64') })),
+          } : {}),
         }),
         signal: AbortSignal.timeout(TIMEOUT_MS),
       });
@@ -61,6 +65,10 @@ const PROVIDERS = {
           textContent: msg.text,
           htmlContent: msg.html,
           ...(env('TB_MAIL_REPLY_TO') ? { replyTo: parseAddress(env('TB_MAIL_REPLY_TO')) } : {}),
+          ...(msg.headers ? { headers: msg.headers } : {}),
+          ...(msg.attachments?.length ? {
+            attachment: msg.attachments.map((a) => ({ name: a.filename, content: Buffer.from(a.content).toString('base64') })),
+          } : {}),
         }),
         signal: AbortSignal.timeout(TIMEOUT_MS),
       });
@@ -88,6 +96,10 @@ const PROVIDERS = {
         text: msg.text,
         html: msg.html,
         ...(env('TB_MAIL_REPLY_TO') ? { replyTo: env('TB_MAIL_REPLY_TO') } : {}),
+        ...(msg.headers ? { headers: msg.headers } : {}),
+        ...(msg.attachments?.length ? {
+          attachments: msg.attachments.map((a) => ({ filename: a.filename, content: a.content, contentType: a.contentType })),
+        } : {}),
       });
     },
   },
@@ -112,14 +124,16 @@ function mailStatus() {
 
 // Returns { ok: true, provider } or { ok: false, error }. Never throws, so a
 // failed email never fails the action that triggered it.
-async function sendMail({ to, subject, text, html }) {
+// Optional: headers (e.g. List-Unsubscribe) and attachments
+// ([{ filename, content (string|Buffer), contentType }], e.g. calendar invites).
+async function sendMail({ to, subject, text, html, headers, attachments }) {
   if (!to) return { ok: false, error: 'no recipient' };
   const providers = activeProviders();
   if (!providers.length) return { ok: false, error: 'no mail provider configured' };
   const errors = [];
   for (const id of providers) {
     try {
-      await PROVIDERS[id].send({ to, subject, text, html: html || undefined });
+      await PROVIDERS[id].send({ to, subject, text, html: html || undefined, headers, attachments });
       return { ok: true, provider: id };
     } catch (e) {
       errors.push(`${id}: ${e.message}`);

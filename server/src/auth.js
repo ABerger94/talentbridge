@@ -49,6 +49,7 @@ function publicUser(row) {
     email: row.email,
     role: effectiveRole(row),
     email_verified: !!row.email_verified,
+    has_password: !!row.password_hash,
     full_name: userData(row).full_name || null,
     // Employers: 'approved' | 'pending' | 'rejected' (pre-verification employers
     // count as approved); admins 'approved'; others null. See employers.js.
@@ -108,10 +109,26 @@ function getUserById(id) {
   return db.prepare('SELECT * FROM users WHERE id = ?').get(id);
 }
 
+// Every token carries the account's token version (tv). Bumping the version
+// (password change or reset, "sign out other devices", account deletion)
+// ends every session issued before it.
+function tokenVersion(row) {
+  return Number(userData(row).token_version) || 0;
+}
+
 function signToken(userRow) {
-  return jwt.sign({ sub: userRow.id, email: userRow.email }, jwtSecret(), {
+  return jwt.sign({ sub: userRow.id, email: userRow.email, tv: tokenVersion(userRow) }, jwtSecret(), {
     expiresIn: '30d',
   });
+}
+
+// Ends all existing sessions for the account; returns the updated row.
+function revokeSessions(userId) {
+  const row = getUserById(userId);
+  if (!row) return null;
+  const data = { ...userData(row), token_version: tokenVersion(row) + 1 };
+  db.prepare('UPDATE users SET data = ? WHERE id = ?').run(JSON.stringify(data), userId);
+  return getUserById(userId);
 }
 
 function authRequired(req, res, next) {
@@ -123,6 +140,9 @@ function authRequired(req, res, next) {
     const payload = jwt.verify(token, jwtSecret());
     const row = getUserById(payload.sub);
     if (!row) return res.status(401).json({ error: 'User not found' });
+    if ((Number(payload.tv) || 0) !== tokenVersion(row)) {
+      return res.status(401).json({ error: 'Your session ended. Please sign in again.', code: 'session_revoked' });
+    }
     req.user = publicUser(row);
     next();
   } catch {
@@ -266,7 +286,35 @@ function registerAuthRoutes(app) {
     if (!checkOtp(email, 'reset', otpCode)) return res.status(400).json({ error: 'Invalid or expired code. After 5 wrong tries a code stops working — request a new one.' });
     const hash = await bcrypt.hash(newPassword, 10);
     db.prepare('UPDATE users SET password_hash = ?, email_verified = 1 WHERE email = ?').run(hash, email.toLowerCase());
+    // A reset usually means the old password may be known: end every session.
+    const row = getUserByEmail(email);
+    if (row) revokeSessions(row.id);
     res.json({ success: true });
+  });
+
+  // Signed-in password change. Google-only accounts (no password yet) can set
+  // one without a current password. Other devices are signed out; this one
+  // gets a fresh token.
+  app.post('/api/auth/change-password', authRequired, limits.login, async (req, res) => {
+    const { currentPassword, newPassword } = req.body || {};
+    if (String(newPassword || '').length < 8) return res.status(400).json({ error: 'Password must be at least 8 characters' });
+    const row = getUserById(req.user.id);
+    if (row.password_hash && !(await bcrypt.compare(String(currentPassword || ''), row.password_hash))) {
+      return res.status(403).json({ error: 'Your current password is incorrect' });
+    }
+    const hash = await bcrypt.hash(String(newPassword), 10);
+    db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(hash, row.id);
+    const fresh = revokeSessions(row.id);
+    require('./audit').audit(req.user, 'account.password_changed', { type: 'user', id: row.id });
+    res.json({ success: true, access_token: signToken(fresh), user: publicUser(fresh) });
+  });
+
+  // Ends every other session (lost phone, shared computer). This device
+  // keeps working with the new token returned here.
+  app.post('/api/auth/sign-out-others', authRequired, (req, res) => {
+    const fresh = revokeSessions(req.user.id);
+    require('./audit').audit(req.user, 'account.signed_out_others', { type: 'user', id: req.user.id });
+    res.json({ success: true, access_token: signToken(fresh) });
   });
 
   app.post('/api/auth/set-role', authRequired, (req, res) => {
@@ -338,4 +386,4 @@ function registerAuthRoutes(app) {
   });
 }
 
-module.exports = { registerAuthRoutes, authRequired, optionalAuth, safeReturnTo, secretStatus, jwtSecret, publicUser, getUserById, getUserByEmail };
+module.exports = { revokeSessions, signToken, registerAuthRoutes, authRequired, optionalAuth, safeReturnTo, secretStatus, jwtSecret, publicUser, getUserById, getUserByEmail };

@@ -145,7 +145,7 @@ function wrap(fn) {
     try {
       res.json({ data: await fn(req) });
     } catch (e) {
-      if (!e.status) console.error('[employers]', e);
+      if (!e.status) { console.error('[employers]', e); require('./monitor').captureServerError(e, req); }
       res.status(e.status || 500).json({ error: e.status ? e.message : 'Something went wrong' });
     }
   };
@@ -250,6 +250,9 @@ function registerEmployerRoutes(app) {
     data.employer_reviewed_by = req.user.id;
     data.employer_review_note = note || null;
     saveData(row.id, data);
+    require('./audit').audit(req.user, `employer.${decision}`, { type: 'user', id: row.id }, {
+      email: row.email, company: data.company?.name || null, note: note || null,
+    });
 
     let published = 0;
     if (decision === 'approve') {

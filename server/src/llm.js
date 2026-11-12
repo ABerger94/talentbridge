@@ -445,6 +445,7 @@ function registerLlmRoutes(app) {
       const result = await invokeLLM({ prompt: fullPrompt, response_json_schema });
       res.json({ data: result });
     } catch (e) {
+      if (!e.status || e.status >= 500) require('./monitor').captureServerError(e, req);
       res.status(e.status || 500).json({ error: e.message });
     }
   });

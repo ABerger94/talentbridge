@@ -102,7 +102,61 @@ const auth = {
   logout() {
     setToken(null);
   },
+  // Signed-in password change; other devices are signed out and this one
+  // switches to the fresh token the server returns.
+  async changePassword({ currentPassword, newPassword }) {
+    const data = await request('/api/auth/change-password', { method: 'POST', body: { currentPassword, newPassword } });
+    if (data.access_token) setToken(data.access_token);
+    return data;
+  },
+  async signOutOtherDevices() {
+    const data = await request('/api/auth/sign-out-others', { method: 'POST' });
+    if (data.access_token) setToken(data.access_token);
+    return data;
+  },
 };
+
+// Account self-service (server/src/account.js).
+const account = {
+  // Downloads the JSON export through the browser (the request needs the
+  // session token, so it can't be a plain link).
+  async downloadExport() {
+    const token = getToken();
+    const res = await fetch(`${API_BASE}/api/account/export`, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+    if (!res.ok) {
+      let msg = `Export failed (${res.status})`;
+      try { msg = (await res.json()).error || msg; } catch { /* not json */ }
+      throw new Error(msg);
+    }
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `talentbridge-data-${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  },
+  async deleteAccount({ password, confirm }) {
+    const data = (await request('/api/account/delete', { method: 'POST', body: { password, confirm } })).data;
+    setToken(null);
+    return data;
+  },
+};
+
+// Reports browser errors to the server (admin System tab). Fire-and-forget.
+export function reportClientError(message, stack) {
+  try {
+    const token = getToken();
+    fetch(`${API_BASE}/api/client-errors`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      body: JSON.stringify({ message: String(message).slice(0, 500), stack: String(stack || '').slice(0, 4000), url: window.location.href }),
+      keepalive: true,
+    }).catch(() => {});
+  } catch { /* never throw from the error reporter */ }
+}
 
 function entityApi(name) {
   return {
@@ -230,6 +284,15 @@ const admin = {
   async remind(userId) {
     return (await request(`/api/admin/incomplete-signups/${encodeURIComponent(userId)}/remind`, { method: 'POST' })).data;
   },
+  async system({ resolved = false } = {}) {
+    return (await request(`/api/admin/system${resolved ? '?resolved=1' : ''}`)).data;
+  },
+  async resolveError(signature) {
+    return (await request(`/api/admin/errors/${encodeURIComponent(signature)}/resolve`, { method: 'POST' })).data;
+  },
+  async migrateStorage() {
+    return (await request('/api/admin/storage/migrate', { method: 'POST' })).data;
+  },
 };
 
-export const base44 = { auth, entities, functions, integrations, messages, employer, admin };
+export const base44 = { auth, account, entities, functions, integrations, messages, employer, admin };

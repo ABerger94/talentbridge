@@ -573,6 +573,7 @@ function registerFunctionRoutes(app) {
       const result = await fn(req.user, req.body || {});
       res.json({ data: result });
     } catch (e) {
+      if (!e.status || e.status >= 500) require('./monitor').captureServerError(e, req);
       res.status(e.status || 500).json({ error: e.message });
     }
   });

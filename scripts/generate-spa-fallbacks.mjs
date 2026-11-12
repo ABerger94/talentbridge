@@ -20,6 +20,7 @@ const routes = [
   'messages',
   'company',
   'admin',
+  'settings',
 ];
 
 await Promise.all(

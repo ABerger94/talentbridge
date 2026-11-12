@@ -39,6 +39,11 @@ export default function ResumeUploader({ profile, onAutoSave }) {
       return;
     }
 
+    if (file.size > 4 * 1024 * 1024) {
+      toast.error("That file is over 4 MB. Try exporting a smaller PDF (e.g. without images).");
+      return;
+    }
+
     // Step 1 — store the file. This always works, even when AI credits are used up.
     setUploading(true);
     let file_url;
@@ -47,7 +52,7 @@ export default function ResumeUploader({ profile, onAutoSave }) {
       file_url = upload.file_url;
     } catch (err) {
       setUploading(false);
-      toast.error("Could not upload your resume. Please try again.");
+      toast.error(err?.message || "Could not upload your resume. Please try again.");
       return;
     }
     setUploading(false);

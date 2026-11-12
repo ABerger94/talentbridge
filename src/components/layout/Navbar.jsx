@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Menu, Briefcase, User, Building2, Search, LogIn, LogOut, MessageSquare, ShieldCheck } from "lucide-react";
+import { Menu, Briefcase, User, Building2, Search, LogIn, LogOut, MessageSquare, ShieldCheck, Settings as SettingsIcon } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
@@ -84,6 +84,13 @@ export default function Navbar() {
               </Link>
             )}
             {isAuthenticated && (
+              <Link to="/settings" aria-label="Account settings" title="Account settings">
+                <Button variant={location.pathname.startsWith("/settings") ? "secondary" : "ghost"} size="icon" className="text-muted-foreground">
+                  <SettingsIcon className="w-4 h-4" />
+                </Button>
+              </Link>
+            )}
+            {isAuthenticated && (
               <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground" onClick={handleLogout}>
                 <LogOut className="w-4 h-4" />
                 Sign Out
@@ -137,10 +144,18 @@ export default function Navbar() {
                     Sign In
                   </Button>
                 ) : (
+                  <>
+                  <Link to="/settings" onClick={() => setOpen(false)}>
+                    <Button variant={location.pathname.startsWith("/settings") ? "secondary" : "ghost"} className="w-full justify-start gap-3">
+                      <SettingsIcon className="w-4 h-4" />
+                      Account settings
+                    </Button>
+                  </Link>
                   <Button variant="ghost" className="w-full gap-2 text-muted-foreground" onClick={handleLogout}>
                     <LogOut className="w-4 h-4" />
                     Sign Out
                   </Button>
+                  </>
                 )}
               </div>
             </SheetContent>
