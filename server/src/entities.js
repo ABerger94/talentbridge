@@ -241,6 +241,11 @@ function present(entity, record, user, cache = new Map()) {
   if ((entity === 'JobApplication' || entity === 'Invitation') && out.job_id) {
     out.job = jobSummary(out.job_id, cache);
   }
+  if (entity === 'JobApplication' && out.seeker_profile_id) {
+    const key = `links:${out.seeker_profile_id}`;
+    if (!cache.has(key)) cache.set(key, require('./links').profileLinks(getRecord('SeekerProfile', out.seeker_profile_id)));
+    out.seeker_links = cache.get(key);
+  }
   if (entity === 'Job') {
     const key = `company:${out.created_by_id}`;
     if (!cache.has(key)) cache.set(key, require('./employers').publicCompany(out.created_by_id));
@@ -314,6 +319,13 @@ function registerEntityRoutes(app) {
     }
     if (entity === 'SeekerProfile' && typeof body.full_name === 'string') {
       body.full_name = body.full_name.trim().slice(0, 120);
+    }
+    if (entity === 'SeekerProfile' && 'professional_links' in body) {
+      try {
+        body.professional_links = require('./links').normalizeLinks(body.professional_links || []);
+      } catch (e) {
+        return res.status(e.status || 400).json({ error: e.message });
+      }
     }
     const record = store.create(entity, body, req.user.id);
     // Keep user.data.seeker_profile_id current so Invitation read rules can
@@ -389,6 +401,13 @@ function registerEntityRoutes(app) {
     if (bad) return res.status(400).json({ error: bad });
     if (entity === 'SeekerProfile' && typeof changes.full_name === 'string') {
       changes.full_name = changes.full_name.trim().slice(0, 120);
+    }
+    if (entity === 'SeekerProfile' && 'professional_links' in changes) {
+      try {
+        changes.professional_links = require('./links').normalizeLinks(changes.professional_links || []);
+      } catch (e) {
+        return res.status(e.status || 400).json({ error: e.message });
+      }
     }
     const updated = store.update(entity, id, changes);
     if (entity === 'SeekerProfile' && updated.created_by_id === req.user.id) {
