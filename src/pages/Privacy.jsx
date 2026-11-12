@@ -116,6 +116,9 @@ const sections = [
           information, or financial account details).
         </p>
         <p>Messages between candidates and employers are <strong>not</strong> sent to AI providers.</p>
+        <p><strong>Listings from other sites.</strong> Some roles on the job board are imported from employers’ own job
+          boards and job feeds. When you choose “Apply on company site” you leave {LEGAL.siteName}; we don’t receive what
+          you submit there, and that site’s privacy policy applies.</p>
         <p>We may also disclose information if required by law, to protect the rights and safety of users or others,
           or as part of a transfer of the service to a new operator (in which case this policy continues to apply).</p>
       </>

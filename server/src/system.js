@@ -45,7 +45,8 @@ function overview() {
     counts: {
       users: roles,
       signups_7d: count('SELECT COUNT(*) AS n FROM users WHERE created_date >= ?', since7),
-      jobs_active: jobStatus('active'),
+      jobs_active: require('./jobindex').counts().direct,
+      jobs_imported_active: require('./jobindex').counts().imported,
       jobs_pending_review: jobStatus('pending_review'),
       applications_7d: count("SELECT COUNT(*) AS n FROM records WHERE entity = 'JobApplication' AND created_date >= ?", since7),
       messages_7d: count('SELECT COUNT(*) AS n FROM messages WHERE created_date >= ?', since7),
@@ -78,7 +79,10 @@ const FAIRNESS_THRESHOLD = 10; // points away from the control average worth rev
 async function fairnessCheck(user, jobId) {
   const { store } = require('./entities');
   const job = jobId ? store.get('Job', jobId)
-    : store.filter('Job', { status: 'active' })[0];
+    : (() => {
+      const row = db.prepare("SELECT job_id FROM job_index WHERE status = 'active' ORDER BY imported ASC, posted DESC LIMIT 1").get();
+      return row ? store.get('Job', row.job_id) : null;
+    })();
   if (!job) throw Object.assign(new Error('Post at least one active role to run the check against.'), { status: 400 });
   const skills = (job.skills || []).slice(0, 5);
   const base = {

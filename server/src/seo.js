@@ -145,6 +145,14 @@ async function jobPage(req, res, next) {
       res.status(job ? 200 : 404).setHeader('Cache-Control', 'public, max-age=0, s-maxage=60');
       return res.type('html').send(html);
     }
+    // Imported listings live on the employer's own site: never ask search
+    // engines to index our copy (duplicate content, and source terms).
+    if (job.imported) {
+      const head = headFor({ title: `${job.title}${job.company ? ` at ${job.company}` : ''} · TalentBridge`, description: oneLine(job.description, 155) || job.title, url, image, ld: null })
+        + '\n    <meta name="robots" content="noindex, follow" />';
+      res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=600');
+      return res.type('html').send(render(html, head));
+    }
     const company = require('./employers').publicCompany(job.created_by_id);
     const companyName = company?.name || job.company;
     const where = [job.work_type === 'remote' ? 'Remote' : job.location].filter(Boolean).join('');
@@ -168,8 +176,11 @@ async function jobPage(req, res, next) {
 
 function sitemap(req, res) {
   const pages = ['/', '/jobs', '/privacy', '/terms'].map((p) => ({ loc: appUrl(p) }));
-  for (const job of store.filter('Job', { status: 'active' })) {
-    pages.push({ loc: appUrl(`/jobs/${encodeURIComponent(job.id)}`), lastmod: String(job.updated_date || job.created_date).slice(0, 10) });
+  // Roles posted on TalentBridge only (imported listings aren't indexed).
+  require('./jobindex').rebuildIfEmpty();
+  const { db } = require('./db');
+  for (const row of db.prepare("SELECT job_id, posted FROM job_index WHERE status = 'active' AND imported = 0 ORDER BY posted DESC LIMIT 5000").all()) {
+    pages.push({ loc: appUrl(`/jobs/${encodeURIComponent(row.job_id)}`), lastmod: String(row.posted || '').slice(0, 10) });
   }
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">

@@ -2,23 +2,36 @@ import React from "react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Search, SlidersHorizontal, X } from "lucide-react";
+import { Search, SlidersHorizontal, X, MapPin } from "lucide-react";
 
 export default function JobFilters({ filters, onFilterChange, onClear }) {
   const update = (key, value) => onFilterChange({ ...filters, [key]: value });
 
-  const hasFilters = filters.search || filters.work_type || filters.experience_level || filters.employment_type;
+  const hasFilters = filters.search || filters.location || filters.work_type || filters.experience_level || filters.employment_type || filters.origin;
 
   return (
     <div className="space-y-4">
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-        <Input
-          placeholder="Search jobs by title, company, or skill..."
-          className="pl-10 h-12 text-base bg-card"
-          value={filters.search || ""}
-          onChange={(e) => update("search", e.target.value)}
-        />
+      <div className="flex flex-col sm:flex-row gap-3">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            placeholder="Job title, company, or skill"
+            aria-label="Search roles"
+            className="pl-10 h-12 text-base bg-card"
+            value={filters.search || ""}
+            onChange={(e) => update("search", e.target.value)}
+          />
+        </div>
+        <div className="relative sm:w-64">
+          <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            placeholder="City, state, or Remote"
+            aria-label="Location"
+            className="pl-10 h-12 text-base bg-card"
+            value={filters.location || ""}
+            onChange={(e) => update("location", e.target.value)}
+          />
+        </div>
       </div>
       <div className="flex flex-wrap gap-3 items-center">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -60,6 +73,16 @@ export default function JobFilters({ filters, onFilterChange, onClear }) {
             <SelectItem value="contract">Contract</SelectItem>
             <SelectItem value="internship">Internship</SelectItem>
             <SelectItem value="freelance">Freelance</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={filters.origin || "all"} onValueChange={(v) => update("origin", v === "all" ? "" : v)}>
+          <SelectTrigger className="w-48 h-9 bg-card" aria-label="Where the role is posted">
+            <SelectValue placeholder="All sources" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All sources</SelectItem>
+            <SelectItem value="direct">Posted on TalentBridge</SelectItem>
+            <SelectItem value="imported">From company job boards</SelectItem>
           </SelectContent>
         </Select>
         {hasFilters && (

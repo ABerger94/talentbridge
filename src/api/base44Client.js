@@ -145,6 +145,17 @@ const account = {
   },
 };
 
+// Job board search and per-seeker suggestions (server/src/jobsapi.js).
+const jobs = {
+  async search(params = {}) {
+    const qs = new URLSearchParams(Object.entries(params).filter(([, v]) => v !== undefined && v !== null && v !== ''));
+    return request(`/api/jobs/search?${qs}`);
+  },
+  async suggested(limit = 25) {
+    return (await request(`/api/jobs/suggested?limit=${limit}`)).data;
+  },
+};
+
 // Job alert emails (server/src/alerts.js).
 const alerts = {
   async preferences() {
@@ -306,6 +317,21 @@ const admin = {
   async fairnessCheck(jobId) {
     return (await request('/api/admin/ai/fairness', { method: 'POST', body: jobId ? { job_id: jobId } : {} })).data;
   },
+  async jobSources() {
+    return (await request('/api/admin/job-sources')).data;
+  },
+  async addJobSource(source) {
+    return (await request('/api/admin/job-sources', { method: 'POST', body: source })).data;
+  },
+  async updateJobSource(id, changes) {
+    return (await request(`/api/admin/job-sources/${encodeURIComponent(id)}`, { method: 'PUT', body: changes })).data;
+  },
+  async removeJobSource(id) {
+    return (await request(`/api/admin/job-sources/${encodeURIComponent(id)}`, { method: 'DELETE' })).data;
+  },
+  async runJobImports(sourceIds) {
+    return (await request('/api/admin/job-sources/run', { method: 'POST', body: sourceIds ? { source_ids: sourceIds } : {} })).data;
+  },
   async runJobAlerts() {
     return (await request('/api/admin/alerts/run', { method: 'POST' })).data;
   },
@@ -314,4 +340,4 @@ const admin = {
   },
 };
 
-export const base44 = { auth, account, alerts, entities, functions, integrations, messages, employer, admin };
+export const base44 = { auth, account, alerts, jobs, entities, functions, integrations, messages, employer, admin };

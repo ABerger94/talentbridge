@@ -12,7 +12,8 @@
     "typecheck": "tsc -p ./jsconfig.json",
     "preview": "vite preview",
     "test": "node --test server/test/*.test.js",
-    "backup": "node server/scripts/backup.js"
+    "backup": "node server/scripts/backup.js",
+    "import-jobs": "node server/scripts/import-jobs.js"
   },
   "engines": {
     "node": ">=18"

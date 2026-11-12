@@ -2,7 +2,7 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { MapPin, Clock, DollarSign, Building2, Zap } from "lucide-react";
+import { MapPin, Clock, DollarSign, Building2, Zap, ExternalLink } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { motion } from "framer-motion";
 
@@ -83,7 +83,15 @@ export default function JobCard({ job, matchScore, index = 0 }) {
               )}
               <div className="flex items-center gap-1 mt-3 text-xs text-muted-foreground">
                <Clock className="w-3 h-3" />
-               Posted {job.created_date ? formatDistanceToNow(new Date(job.created_date)) + " ago" : "recently"}
+               Posted {job.posted_date || job.created_date ? formatDistanceToNow(new Date(job.posted_date || job.created_date)) + " ago" : "recently"}
+               {job.imported ? (
+                 <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-secondary px-2 py-0.5 text-[11px] font-medium">
+                   <ExternalLink className="w-3 h-3" aria-hidden="true" />
+                   {job.source_label && !/greenhouse|lever|ashby|company site/i.test(job.source_label) ? `via ${job.source_label}` : "Apply on company site"}
+                 </span>
+               ) : (
+                 <span className="ml-2 rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">Posted on TalentBridge</span>
+               )}
               </div>
             </div>
           </div>

@@ -122,11 +122,25 @@ async function runJobAlerts({ now = Date.now(), budgetMs = RUN_BUDGET_MS } = {})
   const report = { due: subs.length, emailed: 0, no_new_matches: 0, deferred: 0, scored: 0 };
   if (!subs.length) return report;
 
-  const activeJobs = store.filter('Job', { status: 'active' });
-  const applied = new Set(store.all('JobApplication').map((a) => `${a.job_id}:${a.created_by_id}`));
-  const jobsFor = (s) => activeJobs
-    .filter((j) => Date.parse(j.created_date) > s.since && j.created_by_id !== s.row.id && !applied.has(`${j.id}:${s.row.id}`))
-    .slice(0, 25);
+  // Candidates per subscriber come from the job index: new active roles
+  // ranked by overlap with the profile (roles posted on TalentBridge always
+  // qualify), so the AI scores a dozen likely fits, not every listing.
+  const { suggestFor } = require('./jobindex');
+  const jobCache = new Map();
+  const loadJob = (id) => {
+    if (!jobCache.has(id)) jobCache.set(id, store.get('Job', id));
+    return jobCache.get(id);
+  };
+  const candidates = new Map();
+  for (const s of subs) {
+    const applied = store.filter('JobApplication', { created_by_id: s.row.id }).map((a) => a.job_id);
+    const picks = suggestFor(s.profile, { limit: 12, since: new Date(s.since).toISOString(), excludeIds: applied })
+      .map((p) => loadJob(p.id))
+      .filter((j) => j && j.status === 'active' && j.created_by_id !== s.row.id);
+    candidates.set(s.row.id, picks);
+  }
+  const jobsFor = (s) => candidates.get(s.row.id) || [];
+  const activeJobs = [...jobCache.values()].filter(Boolean);
 
   // Score every (new job, subscriber) pair that isn't cached, one job at a
   // time (each job's subscribers in batched AI calls), within the budget.

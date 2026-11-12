@@ -135,6 +135,9 @@ const sections = [
     body: (
       <ul>
         <li>{LEGAL.siteName} is currently free. If we introduce paid features, we’ll tell you before you’re charged.</li>
+        <li>Some job listings come from other sites, such as employers’ own job boards and job feeds (for example USAJOBS,
+          Remotive, Adzuna, or Jooble). We show them as provided and link to the original. We don’t verify them, and applying
+          on another site is governed by that site’s terms and privacy policy.</li>
         <li>The {LEGAL.siteName} name, design, and software belong to us. These terms don’t give you rights to them
           except to use the service.</li>
         <li>We may change, suspend, or discontinue features. We’ll try to give notice of significant changes.</li>
