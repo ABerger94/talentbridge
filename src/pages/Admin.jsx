@@ -38,7 +38,11 @@ function EmployerCard({ e, onDecide }) {
             {e.name ? `${e.name} · ` : ""}{e.email}{c.contact_title ? ` · ${c.contact_title}` : ""}
           </p>
         </div>
-        <Badge variant="outline" className={STATUS_BADGE[e.status] || ""}>{e.status}</Badge>
+        {e.is_admin ? (
+          <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">Site admin</Badge>
+        ) : (
+          <Badge variant="outline" className={STATUS_BADGE[e.status] || ""}>{e.status}</Badge>
+        )}
       </div>
       <div className="flex flex-wrap gap-x-5 gap-y-1 text-sm">
         {c.website && <a href={c.website} target="_blank" rel="noreferrer noopener" className="text-primary hover:underline inline-flex items-center gap-1">{e.website_domain} <ExternalLink className="w-3 h-3" /></a>}
@@ -63,6 +67,9 @@ function EmployerCard({ e, onDecide }) {
         </p>
       )}
       {e.review_note && <p className="text-xs text-muted-foreground">Last note: “{e.review_note}”</p>}
+      {e.is_admin ? (
+        <p className="text-xs text-muted-foreground pt-1">Admin accounts are trusted automatically; your jobs show as a verified employer.</p>
+      ) : (
       <div className="flex gap-2 pt-1 flex-wrap">
         {e.status !== "approved" && (
           <Button size="sm" className="gap-1.5" onClick={() => onDecide(e, "approve")}>
@@ -78,6 +85,7 @@ function EmployerCard({ e, onDecide }) {
           {e.submitted_at ? `Submitted ${formatDistanceToNow(new Date(e.submitted_at), { addSuffix: true })}` : "No profile submitted"}
         </span>
       </div>
+      )}
     </Card>
   );
 }
