@@ -23,7 +23,8 @@ this one process.
 | Variable | Purpose |
 |---|---|
 | `TB_PORT` | Listen port (default 8787) |
-| `TB_JWT_SECRET` | Signs login tokens. Required for real deployment. |
+| `TB_JWT_SECRET` | Signs login tokens and private file links. **Required in production**: on Vercel / `NODE_ENV=production` the server refuses to sign or accept logins without it (and never falls back to the dev default). Use 32+ random characters; `/api/health` → `auth_secret` reports `ok`, `short`, or `missing`. Set it for Preview deployments too if they share the production database. |
+| `TB_AI_LIMIT_PER_HOUR` | AI calls per user per hour (default 60). |
 | `TB_ADMIN_EMAILS` | Comma-separated emails that always get the `admin` role |
 | `TB_GOOGLE_CLIENT_ID` / `TB_GOOGLE_CLIENT_SECRET` | Google sign-in (optional). Redirect URI: `https://YOUR-DOMAIN/api/auth/google/callback` |
 | `TB_DATA_DIR` | SQLite database + uploads location (default `server/data`) |
@@ -84,6 +85,21 @@ selected). Set **one** provider (more = automatic fallback, in
   `status` (`sent`, `failed` + `error`, or `queued_no_mailer`). A failed
   email never blocks the hiring action.
 - `GET /api/health` → `mail.configured` / `mail.providers`.
+
+## Security notes
+
+- **Private files:** uploads (resumes, job documents) are served only to
+  the uploader, an employer whose job has an application carrying the file,
+  or an admin. Records hand out signed links (`?exp=&sig=`) valid for 2
+  hours; unsigned or expired links need a signed-in, authorized user.
+  Employers browsing seekers never receive resume links. A record's
+  `resume_url` can only be set to a file the user uploaded.
+- **Rate limits** (stored in the database, so they hold across serverless
+  instances): sign-in 10 per account / 50 per IP per 15 min; sign-up 10 per
+  IP per hour; code requests 1 per minute per address and 20 per IP per
+  hour; code checks 10 per address per 15 min, and a code dies after 5
+  wrong guesses; AI calls `TB_AI_LIMIT_PER_HOUR` per user (cached matching
+  results are free); uploads 30 per user per hour.
 
 ## Notes
 

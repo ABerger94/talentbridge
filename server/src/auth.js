@@ -4,8 +4,39 @@ const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const { db } = require('./db');
 const { sendMail, mailConfigured, codeEmail } = require('./mailer');
+const { limits } = require('./ratelimit');
 
-const JWT_SECRET = process.env.TB_JWT_SECRET || 'dev-secret-change-me';
+// --- Signing secret ----------------------------------------------------------
+// Signs login tokens (and, derived from it, private file links). In production
+// a missing secret must never fall back to the public dev default: anyone
+// could then mint a token for any account. Locally the default keeps dev easy.
+const DEV_SECRET = 'dev-secret-change-me';
+const IS_PRODUCTION = !!process.env.VERCEL || process.env.NODE_ENV === 'production';
+
+function secretStatus() {
+  const s = process.env.TB_JWT_SECRET || '';
+  if (!s) return IS_PRODUCTION ? 'missing' : 'dev-default';
+  if (s === DEV_SECRET) return IS_PRODUCTION ? 'default' : 'dev-default';
+  if (s.length < 32) return 'short';
+  return 'ok';
+}
+
+function secretUsable() {
+  return !['missing', 'default'].includes(secretStatus());
+}
+
+function jwtSecret() {
+  if (!secretUsable()) {
+    const e = new Error('Server misconfigured: TB_JWT_SECRET is not set. Sign-in is disabled until it is.');
+    e.status = 503;
+    throw e;
+  }
+  return process.env.TB_JWT_SECRET || DEV_SECRET;
+}
+
+if (!secretUsable()) {
+  console.error('[auth] TB_JWT_SECRET is missing or the public default — refusing to sign or accept logins.');
+}
 const ADMIN_EMAILS = (process.env.TB_ADMIN_EMAILS || '')
   .split(',')
   .map((s) => s.trim().toLowerCase())
@@ -74,7 +105,7 @@ function getUserById(id) {
 }
 
 function signToken(userRow) {
-  return jwt.sign({ sub: userRow.id, email: userRow.email }, JWT_SECRET, {
+  return jwt.sign({ sub: userRow.id, email: userRow.email }, jwtSecret(), {
     expiresIn: '30d',
   });
 }
@@ -83,8 +114,9 @@ function authRequired(req, res, next) {
   const header = req.headers.authorization || '';
   const token = header.startsWith('Bearer ') ? header.slice(7) : null;
   if (!token) return res.status(401).json({ error: 'Authentication required' });
+  if (!secretUsable()) return res.status(503).json({ error: 'Server misconfigured: sign-in is disabled.' });
   try {
-    const payload = jwt.verify(token, JWT_SECRET);
+    const payload = jwt.verify(token, jwtSecret());
     const row = getUserById(payload.sub);
     if (!row) return res.status(401).json({ error: 'User not found' });
     req.user = publicUser(row);
@@ -112,6 +144,9 @@ function optionalAuth(req, res, next) {
 // one could finish signing up). TB_REQUIRE_EMAIL_VERIFICATION=true/false
 // overrides that automatic choice.
 const OTP_TTL_MS = 10 * 60 * 1000;
+const OTP_MAX_ATTEMPTS = 5; // wrong guesses before a code is thrown away
+
+try { db.exec('ALTER TABLE otps ADD COLUMN attempts INTEGER NOT NULL DEFAULT 0'); } catch { /* exists */ }
 const OTP_RESEND_GAP_MS = 60 * 1000;
 
 function verificationRequired() {
@@ -131,7 +166,7 @@ async function deliverOtp(email, purpose) {
   const code = String(crypto.randomInt(0, 1000000)).padStart(6, '0');
   const codeHash = crypto.createHash('sha256').update(code).digest('hex');
   db.prepare(
-    'INSERT OR REPLACE INTO otps (email, purpose, code_hash, expires_at) VALUES (?, ?, ?, ?)'
+    'INSERT OR REPLACE INTO otps (email, purpose, code_hash, expires_at, attempts) VALUES (?, ?, ?, ?, 0)'
   ).run(key, purpose, codeHash, Date.now() + OTP_TTL_MS);
   if (!mailConfigured()) {
     console.log(`[otp] ${purpose} code for ${email}: ${code} (valid 10 min; no mail provider configured)`);
@@ -143,22 +178,28 @@ async function deliverOtp(email, purpose) {
 }
 
 function checkOtp(email, purpose, code) {
-  const row = db
-    .prepare('SELECT * FROM otps WHERE email = ? AND purpose = ?')
-    .get(email.toLowerCase(), purpose);
+  const key = email.toLowerCase();
+  const row = db.prepare('SELECT * FROM otps WHERE email = ? AND purpose = ?').get(key, purpose);
   if (!row || row.expires_at < Date.now()) return false;
-  const codeHash = crypto.createHash('sha256').update(String(code)).digest('hex');
-  if (codeHash !== row.code_hash) return false;
-  db.prepare('DELETE FROM otps WHERE email = ? AND purpose = ?').run(
-    email.toLowerCase(),
-    purpose
-  );
+  const codeHash = crypto.createHash('sha256').update(String(code).trim()).digest('hex');
+  const a = Buffer.from(codeHash);
+  const b = Buffer.from(String(row.code_hash));
+  if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
+    // Too many wrong guesses burns the code; the user requests a new one.
+    if ((row.attempts || 0) + 1 >= OTP_MAX_ATTEMPTS) {
+      db.prepare('DELETE FROM otps WHERE email = ? AND purpose = ?').run(key, purpose);
+    } else {
+      db.prepare('UPDATE otps SET attempts = attempts + 1 WHERE email = ? AND purpose = ?').run(key, purpose);
+    }
+    return false;
+  }
+  db.prepare('DELETE FROM otps WHERE email = ? AND purpose = ?').run(key, purpose);
   return true;
 }
 
 // --- Routes ---------------------------------------------------------------
 function registerAuthRoutes(app) {
-  app.post('/api/auth/register', async (req, res) => {
+  app.post('/api/auth/register', limits.register, async (req, res) => {
     const { email, password } = req.body || {};
     if (!email || !password) return res.status(400).json({ error: 'Email and password required' });
     if (String(password).length < 8) return res.status(400).json({ error: 'Password must be at least 8 characters' });
@@ -174,15 +215,15 @@ function registerAuthRoutes(app) {
     res.json({ success: true, requires_verification: true, email_sent: sent });
   });
 
-  app.post('/api/auth/verify-otp', (req, res) => {
+  app.post('/api/auth/verify-otp', limits.checkCode, (req, res) => {
     const { email, otpCode } = req.body || {};
     if (!email || !otpCode) return res.status(400).json({ error: 'Email and code required' });
-    if (!checkOtp(email, 'verify', otpCode)) return res.status(400).json({ error: 'Invalid or expired code' });
+    if (!checkOtp(email, 'verify', otpCode)) return res.status(400).json({ error: 'Invalid or expired code. After 5 wrong tries a code stops working — request a new one.' });
     db.prepare('UPDATE users SET email_verified = 1 WHERE email = ?').run(email.toLowerCase());
     res.json({ success: true });
   });
 
-  app.post('/api/auth/resend-otp', async (req, res) => {
+  app.post('/api/auth/resend-otp', limits.sendCode, async (req, res) => {
     const { email } = req.body || {};
     // Same answer whether or not the account exists (no account probing).
     const result = email && getUserByEmail(email) ? await deliverOtp(email, 'verify') : { throttled: false };
@@ -190,7 +231,7 @@ function registerAuthRoutes(app) {
     res.json({ success: true });
   });
 
-  app.post('/api/auth/login', async (req, res) => {
+  app.post('/api/auth/login', limits.login, async (req, res) => {
     const { email, password } = req.body || {};
     const row = email ? getUserByEmail(email) : null;
     if (!row || !row.password_hash) return res.status(401).json({ error: 'Invalid email or password' });
@@ -199,6 +240,7 @@ function registerAuthRoutes(app) {
     if (!row.email_verified && verificationRequired()) {
       return res.status(403).json({ error: 'Email not verified', code: 'email_not_verified' });
     }
+    if (!secretUsable()) return res.status(503).json({ error: 'Server misconfigured: sign-in is disabled.' });
     res.json({ access_token: signToken(row), user: publicUser(row) });
   });
 
@@ -206,18 +248,18 @@ function registerAuthRoutes(app) {
     res.json({ user: req.user });
   });
 
-  app.post('/api/auth/reset-password-request', async (req, res) => {
+  app.post('/api/auth/reset-password-request', limits.sendCode, async (req, res) => {
     const { email } = req.body || {};
     const result = email && getUserByEmail(email) ? await deliverOtp(email, 'reset') : { throttled: false };
     if (result.throttled) return res.status(429).json({ error: 'Please wait a minute before requesting another code.' });
     res.json({ success: true });
   });
 
-  app.post('/api/auth/reset-password', async (req, res) => {
+  app.post('/api/auth/reset-password', limits.checkCode, async (req, res) => {
     const { email, otpCode, newPassword } = req.body || {};
     if (!email || !otpCode || !newPassword) return res.status(400).json({ error: 'Email, code and new password required' });
     if (String(newPassword).length < 8) return res.status(400).json({ error: 'Password must be at least 8 characters' });
-    if (!checkOtp(email, 'reset', otpCode)) return res.status(400).json({ error: 'Invalid or expired code' });
+    if (!checkOtp(email, 'reset', otpCode)) return res.status(400).json({ error: 'Invalid or expired code. After 5 wrong tries a code stops working — request a new one.' });
     const hash = await bcrypt.hash(newPassword, 10);
     db.prepare('UPDATE users SET password_hash = ?, email_verified = 1 WHERE email = ?').run(hash, email.toLowerCase());
     res.json({ success: true });
@@ -287,4 +329,4 @@ function registerAuthRoutes(app) {
   });
 }
 
-module.exports = { registerAuthRoutes, authRequired, optionalAuth, safeReturnTo, publicUser, getUserById, getUserByEmail };
+module.exports = { registerAuthRoutes, authRequired, optionalAuth, safeReturnTo, secretStatus, jwtSecret, publicUser, getUserById, getUserByEmail };
