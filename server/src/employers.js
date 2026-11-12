@@ -123,7 +123,9 @@ function publicCompany(userId) {
     size: company.size || '',
     location: company.location || '',
     about: company.about || '',
-    verified: employerStatus(publicUser(row)) === 'approved' && !!dataOf(row).employer_reviewed_at,
+    // Verified = approved by review, or the site's own admin account.
+    verified: publicUser(row).role === 'admin'
+      || (employerStatus(publicUser(row)) === 'approved' && !!dataOf(row).employer_reviewed_at),
   };
 }
 
@@ -201,14 +203,23 @@ function registerEmployerRoutes(app) {
   // --- Admin review ---------------------------------------------------------
   app.get('/api/admin/employers', authRequired, requireAdmin, wrap((req) => {
     const filter = String(req.query.status || 'pending');
-    const rows = db.prepare("SELECT * FROM users WHERE role = 'employer' ORDER BY created_date DESC").all();
+    // Employers, plus admins who have a company profile (shown as approved;
+    // admins never need review). Uses the effective role, so admins named
+    // in TB_ADMIN_EMAILS are included too.
+    const rows = db.prepare('SELECT * FROM users ORDER BY created_date DESC').all()
+      .filter((row) => {
+        const role = publicUser(row).role;
+        return role === 'employer' || (role === 'admin' && dataOf(row).company?.name);
+      });
     const jobs = store.all('Job');
     return rows
       .map((row) => {
         const data = dataOf(row);
+        const isAdmin = publicUser(row).role === 'admin';
         const status = employerStatus(publicUser(row));
         return {
           id: row.id,
+          is_admin: isAdmin,
           email: row.email,
           name: data.full_name || '',
           created_date: row.created_date,
@@ -227,7 +238,9 @@ function registerEmployerRoutes(app) {
 
   app.post('/api/admin/employers/:id/decision', authRequired, requireAdmin, wrap(async (req) => {
     const row = getUserById(req.params.id);
-    if (!row || row.role !== 'employer') throw fail(404, 'Employer not found');
+    if (!row) throw fail(404, 'Employer not found');
+    if (publicUser(row).role === 'admin') throw fail(400, 'Admin accounts don’t need review');
+    if (row.role !== 'employer') throw fail(404, 'Employer not found');
     const decision = req.body?.decision;
     if (!['approve', 'reject'].includes(decision)) throw fail(400, 'decision must be approve or reject');
     const note = String(req.body?.note || '').trim().slice(0, 1000);
