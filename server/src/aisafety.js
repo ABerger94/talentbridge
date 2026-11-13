@@ -71,7 +71,16 @@ function blindProfile(p) {
     work_history: history,
     education: typeof p.education === 'string' ? clip(p.education.replace(/\b(19|20)\d{2}\b/g, ''), 600) : undefined,
     career_goals: clip(p.career_goals, 500),
-    capabilities: Array.isArray(graph) ? graph.slice(0, 8).map((v) => (typeof v === 'string' ? v : clip(v.vector || v.name || v.title || JSON.stringify(v), 200))) : undefined,
+    // Depth level (1-5 rubric) and whether it sets them apart, when built
+    // with the current rubric; older graphs give names only.
+    capabilities: Array.isArray(graph) ? graph.slice(0, 8).map((v) => {
+      if (typeof v === 'string') return v;
+      const name = clip(v.vector || v.name || v.title || JSON.stringify(v), 200);
+      return v.level ? { name, depth_level: v.level, evidence: v.evidence_type, sets_apart: !!v.differentiator } : name;
+    }) : undefined,
+    proof_stories: Array.isArray(p.proof_stories) && p.proof_stories.length
+      ? p.proof_stories.slice(0, 6).map((x) => ({ what_they_did: clip(x.action, 600), result: clip(x.result, 300) }))
+      : undefined,
   }));
 }
 

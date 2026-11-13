@@ -317,6 +317,16 @@ function present(entity, record, user, cache = new Map()) {
   return out;
 }
 
+// Proof stories (Capability Graph evidence): at most 6, plain text, bounded.
+const STORY_IDS = ['investigation', 'risk', 'emergency', 'built', 'data', 'accountability'];
+function normalizeStories(list) {
+  if (!Array.isArray(list)) return [];
+  const text = (v) => String(v || '').replace(/\s+\n/g, '\n').trim().slice(0, 1200);
+  return list.slice(0, 6)
+    .map((x) => ({ prompt_id: STORY_IDS.includes(x?.prompt_id) ? x.prompt_id : 'built', situation: text(x?.situation), action: text(x?.action), result: text(x?.result) }))
+    .filter((x) => x.action || x.result);
+}
+
 function registerEntityRoutes(app) {
   // Anonymous GETs are allowed for PUBLIC_READ entities only; everything else
   // (and every write) requires a valid session.
@@ -384,6 +394,7 @@ function registerEntityRoutes(app) {
       // New profiles take the account's name (e.g. from Google) unless given one.
       body.full_name = String(body.full_name || '').trim().slice(0, 120) || userFullName(req.user.id);
     }
+    if (entity === 'SeekerProfile' && 'proof_stories' in body) body.proof_stories = normalizeStories(body.proof_stories);
     if (entity === 'SeekerProfile' && 'professional_links' in body) {
       try {
         body.professional_links = require('./links').normalizeLinks(body.professional_links || []);
@@ -472,6 +483,7 @@ function registerEntityRoutes(app) {
       changes.full_name = String(changes.full_name || '').trim().slice(0, 120);
       if (!changes.full_name) return res.status(400).json({ error: 'Your full name is required' });
     }
+    if (entity === 'SeekerProfile' && 'proof_stories' in changes) changes.proof_stories = normalizeStories(changes.proof_stories);
     if (entity === 'SeekerProfile' && 'professional_links' in changes) {
       try {
         changes.professional_links = require('./links').normalizeLinks(changes.professional_links || []);

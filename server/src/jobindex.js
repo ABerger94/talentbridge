@@ -187,7 +187,8 @@ function profileTokens(profile) {
   const graph = Array.isArray(p.capability_graph?.core_execution_vectors)
     ? p.capability_graph.core_execution_vectors.map((v) => v?.vector || '').join(' ') : '';
   const strong = new Set([...tokens((p.skills || []).join(' ')), ...tokens(p.headline), ...tokens(graph)]);
-  const weak = new Set([...tokens(p.career_goals), ...tokens((p.industries_of_interest || []).join(' ')), ...tokens(String(p.bio || '').slice(0, 600))]);
+  const stories = Array.isArray(p.proof_stories) ? p.proof_stories.map((x) => `${x?.action || ''} ${x?.result || ''}`).join(' ').slice(0, 1500) : '';
+  const weak = new Set([...tokens(p.career_goals), ...tokens((p.industries_of_interest || []).join(' ')), ...tokens(String(p.bio || '').slice(0, 600)), ...tokens(stories)]);
   return { strong, weak };
 }
 

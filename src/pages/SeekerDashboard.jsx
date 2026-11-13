@@ -7,7 +7,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
@@ -20,7 +19,10 @@ import ProfileChecklist from "@/components/seeker/ProfileChecklist";
 import { JobAlertNudge } from "@/components/seeker/JobAlertSettings";
 import JobCard from "@/components/jobs/JobCard";
 import MatchFilters, { loadMatchFilters, saveMatchFilters } from "@/components/seeker/MatchFilters";
-import { normalizePercent, normalizeCapabilityGraph } from "@/lib/scales";
+import { normalizePercent } from "@/lib/scales";
+import { normalizeGraph, buildGraphPrompt, GRAPH_SCHEMA, RUBRIC_VERSION } from "@/lib/capabilityRubric";
+import CapabilityGraphView from "@/components/seeker/CapabilityGraphView";
+import ProofStories from "@/components/seeker/ProofStories";
 import ResumeUploader from "@/components/resume/ResumeUploader";
 import ResumeCritique from "@/components/resume/ResumeCritique";
 import ApplicationCard from "@/components/seeker/ApplicationCard";
@@ -107,7 +109,7 @@ export default function SeekerDashboard() {
     if (profiles.length > 0) {
       setProfile(profiles[0]);
       if (profiles[0].capability_graph) {
-        setCapabilityGraph(normalizeCapabilityGraph(profiles[0].capability_graph));
+        setCapabilityGraph(normalizeGraph(profiles[0].capability_graph));
       }
     } else if (!profileLoading) {
       setProfile({
@@ -143,6 +145,27 @@ export default function SeekerDashboard() {
   });
 
   const update = (key, val) => setProfile(p => ({ ...p, [key]: val }));
+
+  // Proof stories save on their own, so they aren't lost before a rebuild.
+  const [storiesSaving, setStoriesSaving] = useState(false);
+  const saveStories = async (stories) => {
+    update("proof_stories", stories);
+    const profileId = profiles[0]?.id;
+    if (!profileId) {
+      toast.message("Save your profile on the Profile tab to keep these stories.");
+      return;
+    }
+    setStoriesSaving(true);
+    try {
+      await base44.entities.SeekerProfile.update(profileId, { proof_stories: stories });
+      queryClient.invalidateQueries({ queryKey: ["seekerProfile"] });
+    } catch (err) {
+      toast.error(err?.message || "Couldn't save that story. Please try again.");
+    } finally {
+      setStoriesSaving(false);
+    }
+  };
+  const goToStories = () => document.getElementById("proof-stories")?.scrollIntoView({ behavior: "smooth", block: "start" });
 
   // Saves immediately (used by resume upload): persists the given fields plus
   // any unsaved edits on the form. Returns true on success.
@@ -187,58 +210,19 @@ export default function SeekerDashboard() {
   };
 
   const buildCapabilityGraph = async () => {
-    if (!profile?.skills?.length && !profile?.work_history) {
-      toast.error("Fill in your skills and work history first.");
+    if (!profile?.skills?.length && !profile?.work_history && !profile?.proof_stories?.length) {
+      toast.error("Add your skills, work history or a proof story first.");
       return;
     }
     setGraphLoading(true);
     try {
+      // The rubric (depth levels, evidence caps, baseline vs. differentiators)
+      // lives in lib/capabilityRubric so the page shows the same definitions.
       const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `You are TalentBridge's Capability Graph Engine. Analyze this candidate's holistic profile and build a structured map of their true execution capabilities — not just their job titles.
-
-Current date: ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
-
-Focus on:
-- Core execution vectors (what systems/problems they can actually solve)
-- Adjacent adaptability zones (areas they could move into quickly)
-- Architectural logic patterns (how they think about systems)
-- Transferable methodology (approaches that work across domains)
-
-CANDIDATE:
-Headline: ${profile.headline}
-Skills: ${profile.skills?.join(", ")}
-Experience: ${profile.experience_years} years (${profile.experience_level})
-Work History: ${profile.work_history}
-Education: ${profile.education}
-Career Goals: ${profile.career_goals}
-Values: ${profile.values?.join(", ")}
-
-Generate a deep capability analysis.
-
-IMPORTANT: Rate each core execution vector's "strength" as an integer from 0 to 100 (100 = deepest, most proven expertise). Never return strength as a decimal or fraction.`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            core_execution_vectors: {
-              type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  vector: { type: "string" },
-                  strength: { type: "number", description: "Integer from 0 to 100" },
-                  evidence: { type: "string" }
-                }
-              }
-            },
-            adjacent_zones: { type: "array", items: { type: "string" } },
-            architectural_pattern: { type: "string" },
-            unique_methodology: { type: "string" },
-            suggested_role_types: { type: "array", items: { type: "string" } },
-            capability_headline: { type: "string" }
-          }
-        }
+        prompt: buildGraphPrompt(profile),
+        response_json_schema: GRAPH_SCHEMA,
       });
-      const normalizedResult = normalizeCapabilityGraph(result);
+      const normalizedResult = normalizeGraph({ ...result, rubric_version: RUBRIC_VERSION, built_at: new Date().toISOString() });
       setCapabilityGraph(normalizedResult);
       // Persist to the profile so employers can see it
       const profileId = profiles[0]?.id;
@@ -567,12 +551,12 @@ Return the top matches with specific reasoning.`,
                   <Network className="w-4 h-4 sm:w-5 sm:h-5 text-primary" /> Your Capability Graph
                 </h2>
                 <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-                  AI maps your actual execution capabilities — not just titles — into a semantic profile employers can understand at a glance.
+                  What you’re exceptionally good at, rated on a published rubric with the evidence behind each rating. Add proof stories below for the strongest results.
                 </p>
               </div>
               <Button size="sm" className="gap-2 w-full sm:w-auto" onClick={buildCapabilityGraph} disabled={graphLoading}>
                 {graphLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <GitBranch className="w-4 h-4" />}
-                Build Graph
+                {capabilityGraph ? "Rebuild Graph" : "Build Graph"}
               </Button>
             </div>
 
@@ -580,73 +564,15 @@ Return the top matches with specific reasoning.`,
               <div className="text-center py-8 sm:py-14 text-muted-foreground border-2 border-dashed border-border rounded-xl">
                 <Network className="w-8 h-8 sm:w-10 sm:h-10 mx-auto mb-3 opacity-20" />
                 <p className="font-medium text-sm">No Capability Graph yet</p>
-                <p className="text-xs mt-1 opacity-60">Fill in your profile and click "Build Graph" to generate your semantic capability map</p>
+                <p className="text-xs mt-1 opacity-60">Add a few proof stories below, then click "Build Graph"</p>
               </div>
             )}
 
-            {capabilityGraph && (
-              <div className="space-y-4 sm:space-y-5">
-                {capabilityGraph.capability_headline && (
-                  <div className="rounded-xl bg-primary/8 border border-primary/15 p-3 sm:p-4">
-                    <p className="text-xs sm:text-sm font-semibold text-primary mb-1">Capability Headline</p>
-                    <p className="text-sm sm:text-base font-medium text-foreground">{capabilityGraph.capability_headline}</p>
-                  </div>
-                )}
+            {capabilityGraph && <CapabilityGraphView graph={capabilityGraph} onAddStory={goToStories} />}
+          </Card>
 
-                {capabilityGraph.core_execution_vectors?.length > 0 && (
-                  <div className="space-y-2 sm:space-y-3">
-                    <h3 className="text-xs sm:text-sm font-semibold uppercase tracking-wider text-muted-foreground">Core Execution Vectors</h3>
-                    {capabilityGraph.core_execution_vectors.map((v, i) => (
-                      <div key={i} className="space-y-1">
-                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
-                          <span className="text-xs sm:text-sm font-medium truncate">{v.vector}</span>
-                          <span className="text-xs text-muted-foreground">{v.strength}%</span>
-                        </div>
-                        <Progress value={v.strength} className="h-1.5" />
-                        <p className="text-xs text-muted-foreground line-clamp-2">{v.evidence}</p>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                  {capabilityGraph.architectural_pattern && (
-                    <div className="rounded-lg bg-secondary p-3 sm:p-4">
-                      <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">Architectural Pattern</p>
-                      <p className="text-xs sm:text-sm line-clamp-3">{capabilityGraph.architectural_pattern}</p>
-                    </div>
-                  )}
-                  {capabilityGraph.unique_methodology && (
-                    <div className="rounded-lg bg-secondary p-3 sm:p-4">
-                      <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">Unique Methodology</p>
-                      <p className="text-xs sm:text-sm line-clamp-3">{capabilityGraph.unique_methodology}</p>
-                    </div>
-                  )}
-                </div>
-
-                {capabilityGraph.adjacent_zones?.length > 0 && (
-                  <div>
-                    <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Adjacent Adaptability Zones</h3>
-                    <div className="flex flex-wrap gap-1.5 sm:gap-2">
-                      {capabilityGraph.adjacent_zones.map((z, i) => (
-                        <Badge key={i} variant="outline" className="text-xs bg-accent/8 border-accent/20 text-accent line-clamp-1">{z}</Badge>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {capabilityGraph.suggested_role_types?.length > 0 && (
-                  <div>
-                    <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Roles You're Built For</h3>
-                    <div className="flex flex-wrap gap-1.5 sm:gap-2">
-                      {capabilityGraph.suggested_role_types.map((r, i) => (
-                        <Badge key={i} variant="secondary" className="text-xs line-clamp-1">{r}</Badge>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
+          <Card className="p-4 sm:p-6" id="proof-stories">
+            <ProofStories stories={profile?.proof_stories || []} onSave={saveStories} saving={storiesSaving} />
           </Card>
         </TabsContent>
 
