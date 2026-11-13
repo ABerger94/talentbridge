@@ -170,6 +170,10 @@ function registerSystemRoutes(app) {
     if (!r.ok) return res.status(204).end();
     const { message, stack, url } = req.body || {};
     if (!message) return res.status(400).json({ error: 'message required' });
+    // Scripts injected by in-app browsers (iabjs://) and extensions aren't ours.
+    if (/(extension|iabjs|webkit-masked-url|safari-web-extension):\/\/|Java object is gone/i.test(`${message}\n${stack || ''}`)) {
+      return res.status(204).end();
+    }
     let path = '';
     try { path = new URL(String(url || ''), 'http://x').pathname; } catch { /* ignore */ }
     monitor.record('client', { message: String(message), stack: String(stack || ''), path, userId: req.user?.id });
