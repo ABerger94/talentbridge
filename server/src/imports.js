@@ -21,6 +21,7 @@ const KINDS = {
   greenhouse: { label: 'Greenhouse', company: true, minGapMs: 20 * 60 * 60 * 1000 },
   lever: { label: 'Lever', company: true, minGapMs: 20 * 60 * 60 * 1000 },
   ashby: { label: 'Ashby', company: true, minGapMs: 20 * 60 * 60 * 1000 },
+  workday: { label: 'Workday', company: true, minGapMs: 20 * 60 * 60 * 1000 },
   remotive: { label: 'Remotive', company: false, minGapMs: 6 * 60 * 60 * 1000 },
   usajobs: { label: 'USAJOBS', company: false, minGapMs: 20 * 60 * 60 * 1000, env: ['USAJOBS_API_KEY', 'USAJOBS_EMAIL'] },
   adzuna: { label: 'Adzuna', company: false, minGapMs: 20 * 60 * 60 * 1000, env: ['ADZUNA_APP_ID', 'ADZUNA_APP_KEY'] },
@@ -244,6 +245,74 @@ function parseQuery(token) {
   try { return JSON.parse(token || '{}') || {}; } catch { return {}; }
 }
 
+// --- Workday --------------------------------------------------------------------
+// Workday boards have no single API host: each company lives on its own
+// shard (ingredion.wd1.myworkdayjobs.com/IngredionCareers). The token stores
+// "{host}/{site}" (or "{host}/{tenant}/{site}" for wdN.myworkdaysite.com).
+// Only Workday's own domains are accepted, so a token can't point anywhere else.
+const WD_JOBS_HOST = /^([a-z0-9-]+)\.(?:wd\d+\.)?myworkdayjobs\.com$/;
+const WD_SITE_HOST = /^wd\d+\.myworkdaysite\.com$/;
+const WD_NAME = /^[A-Za-z0-9_-]{1,80}$/;
+const WD_PAGE = 20; // Workday rejects larger pages (HTTP 400)
+const WD_MAX_LIST = 400; // listings read per run, before the per-source cap
+
+function parseWorkday(input) {
+  let raw = String(input || '').trim();
+  if (!raw) return null;
+  if (!/^https?:\/\//i.test(raw)) raw = `https://${raw}`;
+  let url;
+  try { url = new URL(raw); } catch { return null; }
+  const host = url.hostname.toLowerCase();
+  let parts = url.pathname.split('/').filter(Boolean);
+  if (parts[0] === 'wday' && parts[1] === 'cxs') parts = parts.slice(2); // a pasted API URL: tenant/site
+  else if (/^[a-z]{2}(-[a-z]{2})?$/i.test(parts[0] || '')) parts = parts.slice(1); // locale, e.g. en-US
+  const jobs = host.match(WD_JOBS_HOST);
+  if (jobs) {
+    if (parts.length >= 2 && parts[0].toLowerCase() === jobs[1] && WD_NAME.test(parts[1]) && url.pathname.includes('/wday/cxs/')) parts = parts.slice(1);
+    const site = parts[0];
+    if (!site || !WD_NAME.test(site) || site === 'job') return null;
+    return { host, tenant: jobs[1], site, token: `${host}/${site}` };
+  }
+  if (WD_SITE_HOST.test(host)) {
+    if (parts[0] === 'recruiting') parts = parts.slice(1);
+    const [tenant, site] = parts;
+    if (!tenant || !site || !WD_NAME.test(tenant) || !WD_NAME.test(site)) return null;
+    return { host, tenant: tenant.toLowerCase(), site, token: `${host}/${tenant.toLowerCase()}/${site}` };
+  }
+  return null;
+}
+
+const workdayApi = (w) => `https://${w.host}/wday/cxs/${encodeURIComponent(w.tenant)}/${encodeURIComponent(w.site)}`;
+const workdayJobUrl = (w, path) => (WD_SITE_HOST.test(w.host)
+  ? `https://${w.host}/en-US/recruiting/${w.tenant}/${w.site}${path}`
+  : `https://${w.host}/en-US/${w.site}${path}`);
+
+async function workdayPage(w, { offset = 0, limit = WD_PAGE, facets = {} } = {}) {
+  return getJSON(`${workdayApi(w)}/jobs`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ appliedFacets: facets, limit, offset, searchText: '' }),
+  });
+}
+
+// "Posted Today" / "Posted Yesterday" / "Posted 3 Days Ago" / "Posted 30+ Days Ago"
+function workdayPosted(text, now = Date.now()) {
+  const t = String(text || '').toLowerCase();
+  let days = 0;
+  if (t.includes('yesterday')) days = 1;
+  else if (/(\d+)\+?\s*days?/.test(t)) days = parseInt(t.match(/(\d+)\+?\s*days?/)[1], 10);
+  return new Date(now - days * DAY).toISOString();
+}
+
+// Checks a board exists; returns { total, us } (us = US postings, or null).
+async function workdayProbe(w) {
+  const first = await workdayPage(w, { limit: 1 });
+  if (typeof first?.total !== 'number') throw fail(400, 'That address didn’t answer like a Workday job board');
+  const country = (first.facets || []).find((f) => f.facetParameter === 'Country');
+  const us = (country?.values || []).find((v) => /united states/i.test(v.descriptor || ''));
+  return { total: first.total, us: us ? us.count : null, usId: us?.id || null, hasCountryFacet: !!country };
+}
+
 // --- Fetchers: each returns normalized jobs (newest first, US-relevant) -------
 // A normalized job: { external_id, title, company, location, work_type,
 // employment_type, description, salary_min, salary_max, salary_text,
@@ -270,6 +339,62 @@ const FETCHERS = {
     const d = await getJSON(`https://boards-api.greenhouse.io/v1/boards/${encodeURIComponent(src.token)}/jobs/${encodeURIComponent(job.external_id)}`);
     const description = htmlToMarkdown(d.content);
     return { ...job, description, ...salaryOf(description.match(/\$[\d,.]+[kK]?\s*(?:-|–|to)\s*\$?[\d,.]+[kK]?[^\n]{0,20}/)?.[0]) };
+  },
+  async workday(src) {
+    const w = parseWorkday(src.token);
+    if (!w) throw fail(400, 'Not a Workday job board address');
+    const probe = await workdayProbe(w);
+    // Ask Workday for US postings only when the board offers a Country filter;
+    // otherwise filter by the location text and the job details.
+    const facets = probe.usId ? { Country: [probe.usId] } : {};
+    if (probe.hasCountryFacet && !probe.usId) return [];
+    // Workday reports the total only on the first page (later pages say 0).
+    const rows = [];
+    let total = Infinity;
+    for (let offset = 0; offset < Math.min(total, WD_MAX_LIST); offset += WD_PAGE) {
+      const page = await workdayPage(w, { offset, facets });
+      if (offset === 0 && typeof page.total === 'number') total = page.total;
+      const got = page.jobPostings || [];
+      rows.push(...got);
+      if (got.length < WD_PAGE) break;
+    }
+    return rows
+      .filter((j) => j.externalPath && j.title)
+      .filter((j) => probe.usId || /\d+ locations/i.test(j.locationsText || '') || looksUS(j.locationsText))
+      .map((j) => ({
+        external_id: String((j.bulletFields || [])[0] || j.externalPath),
+        title: String(j.title).trim(),
+        company: src.name,
+        location: j.locationsText || '',
+        work_type: workTypeOf(j.locationsText, j.title),
+        employment_type: null,
+        description: null,
+        external_url: safeUrl(workdayJobUrl(w, j.externalPath)),
+        posted_date: workdayPosted(j.postedOn),
+        path: j.externalPath,
+        needsDetail: true,
+      }));
+  },
+  async workdayDetail(src, job) {
+    const w = parseWorkday(src.token);
+    const d = await getJSON(`${workdayApi(w)}${job.path}`);
+    const info = d.jobPostingInfo || {};
+    const country = info.jobRequisitionLocation?.country?.alpha2Code || info.country?.descriptor;
+    if (country && !looksUS('', country === 'US' ? 'US' : country)) return null; // not a US role
+    const extra = Array.isArray(info.additionalLocations) ? info.additionalLocations.filter(Boolean) : [];
+    const location = info.location ? `${info.location}${extra.length ? ` + ${extra.length} more` : ''}` : job.location;
+    const description = htmlToMarkdown(info.jobDescription);
+    const { path, ...rest } = job;
+    return {
+      ...rest,
+      title: String(info.title || job.title).trim(),
+      location,
+      work_type: workTypeOf(info.remoteType, location, info.title),
+      employment_type: employmentOf(info.timeType),
+      description,
+      ...salaryOf(description.match(/\$[\d,.]+[kK]?\s*(?:-|–|to)\s*\$?[\d,.]+[kK]?[^\n]{0,20}/)?.[0]),
+      posted_date: info.startDate ? new Date(`${info.startDate}T12:00:00Z`).toISOString() : job.posted_date,
+    };
   },
   async lever(src) {
     const data = await getJSON(`https://api.lever.co/v0/postings/${encodeURIComponent(src.token)}?mode=json`);
@@ -496,9 +621,9 @@ async function syncSource(src) {
   const wantedKeys = new Set(wanted.map((j) => `${src.kind}:${src.token}:${j.external_id}`));
 
   let fresh = wanted.filter((j) => !byKey.has(`${src.kind}:${src.token}:${j.external_id}`));
-  if (src.kind === 'greenhouse') {
-    fresh = (await mapLimit(fresh, 8, (j) => FETCHERS.greenhouseDetail(src, j))).filter(Boolean);
-  }
+  // Boards whose lists omit descriptions: fetch details for new jobs only.
+  const detail = FETCHERS[`${src.kind}Detail`];
+  if (detail) fresh = (await mapLimit(fresh, 8, (j) => detail(src, j))).filter(Boolean);
   if (fresh.length) insertJobs(fresh.map((j) => toRecord(src, j, now)));
 
   // Jobs back in the feed after being closed reopen; gone ones close.
@@ -571,7 +696,12 @@ async function addSource(body) {
   const kind = String(body.kind || '');
   if (!KINDS[kind]) throw fail(400, 'Choose a source type');
   let token = '';
-  if (KINDS[kind].company) {
+  let workday = null;
+  if (kind === 'workday') {
+    workday = parseWorkday(body.token);
+    if (!workday) throw fail(400, 'Paste the company’s Workday careers address, e.g. https://ingredion.wd1.myworkdayjobs.com/en-US/IngredionCareers');
+    token = workday.token;
+  } else if (KINDS[kind].company) {
     token = String(body.token || '').trim().toLowerCase();
     // Accept a pasted board URL as well as the bare name.
     const m = token.match(/(?:boards\.greenhouse\.io|job-boards\.greenhouse\.io|jobs\.lever\.co|jobs\.ashbyhq\.com)\/([a-z0-9_-]+)/);
@@ -591,7 +721,13 @@ async function addSource(body) {
     max_jobs: Math.min(Math.max(parseInt(body.max_jobs, 10) || MAX_PER_SOURCE, 1), 200),
   };
   // Company boards: check the board exists before saving it.
-  if (KINDS[kind].company) {
+  if (workday) {
+    const probe = await workdayProbe(workday).catch((e) => {
+      throw fail(400, e.status === 404 ? `No Workday job board at ${workday.host}/${workday.site}. Check the careers address.` : e.message);
+    });
+    src.preview = probe.us ?? probe.total;
+    if (!body.name) src.name = workday.tenant.charAt(0).toUpperCase() + workday.tenant.slice(1);
+  } else if (KINDS[kind].company) {
     const jobs = await FETCHERS[kind]({ ...src }).catch((e) => { throw fail(400, e.status === 404 ? `No ${KINDS[kind].label} board called “${token}”` : e.message); });
     src.preview = jobs.length;
   }
@@ -674,4 +810,4 @@ function registerImportRoutes(app) {
   }));
 }
 
-module.exports = { registerImportRoutes, runImports, syncSource, listSources, addSource, htmlToMarkdown, looksUS, salaryOf, levelOf, KINDS, FETCHERS, DEFAULT_SOURCES };
+module.exports = { parseWorkday, workdayPosted, registerImportRoutes, runImports, syncSource, listSources, addSource, htmlToMarkdown, looksUS, salaryOf, levelOf, KINDS, FETCHERS, DEFAULT_SOURCES };

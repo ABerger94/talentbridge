@@ -63,7 +63,7 @@ function AddSource({ kinds, onAdded }) {
           <>
             <div className="space-y-1.5">
               <Label htmlFor="src-token">Board name or jobs URL</Label>
-              <Input id="src-token" required placeholder={kind === "greenhouse" ? "e.g. sweetgreen" : kind === "lever" ? "e.g. palantir" : "e.g. ramp"} value={form.token || ""} onChange={set("token")} />
+              <Input id="src-token" required placeholder={kind === "greenhouse" ? "e.g. sweetgreen" : kind === "lever" ? "e.g. palantir" : kind === "workday" ? "e.g. https://ingredion.wd1.myworkdayjobs.com/en-US/IngredionCareers" : "e.g. ramp"} value={form.token || ""} onChange={set("token")} />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="src-name">Company name</Label>
@@ -91,7 +91,7 @@ function AddSource({ kinds, onAdded }) {
         </Button>
         {k?.company && (
           <p className="text-xs text-muted-foreground">
-            Find it in the company’s careers links: boards.greenhouse.io/<b>name</b>, jobs.lever.co/<b>name</b>, or jobs.ashbyhq.com/<b>name</b>. We check it exists before saving.
+            Find it in the company’s careers links: boards.greenhouse.io/<b>name</b>, jobs.lever.co/<b>name</b>, jobs.ashbyhq.com/<b>name</b>, or for Workday paste the whole careers address (<b>company</b>.wd1.myworkdayjobs.com/<b>Site</b>). We check it exists before saving.
           </p>
         )}
       </div>
