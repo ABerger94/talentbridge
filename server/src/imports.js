@@ -422,12 +422,12 @@ const FETCHERS = {
     const facets = probe.usFacet ? { [probe.usFacet.param]: [probe.usFacet.id] } : {};
     // Workday reports the total only on the first page (later pages say 0),
     // so read page one, then the rest in parallel.
-    const first = await workdayPage(w, { facets });
+    const first = (await workdayPage(w, { facets })) || {};
     const total = Math.min(typeof first.total === 'number' ? first.total : 0, WD_MAX_LIST);
     const offsets = [];
     for (let o = WD_PAGE; o < total; o += WD_PAGE) offsets.push(o);
     const pages = await mapLimit(offsets, 5, (offset) => workdayPage(w, { offset, facets }));
-    const rows = [first, ...pages].flatMap((p) => p.jobPostings || []);
+    const rows = [first, ...pages].flatMap((p) => p?.jobPostings || []); // a page can come back empty
     const seen = new Set();
     return rows
       .filter((j) => j.externalPath && j.title && !seen.has(j.externalPath) && seen.add(j.externalPath))
@@ -853,7 +853,9 @@ async function runImports({ budgetMs = 45000, force = false, sourceIds = null, c
   let next = 0;
   await Promise.all(Array.from({ length: Math.min(concurrency, due.length) }, async () => {
     while (next < due.length) {
-      if (Date.now() - started > budgetMs * 0.65) { report.skipped = due.length - next; next = due.length; break; }
+      // Stop starting sources a little past halfway: the slowest take ~25s, and
+      // the whole run must finish inside Vercel's 60-second limit.
+      if (Date.now() - started > budgetMs * 0.55) { report.skipped = due.length - next; next = due.length; break; }
       const src = due[next++];
       try {
         const r = await syncSource(src);
