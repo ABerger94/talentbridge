@@ -44,6 +44,42 @@ function Stat({ label, value }) {
   );
 }
 
+// Depth levels half of the fairness check (Capability Graph, 1-5 rubric).
+function DepthResults({ depth }) {
+  return (
+    <div className="space-y-2 pt-2">
+      <h4 className="text-sm font-semibold">Capability Graph depth levels</h4>
+      <p className={`text-xs ${depth.passed === false ? "text-amber-800" : depth.inconclusive ? "text-muted-foreground" : "text-emerald-800"}`}>
+        {depth.inconclusive
+          ? depth.reason || "Inconclusive: the two control graphs didn’t agree on any capability, so there was nothing stable to compare. Run it again."
+          : depth.passed
+            ? `No variant moved a capability by ${depth.threshold} level or more (compared ${depth.stable} capabilities both controls rated the same).`
+            : `Review needed: ${depth.flagged.join(", ")} moved a capability by ${depth.threshold} level or more.`}
+        {depth.noise > 0 && ` The controls themselves disagreed on ${depth.noise === 1 ? "1 capability, which was" : `${depth.noise} capabilities, which were`} left out.`}
+      </p>
+      {depth.rows?.length > 0 && (
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs">
+            <thead><tr className="text-left text-muted-foreground"><th className="py-1 pr-2">Variant</th><th className="pr-2 text-right">Avg depth</th><th className="pr-2 text-right">Sets apart</th><th>Changes vs control</th></tr></thead>
+            <tbody>
+              {depth.rows.map((r) => (
+                <tr key={r.variant} className="border-t align-top">
+                  <td className="py-1 pr-2 whitespace-nowrap">{r.variant}</td>
+                  <td className="pr-2 text-right tabular-nums">{r.error ? "—" : r.mean_level}</td>
+                  <td className="pr-2 text-right tabular-nums">{r.error ? "—" : r.sets_apart}</td>
+                  <td className={r.changes.length ? "text-amber-700 font-semibold" : "text-muted-foreground"}>
+                    {r.error ? "AI didn’t answer" : r.changes.length ? r.changes.map((c) => `${c.capability}: ${c.control} → ${c.variant}`).join("; ") : "None"}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function SystemTab() {
   const queryClient = useQueryClient();
   const [showResolved, setShowResolved] = useState(false);
@@ -149,19 +185,25 @@ export default function SystemTab() {
           </Button>
         </div>
         <p className="text-xs text-muted-foreground">
-          Scores identical made-up candidates for one of your live roles. Each differs only by one sentence hinting at gender,
-          ethnicity, nationality, age, disability, or religion. A fair model scores them all about the same. Uses one AI call.
+          Runs identical made-up candidates through the AI for one of your live roles. Each differs only by one sentence hinting at gender,
+          ethnicity, nationality, age, disability, or religion. It checks both match scores (0–100) and the depth levels (1–5) in each
+          candidate’s Capability Graph. A fair model treats them all the same. Uses 9 AI calls and takes up to a minute.
         </p>
         {fair && (
           <div className="space-y-2">
             <div className={`rounded-md border p-2.5 text-sm ${fair.passed ? "bg-emerald-50 border-emerald-200 text-emerald-900" : "bg-amber-50 border-amber-200 text-amber-900"}`}>
-              {fair.passed
-                ? `Passed: no variant moved more than ${fair.worst_difference} points from the control (limit ${fair.threshold}).`
-                : `Review needed: a variant moved ${fair.worst_difference} points from the control (limit ${fair.threshold}).`}
+              {fair.passed ? "Passed" : "Review needed"}
+              {fair.depth?.inconclusive && fair.passed ? " (depth levels inconclusive this run, see below)" : ""}
               <span className="block text-xs opacity-80">
                 Role: {fair.job.title} · control {fair.baseline}%{fair.noise != null ? ` · control repeat differed by ${fair.noise}` : ""} · {ago(fair.ran_at)}
               </span>
             </div>
+            <h4 className="text-sm font-semibold pt-1">Match scores</h4>
+            <p className={`text-xs ${(fair.match_passed ?? fair.passed) ? "text-emerald-800" : "text-amber-800"}`}>
+              {(fair.match_passed ?? fair.passed)
+                ? `No variant moved more than ${fair.worst_difference} points from the control (limit ${fair.threshold}).`
+                : `A variant moved ${fair.worst_difference} points from the control (limit ${fair.threshold}).`}
+            </p>
             <div className="overflow-x-auto">
               <table className="w-full text-xs">
                 <thead><tr className="text-left text-muted-foreground"><th className="py-1 pr-2">Variant</th><th className="pr-2">Added sentence</th><th className="pr-2 text-right">Score</th><th className="text-right">vs control</th></tr></thead>
@@ -179,6 +221,7 @@ export default function SystemTab() {
                 </tbody>
               </table>
             </div>
+            {fair.depth && <DepthResults depth={fair.depth} />}
           </div>
         )}
       </Card>

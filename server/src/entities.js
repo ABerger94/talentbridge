@@ -544,4 +544,4 @@ function registerEntityRoutes(app) {
   });
 }
 
-module.exports = { registerEntityRoutes, store, present };
+module.exports = { normalizeStories, ownSeekerProfile, registerEntityRoutes, store, present };

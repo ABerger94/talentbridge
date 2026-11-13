@@ -20,7 +20,7 @@ import { JobAlertNudge } from "@/components/seeker/JobAlertSettings";
 import JobCard from "@/components/jobs/JobCard";
 import MatchFilters, { loadMatchFilters, saveMatchFilters } from "@/components/seeker/MatchFilters";
 import { normalizePercent } from "@/lib/scales";
-import { normalizeGraph, buildGraphPrompt, GRAPH_SCHEMA, RUBRIC_VERSION } from "@/lib/capabilityRubric";
+import { normalizeGraph } from "@/lib/capabilityRubric";
 import CapabilityGraphView from "@/components/seeker/CapabilityGraphView";
 import ProofStories from "@/components/seeker/ProofStories";
 import ResumeUploader from "@/components/resume/ResumeUploader";
@@ -216,20 +216,15 @@ export default function SeekerDashboard() {
     }
     setGraphLoading(true);
     try {
-      // The rubric (depth levels, evidence caps, baseline vs. differentiators)
-      // lives in lib/capabilityRubric so the page shows the same definitions.
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: buildGraphPrompt(profile),
-        response_json_schema: GRAPH_SCHEMA,
+      // Built on the server, which applies the rubric (depth levels,
+      // evidence caps, baseline vs. differentiators) and saves the graph.
+      // Current edits are sent along so unsaved changes count.
+      const { headline, skills, experience_years, experience_level, work_history, education, career_goals, proof_stories } = profile;
+      const graph = await base44.functions.invoke("buildCapabilityGraph", {
+        profile: { headline, skills, experience_years, experience_level, work_history, education, career_goals, proof_stories },
       });
-      const normalizedResult = normalizeGraph({ ...result, rubric_version: RUBRIC_VERSION, built_at: new Date().toISOString() });
-      setCapabilityGraph(normalizedResult);
-      // Persist to the profile so employers can see it
-      const profileId = profiles[0]?.id;
-      if (profileId) {
-        await base44.entities.SeekerProfile.update(profileId, { capability_graph: normalizedResult });
-        queryClient.invalidateQueries({ queryKey: ["seekerProfile"] });
-      }
+      setCapabilityGraph(normalizeGraph(graph?.data ?? graph));
+      queryClient.invalidateQueries({ queryKey: ["seekerProfile"] });
       toast.success("Capability Graph saved to your profile!");
     } catch (err) {
       console.error("buildCapabilityGraph failed", err);
