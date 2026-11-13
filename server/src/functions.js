@@ -310,6 +310,28 @@ Express match_score as an integer from 0 to 100, reflecting job-relevant evidenc
 
   // Reads the seeker's professional links (any profession: websites, practice
   // pages, LinkedIn, portfolios, GitHub) and summarizes what they show.
+  // Builds the seeker's Capability Graph on the published rubric and saves it.
+  // The page sends its current (possibly unsaved) edits to the fields the
+  // graph reads; everything else comes from the stored profile.
+  async buildCapabilityGraph(user, { profile: edits } = {}) {
+    const { ownSeekerProfile, normalizeStories } = require('./entities');
+    const stored = ownSeekerProfile(user.id);
+    if (!stored) throw fail(400, 'Save your profile first');
+    const merged = { ...stored };
+    const e = edits && typeof edits === 'object' ? edits : {};
+    for (const k of ['headline', 'work_history', 'education', 'career_goals', 'experience_level']) if (typeof e[k] === 'string') merged[k] = e[k].slice(0, 6000);
+    if (Array.isArray(e.skills)) merged.skills = e.skills.filter((x) => typeof x === 'string').slice(0, 60);
+    if (Number.isFinite(Number(e.experience_years))) merged.experience_years = Number(e.experience_years);
+    if (Array.isArray(e.proof_stories)) merged.proof_stories = normalizeStories(e.proof_stories);
+    if (!merged.skills?.length && !merged.work_history && !merged.proof_stories?.length) {
+      throw fail(400, 'Add your skills, work history or a proof story first.');
+    }
+    spendAiAllowance(user);
+    const graph = await require('./capability').buildGraph(merged);
+    if (!graph.core_execution_vectors.length) throw fail(502, 'The AI didn’t return any capabilities. Please try again.');
+    store.update('SeekerProfile', stored.id, { capability_graph: graph });
+    return graph;
+  },
   async analyzePortfolio(user, { seeker_profile_id }) {
     if (!seeker_profile_id) throw fail(400, 'seeker_profile_id is required');
     const seekerProfile = store.get('SeekerProfile', seeker_profile_id);
