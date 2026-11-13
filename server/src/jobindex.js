@@ -125,20 +125,16 @@ const publicRow = (r) => ({
   snippet: r.snippet,
 });
 
-// Job board search. Roles posted on TalentBridge come first, then imported
-// ones, newest first within each.
-function search({ q = '', location = '', work_type, employment_type, experience_level, origin = 'all', page = 1, per = 20 } = {}) {
+const WORK_TYPES = ['remote', 'hybrid', 'onsite'];
+const EMPLOYMENT_TYPES = ['full_time', 'part_time', 'contract', 'internship', 'freelance'];
+const LEVELS = ['entry', 'mid', 'senior', 'lead', 'executive'];
+
+// The filters shared by the job board and the seeker's match pool, as SQL.
+// Unknown values are ignored rather than matching nothing.
+function filterClause({ location = '', work_type, employment_type, experience_level, origin = 'all', min_salary, posted_within } = {}) {
   const where = ["status = 'active'"];
   const args = [];
-  const words = tokens(q).slice(0, 6);
-  for (const word of words) {
-    where.push('text LIKE ?');
-    args.push(`%${word}%`);
-  }
-  // Within each group, roles with the search words in the title come first.
-  const titleRank = words.length ? `(${words.map(() => '(LOWER(title) LIKE ?)').join(' + ')}) DESC, ` : '';
-  const rankArgs = words.map((w) => `%${w}%`);
-  const loc = String(location || '').trim().toLowerCase();
+  const loc = String(location || '').trim().toLowerCase().slice(0, 80);
   if (loc === 'remote') where.push("work_type = 'remote'");
   else if (loc) {
     // "Maryland" also finds "Baltimore, MD", and "md" finds "Maryland".
@@ -150,11 +146,32 @@ function search({ q = '', location = '', work_type, employment_type, experience_
     where.push(`(${likes.map(() => 'LOWER(location) LIKE ?').join(' OR ')})`);
     args.push(...likes);
   }
-  if (work_type) { where.push('work_type = ?'); args.push(work_type); }
-  if (employment_type) { where.push('employment_type = ?'); args.push(employment_type); }
-  if (experience_level) { where.push('experience_level = ?'); args.push(experience_level); }
+  if (WORK_TYPES.includes(work_type)) { where.push('work_type = ?'); args.push(work_type); }
+  if (EMPLOYMENT_TYPES.includes(employment_type)) { where.push('employment_type = ?'); args.push(employment_type); }
+  if (LEVELS.includes(experience_level)) { where.push('experience_level = ?'); args.push(experience_level); }
   if (origin === 'direct') where.push('imported = 0');
   if (origin === 'imported') where.push('imported = 1');
+  // Pay: roles that list pay must reach the minimum; roles that don't list
+  // it are kept (most postings don't say).
+  const minPay = parseInt(min_salary, 10);
+  if (minPay > 0) { where.push('(COALESCE(salary_max, salary_min) IS NULL OR COALESCE(salary_max, salary_min) >= ?)'); args.push(minPay); }
+  const days = parseInt(posted_within, 10);
+  if (days > 0) { where.push('posted >= ?'); args.push(new Date(Date.now() - days * 86400000).toISOString()); }
+  return { where, args };
+}
+
+// Job board search. Roles posted on TalentBridge come first, then imported
+// ones, newest first within each.
+function search({ q = '', page = 1, per = 20, ...filters } = {}) {
+  const { where, args } = filterClause(filters);
+  const words = tokens(q).slice(0, 6);
+  for (const word of words) {
+    where.push('text LIKE ?');
+    args.push(`%${word}%`);
+  }
+  // Within each group, roles with the search words in the title come first.
+  const titleRank = words.length ? `(${words.map(() => '(LOWER(title) LIKE ?)').join(' + ')}) DESC, ` : '';
+  const rankArgs = words.map((w) => `%${w}%`);
   const clause = where.join(' AND ');
   const total = db.prepare(`SELECT COUNT(*) AS n FROM job_index WHERE ${clause}`).get(...args).n;
   const size = Math.min(Math.max(parseInt(per, 10) || 20, 1), 50);
@@ -175,15 +192,15 @@ function profileTokens(profile) {
 
 // Active jobs ranked by word overlap with a seeker's profile: a cheap
 // pre-filter so the AI only scores roles worth scoring.
-function suggestFor(profile, { limit = 25, since = null, excludeIds = [] } = {}) {
+function suggestFor(profile, { limit = 25, since = null, excludeIds = [], filters = {} } = {}) {
   const { strong, weak } = profileTokens(profile);
   if (!strong.size && !weak.size) return [];
-  const args = [];
-  // Narrow in the database first: TalentBridge-posted roles, plus imported
-  // ones that mention at least one of the profile's key words. Keeps this
-  // cheap with thousands of listings.
+  // Narrow in the database first: the seeker's filters, then TalentBridge-
+  // posted roles plus imported ones that mention at least one of the
+  // profile's key words. Keeps this cheap with thousands of listings.
+  const { where, args } = filterClause(filters);
   const keys = [...strong, ...weak].slice(0, 12);
-  let sql = "SELECT job_id, imported, title, posted, text FROM job_index WHERE status = 'active'";
+  let sql = `SELECT job_id, imported, title, posted, text FROM job_index WHERE ${where.join(' AND ')}`;
   if (since) { sql += ' AND posted > ?'; args.push(since); }
   sql += ` AND (imported = 0 OR ${keys.map(() => 'text LIKE ?').join(' OR ')})`;
   args.push(...keys.map((k) => `%${k}%`));
@@ -207,9 +224,14 @@ function suggestFor(profile, { limit = 25, since = null, excludeIds = [] } = {})
   return top.filter(({ r }) => full.has(r.job_id)).map(({ r, score }) => ({ ...publicRow(full.get(r.job_id)), relevance: score }));
 }
 
+function countWhere(filters) {
+  const { where, args } = filterClause(filters);
+  return db.prepare(`SELECT COUNT(*) AS n FROM job_index WHERE ${where.join(' AND ')}`).get(...args).n;
+}
+
 function counts() {
   const row = db.prepare("SELECT SUM(CASE WHEN imported = 0 THEN 1 ELSE 0 END) AS direct, SUM(CASE WHEN imported = 1 THEN 1 ELSE 0 END) AS imported FROM job_index WHERE status = 'active'").get();
   return { direct: row.direct || 0, imported: row.imported || 0 };
 }
 
-module.exports = { STATES, toRow, upsertRows, upsertJob, removeJob, setStatus, rebuildIfEmpty, search, suggestFor, tokens, counts, publicRow };
+module.exports = { filterClause, countWhere, STATES, toRow, upsertRows, upsertJob, removeJob, setStatus, rebuildIfEmpty, search, suggestFor, tokens, counts, publicRow };

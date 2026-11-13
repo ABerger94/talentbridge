@@ -22,6 +22,8 @@ function registerJobRoutes(app) {
           employment_type: ['full_time', 'part_time', 'contract', 'internship', 'freelance'].includes(q.employment_type) ? q.employment_type : undefined,
           experience_level: ['entry', 'mid', 'senior', 'lead', 'executive'].includes(q.experience_level) ? q.experience_level : undefined,
           origin: ['direct', 'imported'].includes(q.origin) ? q.origin : 'all',
+          min_salary: q.min_salary,
+          posted_within: q.posted_within,
           page: q.page,
           per: q.per,
         }),
@@ -40,7 +42,13 @@ function registerJobRoutes(app) {
     if (!profile) return res.json({ data: [] });
     const applied = store.filter('JobApplication', { created_by_id: req.user.id }).map((a) => a.job_id);
     const limit = Math.min(parseInt(req.query.limit, 10) || 25, 40);
-    res.json({ data: jobindex.suggestFor(profile, { limit, excludeIds: applied }) });
+    const q = req.query || {};
+    const filters = {
+      location: String(q.location || ''), work_type: q.work_type, employment_type: q.employment_type,
+      experience_level: q.experience_level, origin: q.origin, min_salary: q.min_salary, posted_within: q.posted_within,
+    };
+    // pool: how many open roles fit the filters at all, so the page can say so.
+    res.json({ data: jobindex.suggestFor(profile, { limit, excludeIds: applied, filters }), pool: jobindex.countWhere(filters) });
   });
 }
 

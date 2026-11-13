@@ -151,8 +151,13 @@ const jobs = {
     const qs = new URLSearchParams(Object.entries(params).filter(([, v]) => v !== undefined && v !== null && v !== ''));
     return request(`/api/jobs/search?${qs}`);
   },
-  async suggested(limit = 25) {
-    return (await request(`/api/jobs/suggested?limit=${limit}`)).data;
+  // Roles relevant to the signed-in seeker. With filters, returns
+  // { data: jobs, pool: open roles fitting the filters }.
+  async suggested(limit = 25, filters) {
+    const params = new URLSearchParams({ limit: String(limit) });
+    for (const [k, v] of Object.entries(filters || {})) if (v) params.set(k, String(v));
+    const r = await request(`/api/jobs/suggested?${params}`);
+    return filters ? r : r.data;
   },
 };
 
