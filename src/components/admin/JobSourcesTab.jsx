@@ -26,6 +26,15 @@ const QUERY_FIELDS = {
   usajobs: [["location", "Location (e.g. Maryland)"], ["keyword", "Keyword (optional)"]],
   adzuna: [["where", "Location (e.g. Baltimore)"], ["what", "Keywords (optional)"]],
   jooble: [["location", "Location (e.g. Maryland)"], ["keywords", "Keywords (optional)"]],
+  workable_search: [["location", "Location (e.g. Maryland)"], ["keywords", "Keywords (optional)"]],
+};
+const PLACEHOLDER = {
+  greenhouse: "e.g. sweetgreen",
+  lever: "e.g. palantir",
+  ashby: "e.g. ramp",
+  workday: "e.g. https://ingredion.wd1.myworkdayjobs.com/en-US/IngredionCareers",
+  smartrecruiters: "e.g. BoschGroup or jobs.smartrecruiters.com/BoschGroup",
+  workable: "e.g. huggingface or apply.workable.com/huggingface",
 };
 const STATUS = {
   ok: "bg-emerald-50 text-emerald-800 border-emerald-200",
@@ -63,7 +72,7 @@ function AddSource({ kinds, onAdded }) {
           <>
             <div className="space-y-1.5">
               <Label htmlFor="src-token">Board name or jobs URL</Label>
-              <Input id="src-token" required placeholder={kind === "greenhouse" ? "e.g. sweetgreen" : kind === "lever" ? "e.g. palantir" : kind === "workday" ? "e.g. https://ingredion.wd1.myworkdayjobs.com/en-US/IngredionCareers" : "e.g. ramp"} value={form.token || ""} onChange={set("token")} />
+              <Input id="src-token" required placeholder={PLACEHOLDER[kind] || "Board name"} value={form.token || ""} onChange={set("token")} />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="src-name">Company name</Label>
@@ -91,7 +100,7 @@ function AddSource({ kinds, onAdded }) {
         </Button>
         {k?.company && (
           <p className="text-xs text-muted-foreground">
-            Find it in the company’s careers links: boards.greenhouse.io/<b>name</b>, jobs.lever.co/<b>name</b>, jobs.ashbyhq.com/<b>name</b>, or for Workday paste the whole careers address (<b>company</b>.wd1.myworkdayjobs.com/<b>Site</b>). We check it exists before saving.
+            Find it in the company’s careers links: boards.greenhouse.io/<b>name</b>, jobs.lever.co/<b>name</b>, jobs.ashbyhq.com/<b>name</b>, jobs.smartrecruiters.com/<b>Name</b>, apply.workable.com/<b>name</b>, or for Workday paste the whole careers address (<b>company</b>.wd1.myworkdayjobs.com/<b>Site</b>). You can paste the link itself. We check it exists before saving.
           </p>
         )}
       </div>
