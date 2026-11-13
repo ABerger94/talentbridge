@@ -43,7 +43,7 @@ globalThis.fetch = async (url, init) => {
       return new Response(JSON.stringify({
         total: offset === 0 ? all.length : 0, // like Workday: only the first page says
         jobPostings: all.slice(offset, offset + limit),
-        facets: [{ facetParameter: 'Country', values: [{ descriptor: 'Canada', id: 'ca1', count: 3 }, { descriptor: 'United States of America', id: 'us1', count: 25 }] }],
+        facets: [{ facetParameter: 'timeType', values: [{ descriptor: 'Full time', id: 'ft', count: 25 }] }, { facetParameter: 'Location_Country', values: [{ descriptor: 'Canada', id: 'ca1', count: 3 }, { descriptor: 'United States of America', id: 'us1', count: 25 }] }],
       }));
     }
     const n = Number(u.match(/Plant-Operator-(\d+)_/)[1]);
@@ -152,6 +152,9 @@ test('workday: careers URLs parse to host/site, and only Workday hosts', () => {
   assert.equal(parseWorkday('https://evil.example.com/en-US/IngredionCareers'), null);
   assert.equal(parseWorkday('https://myworkdayjobs.com.evil.com/x'), null);
   assert.equal(parseWorkday('https://ingredion.wd1.myworkdayjobs.com/'), null);
+  // A site can look like a language code; it is only a locale when something follows it.
+  assert.equal(parseWorkday('https://jj.wd5.myworkdayjobs.com/en-US/JJ').token, 'jj.wd5.myworkdayjobs.com/JJ');
+  assert.equal(parseWorkday('jj.wd5.myworkdayjobs.com/JJ').token, 'jj.wd5.myworkdayjobs.com/JJ');
 });
 
 test('workday sync pages through the US filter, reads details, links to the job page', async () => {
@@ -161,7 +164,7 @@ test('workday sync pages through the US filter, reads details, links to the job 
   // Page size 20 with the US Country facet applied: 25 postings take two pages.
   const pages = wdCalls.filter((b) => b.limit === 20);
   assert.deepEqual(pages.map((b) => b.offset), [0, 20]);
-  assert.deepEqual(pages[0].appliedFacets, { Country: ['us1'] });
+  assert.deepEqual(pages[0].appliedFacets, { Location_Country: ['us1'] });
   assert.equal(r.found, 25);
   const jobs = store.filter('Job', { source_id: src.id });
   assert.equal(jobs.length, 24, 'the posting whose details say Canada is dropped');

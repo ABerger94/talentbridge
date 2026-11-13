@@ -73,8 +73,24 @@
       "schedule": "37 12 * * *"
     },
     {
+      "path": "/api/cron/import-jobs?run=2",
+      "schedule": "52 12 * * *"
+    },
+    {
+      "path": "/api/cron/import-jobs?run=3",
+      "schedule": "22 13 * * *"
+    },
+    {
+      "path": "/api/cron/import-jobs?run=4",
+      "schedule": "47 13 * * *"
+    },
+    {
       "path": "/api/cron/job-alerts",
       "schedule": "7 14 * * *"
+    },
+    {
+      "path": "/api/cron/import-jobs?run=5",
+      "schedule": "37 18 * * *"
     }
   ]
 }

@@ -66,6 +66,44 @@ const DEFAULT_SOURCES = [
   ['adzuna', JSON.stringify({ where: 'Maryland' }), 'Adzuna: Maryland', MAX_PER_SOURCE],
   ['adzuna', JSON.stringify({ where: 'Washington, DC' }), 'Adzuna: Washington, DC', MAX_PER_SOURCE],
   ['jooble', JSON.stringify({ location: 'Maryland' }), 'Jooble: Maryland', MAX_PER_SOURCE],
+  // Large employers on Workday (verified live 2026-11-13).
+  ['workday', 'cvshealth.wd1.myworkdayjobs.com/CVS_Health_Careers', 'CVS Health', MAX_PER_SOURCE],
+  ['workday', 'globalhr.wd5.myworkdayjobs.com/REC_RTX_Ext_Gateway', 'RTX', MAX_PER_SOURCE],
+  ['workday', 'capitalone.wd12.myworkdayjobs.com/Capital_One', 'Capital One', MAX_PER_SOURCE],
+  ['workday', 'walmart.wd504.myworkdayjobs.com/WalmartExternal', 'Walmart', MAX_PER_SOURCE],
+  ['workday', 'target.wd5.myworkdayjobs.com/targetcareers', 'Target', MAX_PER_SOURCE],
+  ['workday', 'abbott.wd5.myworkdayjobs.com/AbbottCareers', 'Abbott', MAX_PER_SOURCE],
+  ['workday', 'accenture.wd103.myworkdayjobs.com/AccentureCareers', 'Accenture', MAX_PER_SOURCE],
+  ['workday', 'ghr.wd1.myworkdayjobs.com/Lateral-US', 'Bank of America', MAX_PER_SOURCE],
+  ['workday', 'amgen.wd1.myworkdayjobs.com/Careers', 'Amgen', MAX_PER_SOURCE],
+  ['workday', 'jj.wd5.myworkdayjobs.com/JJ', 'Johnson & Johnson', MAX_PER_SOURCE],
+  ['workday', 'salesforce.wd12.myworkdayjobs.com/External_Career_Site', 'Salesforce', MAX_PER_SOURCE],
+  ['workday', 'mdlz.wd3.myworkdayjobs.com/External', 'Mondelez', MAX_PER_SOURCE],
+  ['workday', 'cisco.wd5.myworkdayjobs.com/Cisco_Careers', 'Cisco', MAX_PER_SOURCE],
+  ['workday', 'wf.wd1.myworkdayjobs.com/WellsFargoJobs', 'Wells Fargo', MAX_PER_SOURCE],
+  ['workday', 'medtronic.wd1.myworkdayjobs.com/MedtronicCareers', 'Medtronic', MAX_PER_SOURCE],
+  ['workday', 'heinz.wd1.myworkdayjobs.com/KraftHeinz_Careers', 'Kraft Heinz', MAX_PER_SOURCE],
+  ['workday', 'pg.wd5.myworkdayjobs.com/1000', 'Procter & Gamble', MAX_PER_SOURCE],
+  ['workday', '3m.wd1.myworkdayjobs.com/Search', '3M', MAX_PER_SOURCE],
+  ['workday', 'boeing.wd1.myworkdayjobs.com/EXTERNAL_CAREERS', 'Boeing', MAX_PER_SOURCE],
+  ['workday', 'pfizer.wd1.myworkdayjobs.com/PfizerCareers', 'Pfizer', MAX_PER_SOURCE],
+  ['workday', 'tysonfoods.wd5.myworkdayjobs.com/TSN', 'Tyson Foods', MAX_PER_SOURCE],
+  ['workday', 'generalmotors.wd5.myworkdayjobs.com/Careers_GM', 'General Motors', MAX_PER_SOURCE],
+  ['workday', 'bristolmyerssquibb.wd5.myworkdayjobs.com/BMS', 'Bristol Myers Squibb', MAX_PER_SOURCE],
+  ['workday', 'sbdinc.wd1.myworkdayjobs.com/Stanley_Black_Decker_Career_Site', 'Stanley Black & Decker', MAX_PER_SOURCE],
+  ['workday', 'geaerospace.wd5.myworkdayjobs.com/GE_ExternalSite', 'GE Aerospace', MAX_PER_SOURCE],
+  ['workday', 'lilly.wd115.myworkdayjobs.com/LLY', 'Eli Lilly', MAX_PER_SOURCE],
+  ['workday', 'smithfieldfoods.wd1.myworkdayjobs.com/Careers', 'Smithfield Foods', MAX_PER_SOURCE],
+  ['workday', 'mymvw.wd5.myworkdayjobs.com/MVW', 'Marriott Vacations Worldwide', MAX_PER_SOURCE],
+  ['workday', 'genmills.wd1.myworkdayjobs.com/GMI_External_Careers', 'General Mills', MAX_PER_SOURCE],
+  ['workday', 'workday.wd5.myworkdayjobs.com/Workday', 'Workday', MAX_PER_SOURCE],
+  ['workday', 'campbellsoup.wd5.myworkdayjobs.com/ExternalCareers_GlobalSite', "Campbell's", MAX_PER_SOURCE],
+  ['workday', 'adobe.wd5.myworkdayjobs.com/external_experienced', 'Adobe', MAX_PER_SOURCE],
+  ['workday', 'coke.wd1.myworkdayjobs.com/coca-cola-careers', 'Coca-Cola', MAX_PER_SOURCE],
+  ['workday', 'unilever.wd3.myworkdayjobs.com/Unilever_Experienced_Professionals', 'Unilever', MAX_PER_SOURCE],
+  ['workday', 'ingredion.wd1.myworkdayjobs.com/IngredionCareers', 'Ingredion', MAX_PER_SOURCE],
+  ['workday', 'conagrabrands.wd1.myworkdayjobs.com/Careers_US', 'Conagra Brands', MAX_PER_SOURCE],
+  ['workday', 'troweprice.wd5.myworkdayjobs.com/TRowePrice', 'T. Rowe Price', MAX_PER_SOURCE],
 ];
 
 db.exec(`
@@ -173,12 +211,16 @@ const US_STATE_ABBR = /\b(A[LKZR]|C[AOT]|D[EC]|FL|GA|HI|I[ADLN]|K[SY]|LA|M[ADEIN
 const US_WORDS = /united states|\busa\b|\bu\.s\.|\bus\b|remote|anywhere|americas|north america|new york|san francisco|los angeles|chicago|boston|seattle|austin|denver|atlanta|miami|dallas|houston|phoenix|baltimore|washington|philadelphia|portland|san diego|san jose|nashville|raleigh|salt lake|minneapolis|detroit/i;
 const NON_US = /\b(canada|toronto|vancouver|montreal|uk|united kingdom|london|ireland|dublin|germany|berlin|munich|france|paris|spain|madrid|barcelona|netherlands|amsterdam|india|bangalore|bengaluru|hyderabad|pune|singapore|japan|tokyo|australia|sydney|melbourne|brazil|são paulo|sao paulo|mexico|poland|warsaw|israel|tel aviv|sweden|stockholm|switzerland|zurich|italy|milan|portugal|lisbon|korea|seoul|china|hong kong|philippines|argentina|colombia|chile|new zealand|auckland|emea|apac|europe|latam)\b/i;
 
+// Full state names ("Home Office - Virginia"). Georgia is left out: it's a country too.
+const US_STATE_NAMES = new RegExp(`\\b(${Object.keys(require('./jobindex').STATES).filter((n) => n !== 'georgia').join('|')})\\b`, 'i');
+
 function looksUS(location, country) {
   const c = String(country || '').trim().toLowerCase();
   if (c) return ['us', 'usa', 'united states', 'united states of america'].includes(c);
   const loc = String(location || '');
   if (!loc) return true;
   if (/remote/i.test(loc) && !NON_US.test(loc)) return true;
+  if (US_STATE_NAMES.test(loc)) return true;
   if (NON_US.test(loc) && !/united states|\busa\b|\bus\b/i.test(loc)) return false;
   return US_WORDS.test(loc) || US_STATE_ABBR.test(loc);
 }
@@ -254,7 +296,7 @@ const WD_JOBS_HOST = /^([a-z0-9-]+)\.(?:wd\d+\.)?myworkdayjobs\.com$/;
 const WD_SITE_HOST = /^wd\d+\.myworkdaysite\.com$/;
 const WD_NAME = /^[A-Za-z0-9_-]{1,80}$/;
 const WD_PAGE = 20; // Workday rejects larger pages (HTTP 400)
-const WD_MAX_LIST = 400; // listings read per run, before the per-source cap
+const WD_MAX_LIST = 300; // newest listings read per run, before local-first sorting and the per-source cap
 
 function parseWorkday(input) {
   let raw = String(input || '').trim();
@@ -265,7 +307,7 @@ function parseWorkday(input) {
   const host = url.hostname.toLowerCase();
   let parts = url.pathname.split('/').filter(Boolean);
   if (parts[0] === 'wday' && parts[1] === 'cxs') parts = parts.slice(2); // a pasted API URL: tenant/site
-  else if (/^[a-z]{2}(-[a-z]{2})?$/i.test(parts[0] || '')) parts = parts.slice(1); // locale, e.g. en-US
+  else if (parts.length > 1 && /^[a-z]{2}(-[a-z]{2})?$/i.test(parts[0])) parts = parts.slice(1); // locale, e.g. en-US (a site can be called "JJ")
   const jobs = host.match(WD_JOBS_HOST);
   if (jobs) {
     if (parts.length >= 2 && parts[0].toLowerCase() === jobs[1] && WD_NAME.test(parts[1]) && url.pathname.includes('/wday/cxs/')) parts = parts.slice(1);
@@ -308,9 +350,16 @@ function workdayPosted(text, now = Date.now()) {
 async function workdayProbe(w) {
   const first = await workdayPage(w, { limit: 1 });
   if (typeof first?.total !== 'number') throw fail(400, 'That address didn’t answer like a Workday job board');
-  const country = (first.facets || []).find((f) => f.facetParameter === 'Country');
-  const us = (country?.values || []).find((v) => /united states/i.test(v.descriptor || ''));
-  return { total: first.total, us: us ? us.count : null, usId: us?.id || null, hasCountryFacet: !!country };
+  // Boards name their country filter differently (Country, Location_Country,
+  // LocationCountry, ...), but its values are countries: find the one that
+  // offers "United States of America".
+  const groups = (first.facets || []).flatMap((f) => [f, ...(f.values || []).filter((v) => v.facetParameter)]);
+  let found = null;
+  for (const f of groups) {
+    const us = (f.values || []).find((v) => !v.facetParameter && /^united states( of america)?$/i.test(String(v.descriptor || '').trim()));
+    if (us?.id) { found = { param: f.facetParameter, id: us.id, count: us.count }; break; }
+  }
+  return { total: first.total, us: found ? found.count : null, usFacet: found };
 }
 
 // --- Fetchers: each returns normalized jobs (newest first, US-relevant) -------
@@ -346,21 +395,19 @@ const FETCHERS = {
     const probe = await workdayProbe(w);
     // Ask Workday for US postings only when the board offers a Country filter;
     // otherwise filter by the location text and the job details.
-    const facets = probe.usId ? { Country: [probe.usId] } : {};
-    if (probe.hasCountryFacet && !probe.usId) return [];
-    // Workday reports the total only on the first page (later pages say 0).
-    const rows = [];
-    let total = Infinity;
-    for (let offset = 0; offset < Math.min(total, WD_MAX_LIST); offset += WD_PAGE) {
-      const page = await workdayPage(w, { offset, facets });
-      if (offset === 0 && typeof page.total === 'number') total = page.total;
-      const got = page.jobPostings || [];
-      rows.push(...got);
-      if (got.length < WD_PAGE) break;
-    }
+    const facets = probe.usFacet ? { [probe.usFacet.param]: [probe.usFacet.id] } : {};
+    // Workday reports the total only on the first page (later pages say 0),
+    // so read page one, then the rest in parallel.
+    const first = await workdayPage(w, { facets });
+    const total = Math.min(typeof first.total === 'number' ? first.total : 0, WD_MAX_LIST);
+    const offsets = [];
+    for (let o = WD_PAGE; o < total; o += WD_PAGE) offsets.push(o);
+    const pages = await mapLimit(offsets, 5, (offset) => workdayPage(w, { offset, facets }));
+    const rows = [first, ...pages].flatMap((p) => p.jobPostings || []);
+    const seen = new Set();
     return rows
-      .filter((j) => j.externalPath && j.title)
-      .filter((j) => probe.usId || /\d+ locations/i.test(j.locationsText || '') || looksUS(j.locationsText))
+      .filter((j) => j.externalPath && j.title && !seen.has(j.externalPath) && seen.add(j.externalPath))
+      .filter((j) => probe.usFacet || /\d+ locations/i.test(j.locationsText || '') || looksUS(j.locationsText))
       .map((j) => ({
         external_id: String((j.bulletFields || [])[0] || j.externalPath),
         title: String(j.title).trim(),
@@ -379,10 +426,10 @@ const FETCHERS = {
     const w = parseWorkday(src.token);
     const d = await getJSON(`${workdayApi(w)}${job.path}`);
     const info = d.jobPostingInfo || {};
-    const country = info.jobRequisitionLocation?.country?.alpha2Code || info.country?.descriptor;
-    if (country && !looksUS('', country === 'US' ? 'US' : country)) return null; // not a US role
     const extra = Array.isArray(info.additionalLocations) ? info.additionalLocations.filter(Boolean) : [];
     const location = info.location ? `${info.location}${extra.length ? ` + ${extra.length} more` : ''}` : job.location;
+    const country = info.jobRequisitionLocation?.country?.alpha2Code || info.country?.alpha2Code || info.country?.descriptor;
+    if (country ? !looksUS('', country) : !looksUS(location)) return null; // not a US role
     const description = htmlToMarkdown(info.jobDescription);
     const { path, ...rest } = job;
     return {
