@@ -10,11 +10,13 @@ const { fence } = require('./aisafety');
 const clip = (v, n) => String(v ?? '').slice(0, n);
 
 function storiesText(stories) {
-  const filled = (Array.isArray(stories) ? stories : []).filter((s) => s && (s.action || s.result)).slice(0, 6);
+  const filled = (Array.isArray(stories) ? stories : []).filter((s) => s && (s.action || s.result)).slice(0, 8);
   if (!filled.length) return 'None yet.';
   return filled.map((s, i) => {
     const p = RUBRIC.story_prompts.find((x) => x.id === s.prompt_id);
-    return `${i + 1}. ${p ? p.title : 'Story'}\n   Situation: ${clip(s.situation, 1200) || '(not given)'}\n   What they did: ${clip(s.action, 1200) || '(not given)'}\n   Result: ${clip(s.result, 1200) || '(not given)'}`;
+    // Answers to the graph's own follow-up questions say which question.
+    const title = s.question ? `Answer to: ${clip(s.question, 300)}` : p ? p.title : 'Story';
+    return `${i + 1}. ${title}\n   Situation: ${clip(s.situation, 1200) || '(not given)'}\n   What they did: ${clip(s.action, 1200) || '(not given)'}\n   Result: ${clip(s.result, 1200) || '(not given)'}`;
   }).join('\n');
 }
 
@@ -55,6 +57,7 @@ WHAT SETS THEM APART
 
 GAPS
 - In follow_up_questions, ask 2 to 4 specific questions whose answers would most change this assessment (e.g. "Have you led a recall or market withdrawal? What was your role?").
+- Don't ask again about something a proof story already answers ("Answer to: ..."); use that answer as evidence instead.
 
 CANDIDATE
 ${fence('candidate profile', candidate, 8000)}

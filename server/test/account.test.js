@@ -345,10 +345,20 @@ test('proof stories are bounded and feed blind capability evidence', async () =>
   });
   assert.equal(created.status, 200);
   const stories = created.data.proof_stories;
-  assert.ok(stories.length <= 6, 'at most six stories');
+  assert.ok(stories.length <= 8, 'at most eight stories');
   assert.equal(stories[1].prompt_id, 'built', 'unknown prompts fall back');
   assert.equal(stories[1].action.length, 1200, 'long text is cut');
   assert.ok(!stories.some((x) => x.situation === 'only a situation'), 'stories need an action or result');
+  // Answers to the graph's follow-up questions keep the question.
+  const answered = await call(t, 'PUT', `/api/entities/SeekerProfile/${created.data.id}`, { proof_stories: [
+    { prompt_id: 'followup', question: 'Have you led a recall? What was your role?', action: 'Led the mock recall', result: 'Traced 100% of lots in 2 hours' },
+    { prompt_id: 'followup', question: '', action: 'No question given' },
+  ] });
+  assert.equal(answered.status, 200);
+  assert.deepEqual(answered.data.proof_stories[0], { prompt_id: 'followup', question: 'Have you led a recall? What was your role?', situation: '', action: 'Led the mock recall', result: 'Traced 100% of lots in 2 hours' });
+  assert.equal(answered.data.proof_stories[1].prompt_id, 'built', 'a follow-up without its question is a regular story');
+  const { buildGraphPrompt } = require('../src/capability.js');
+  assert.match(buildGraphPrompt({ proof_stories: answered.data.proof_stories }), /Answer to: Have you led a recall\? What was your role\?/);
   const updated = await call(t, 'PUT', `/api/entities/SeekerProfile/${created.data.id}`, { proof_stories: 'not a list' });
   assert.equal(updated.status, 200);
   assert.deepEqual(updated.data.proof_stories, []);

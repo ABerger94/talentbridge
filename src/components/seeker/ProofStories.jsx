@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -6,14 +6,31 @@ import { Badge } from "@/components/ui/badge";
 import { Plus, Trash2, Check, Loader2, Pencil } from "lucide-react";
 import { STORY_PROMPTS } from "@/lib/capabilityRubric";
 
-export const MAX_STORIES = 6;
+export const MAX_STORIES = 8;
 const FIELD_MAX = 1200;
 
 // Short, guided examples of the work resumes leave out. They count as the
 // strongest evidence when the Capability Graph is built.
-export default function ProofStories({ stories = [], onSave, saving }) {
+// `request` ({ question, nonce }) opens a story answering one of the graph's
+// follow-up questions; the question is saved with the story.
+export default function ProofStories({ stories = [], onSave, saving, request }) {
   const [editing, setEditing] = useState(null); // index being edited, or "new"
   const [draft, setDraft] = useState(null);
+  const formRef = useRef(null);
+
+  useEffect(() => {
+    if (!request?.question) return;
+    const i = stories.findIndex((s) => s.question === request.question);
+    if (i >= 0) { setDraft({ ...stories[i] }); setEditing(i); } else {
+      setDraft({ prompt_id: "followup", question: request.question, situation: "", action: "", result: "" });
+      setEditing("new");
+    }
+    // Bring the form into view and put the cursor in the first box.
+    setTimeout(() => {
+      formRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      formRef.current?.querySelector("textarea")?.focus({ preventScroll: true });
+    }, 60);
+  }, [request?.nonce]);
 
   const used = new Set(stories.map((s) => s.prompt_id));
   const start = (prompt_id) => { setDraft({ prompt_id, situation: "", action: "", result: "" }); setEditing("new"); };
@@ -27,12 +44,15 @@ export default function ProofStories({ stories = [], onSave, saving }) {
   const remove = (i) => onSave(stories.filter((_, j) => j !== i));
   const set = (k) => (e) => setDraft((d) => ({ ...d, [k]: e.target.value.slice(0, FIELD_MAX) }));
   const prompt = (id) => STORY_PROMPTS.find((p) => p.id === id);
+  const titleOf = (s) => (s.question ? s.question : prompt(s.prompt_id)?.title);
+  const hintOf = (s) => (s.question ? "Answer in your own words: the situation, what you did, and what changed. Specific numbers count most." : prompt(s.prompt_id)?.hint);
 
   const form = draft && (
-    <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 sm:p-4 space-y-3">
+    <div ref={formRef} className="rounded-lg border border-primary/30 bg-primary/5 p-3 sm:p-4 space-y-3">
       <div>
-        <p className="text-sm font-semibold">{prompt(draft.prompt_id)?.title}</p>
-        <p className="text-xs text-muted-foreground mt-0.5">{prompt(draft.prompt_id)?.hint}</p>
+        {draft.question && <p className="text-[11px] font-semibold uppercase tracking-wider text-primary mb-0.5">Answering</p>}
+        <p className="text-sm font-semibold">{titleOf(draft)}</p>
+        <p className="text-xs text-muted-foreground mt-0.5">{hintOf(draft)}</p>
       </div>
       {[
         ["situation", "The situation", "What was happening, and what was at stake?"],
@@ -66,7 +86,7 @@ export default function ProofStories({ stories = [], onSave, saving }) {
       {stories.map((s, i) => (editing === i ? <div key={i}>{form}</div> : (
         <div key={i} className="rounded-lg border border-border p-3 flex gap-3 items-start">
           <div className="min-w-0 flex-1">
-            <Badge variant="secondary" className="text-[11px] mb-1">{prompt(s.prompt_id)?.title || "Story"}</Badge>
+            <Badge variant="secondary" className="text-[11px] mb-1 max-w-full whitespace-normal text-left">{s.question ? `Answer: ${s.question}` : prompt(s.prompt_id)?.title || "Story"}</Badge>
             <p className="text-sm line-clamp-2">{s.action}</p>
             {s.result && <p className="text-xs text-muted-foreground mt-1 line-clamp-1">Result: {s.result}</p>}
           </div>

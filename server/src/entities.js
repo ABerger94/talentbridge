@@ -317,13 +317,20 @@ function present(entity, record, user, cache = new Map()) {
   return out;
 }
 
-// Proof stories (Capability Graph evidence): at most 6, plain text, bounded.
-const STORY_IDS = ['investigation', 'risk', 'emergency', 'built', 'data', 'accountability'];
+// Proof stories (Capability Graph evidence): at most 8, plain text, bounded.
+// 'followup' stories answer one of the graph's follow-up questions, which is
+// kept with the story so a rebuild knows what was asked.
+const STORY_IDS = ['investigation', 'risk', 'emergency', 'built', 'data', 'accountability', 'followup'];
+const MAX_STORIES = 8;
 function normalizeStories(list) {
   if (!Array.isArray(list)) return [];
-  const text = (v) => String(v || '').replace(/\s+\n/g, '\n').trim().slice(0, 1200);
-  return list.slice(0, 6)
-    .map((x) => ({ prompt_id: STORY_IDS.includes(x?.prompt_id) ? x.prompt_id : 'built', situation: text(x?.situation), action: text(x?.action), result: text(x?.result) }))
+  const text = (v, n = 1200) => String(v || '').replace(/\s+\n/g, '\n').trim().slice(0, n);
+  return list.slice(0, MAX_STORIES)
+    .map((x) => {
+      const prompt_id = STORY_IDS.includes(x?.prompt_id) ? x.prompt_id : 'built';
+      const question = prompt_id === 'followup' ? text(x?.question, 300) : '';
+      return { prompt_id: prompt_id === 'followup' && !question ? 'built' : prompt_id, ...(question ? { question } : {}), situation: text(x?.situation), action: text(x?.action), result: text(x?.result) };
+    })
     .filter((x) => x.action || x.result);
 }
 

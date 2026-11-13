@@ -2,7 +2,7 @@ import React from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { HelpCircle, Sparkles, MessageCircleQuestion } from "lucide-react";
+import { HelpCircle, Sparkles, MessageCircleQuestion, Check, PenLine } from "lucide-react";
 import { LEVELS, EVIDENCE, levelInfo } from "@/lib/capabilityRubric";
 
 // Five segments, filled to the capability's depth level.
@@ -101,7 +101,10 @@ function Capability({ v, compact }) {
   );
 }
 
-export default function CapabilityGraphView({ graph, onAddStory }) {
+// onAnswer(question) opens a proof story answering that question;
+// `stories` marks which questions already have an answer.
+export default function CapabilityGraphView({ graph, onAnswer, stories = [] }) {
+  const answered = new Set(stories.map((s) => s.question).filter(Boolean));
   const caps = graph.core_execution_vectors || [];
   const apart = caps.filter((v) => v.differentiator);
   const baseline = caps.filter((v) => !v.differentiator);
@@ -156,10 +159,24 @@ export default function CapabilityGraphView({ graph, onAddStory }) {
           <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
             <MessageCircleQuestion className="w-3.5 h-3.5" /> Questions that would sharpen this
           </h3>
-          <ul className="text-sm space-y-1 list-disc pl-5">
-            {graph.follow_up_questions.slice(0, 4).map((q, i) => <li key={i}>{q}</li>)}
+          <p className="text-xs text-muted-foreground">Answer any of these with a short proof story, then rebuild your graph.</p>
+          <ul className="space-y-2">
+            {graph.follow_up_questions.slice(0, 4).map((q, i) => (
+              <li key={i} className="rounded-md bg-card border border-border p-2.5 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+                <span className="text-sm flex-1">{q}</span>
+                {onAnswer && (answered.has(q) ? (
+                  <span className="flex items-center gap-2 shrink-0">
+                    <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-700"><Check className="w-3.5 h-3.5" /> Answered</span>
+                    <Button type="button" variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => onAnswer(q)}>Edit answer</Button>
+                  </span>
+                ) : (
+                  <Button type="button" variant="outline" size="sm" className="h-8 text-xs shrink-0 gap-1 self-start sm:self-auto" onClick={() => onAnswer(q)}>
+                    <PenLine className="w-3.5 h-3.5" /> Answer
+                  </Button>
+                ))}
+              </li>
+            ))}
           </ul>
-          {onAddStory && <Button type="button" variant="outline" size="sm" className="h-8 text-xs" onClick={onAddStory}>Answer with a proof story</Button>}
         </section>
       )}
 
