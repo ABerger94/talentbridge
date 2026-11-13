@@ -55,6 +55,36 @@ globalThis.fetch = async (url, init) => {
       jobRequisitionLocation: { country: { alpha2Code: n === 2 ? 'CA' : 'US' } },
     } }));
   }
+  if (u.includes('api.smartrecruiters.com/v1/companies/')) {
+    const co = u.match(/companies\/([^/?]+)/)[1];
+    if (co !== 'AcmeCo') return new Response(JSON.stringify({ totalFound: 0, content: [] }));
+    const detail = u.match(/postings\/([^/?]+)$/);
+    if (detail) {
+      return new Response(JSON.stringify({ id: detail[1], postingUrl: `https://jobs.smartrecruiters.com/AcmeCo/${detail[1]}-role`, jobAd: { sections: {
+        jobDescription: { title: 'Job Description', text: '<p>Inspect product. Pay $50,000 - $60,000.</p>' },
+        qualifications: { title: 'Qualifications', text: '<ul><li>HACCP</li></ul>' } } } }));
+    }
+    const region = new URL(u).searchParams.get('region');
+    const all = [
+      { id: 'sr1', name: 'QA Inspector', releasedDate: '2026-11-10T00:00:00Z', location: { city: 'Columbia', region: 'MD', country: 'us', remote: false, hybrid: true }, typeOfEmployment: { label: 'Full-time' }, company: { name: 'Acme Co' } },
+      { id: 'sr2', name: 'Remote Auditor', releasedDate: '2026-11-11T00:00:00Z', location: { city: '', region: '', country: 'us', remote: true }, typeOfEmployment: { label: 'Contract' }, company: { name: 'Acme Co' } },
+    ];
+    const content = region ? all.filter((j) => j.location.region === region) : all;
+    return new Response(JSON.stringify({ totalFound: content.length, content }));
+  }
+  if (u.includes('apply.workable.com/api/v1/widget/accounts/')) {
+    if (!u.includes('/accounts/acmework')) return new Response('Not Found', { status: 404 });
+    return new Response(JSON.stringify({ name: 'Acme Works', jobs: [
+      { title: 'Lab Tech', shortcode: 'AB1', employment_type: 'Full-time', telecommuting: false, url: 'https://apply.workable.com/j/AB1', published_on: '2026-11-09', locations: [{ countryCode: 'US', city: 'Rockville', region: 'Maryland' }], description: '<p>Run the lab.</p>' },
+      { title: 'Berlin Tech', shortcode: 'AB2', employment_type: 'Full-time', url: 'https://apply.workable.com/j/AB2', locations: [{ countryCode: 'DE', city: 'Berlin' }], description: '<p>x</p>' },
+    ] }));
+  }
+  if (u.includes('jobs.workable.com/api/v1/jobs')) {
+    const token = new URL(u).searchParams.get('pageToken');
+    const job = (id, city, sub) => ({ id, title: `Coordinator ${id}`, state: 'published', description: '<p>Coordinate.</p>', requirementsSection: '<p>HACCP</p>', employmentType: 'Full-time', url: `https://jobs.workable.com/view/${id}`, location: { city, subregion: sub, countryName: 'United States' }, created: '2026-11-12T00:00:00Z', company: { title: 'Local Co' }, workplace: 'on_site' });
+    if (!token) return new Response(JSON.stringify({ jobs: [job('w1', 'Baltimore', 'Maryland'), job('w2', 'Arlington', 'Virginia')], nextPageToken: 'p2' }));
+    return new Response(JSON.stringify({ jobs: [job('w3', 'Bethesda', 'Maryland'), { ...job('w4', 'Toronto', 'Ontario'), location: { city: 'Toronto', countryName: 'Canada' } }] }));
+  }
   if (u.includes('api.lever.co')) {
     return new Response(JSON.stringify([{ id: 'lv1', text: 'Clinical Operations Lead', hostedUrl: 'https://jobs.lever.co/x/lv1', categories: { location: 'New York, NY', commitment: 'Full-time' }, country: 'US', workplaceType: 'hybrid', description: '<p>Run clinics.</p>', lists: [{ text: 'You will', content: '<li>Hire</li>' }], createdAt: Date.parse('2026-11-01') }]));
   }
@@ -182,6 +212,45 @@ test('workday sync pages through the US filter, reads details, links to the job 
   db.prepare('DELETE FROM job_sources WHERE id = ?').run(src.id);
 });
 
+test('smartrecruiters: local states first, details for new postings', async () => {
+  const src = source('smartrecruiters', 'AcmeCo', 'Acme Co', 100);
+  const r = await syncSource(src);
+  assert.equal(r.found, 2, 'the MD posting appears in both the state and US lists but is kept once');
+  const jobs = store.filter('Job', { source_id: src.id });
+  const qa = jobs.find((j) => j.title === 'QA Inspector');
+  assert.equal(qa.location, 'Columbia, MD');
+  assert.equal(qa.work_type, 'hybrid');
+  assert.match(qa.description, /Inspect product/);
+  assert.match(qa.description, /HACCP/);
+  assert.equal(qa.salary_min, 50000);
+  assert.equal(qa.external_url, 'https://jobs.smartrecruiters.com/AcmeCo/sr1-role');
+  const remote = jobs.find((j) => j.title === 'Remote Auditor');
+  assert.equal(remote.location, 'Remote');
+  assert.equal(remote.employment_type, 'contract');
+  for (const j of jobs) store.remove('Job', j.id);
+  db.prepare('DELETE FROM job_sources WHERE id = ?').run(src.id);
+});
+
+test('workable board keeps US roles; workable search pages and skips duplicates', async () => {
+  const board = source('workable', 'acmework', 'Acme Works', 100);
+  await syncSource(board);
+  const bj = store.filter('Job', { source_id: board.id });
+  assert.deepEqual(bj.map((j) => [j.title, j.location, j.external_url]), [['Lab Tech', 'Rockville, Maryland', 'https://apply.workable.com/j/AB1']]);
+  const md = source('workable_search', JSON.stringify({ location: 'Maryland' }), 'Workable: Maryland', 100);
+  const va = source('workable_search', JSON.stringify({ location: 'Virginia' }), 'Workable: Virginia', 100);
+  const r1 = await syncSource(md);
+  assert.equal(r1.found, 3, 'two pages, Canada dropped');
+  const mj = store.filter('Job', { source_id: md.id });
+  assert.equal(mj.find((j) => j.title === 'Coordinator w1').company, 'Local Co');
+  assert.match(mj[0].description, /HACCP/);
+  assert.equal(mj[0].attribution.label, 'Workable');
+  // The Virginia search returns the same postings: they aren't listed twice.
+  const r2 = await syncSource(va);
+  assert.equal(r2.added, 0);
+  for (const j of [...bj, ...mj]) store.remove('Job', j.id);
+  for (const s2 of [board, md, va]) db.prepare('DELETE FROM job_sources WHERE id = ?').run(s2.id);
+});
+
 test('keyed sources wait for their keys and report it', async () => {
   const src = source('usajobs', '{"location":"Maryland"}', 'USAJOBS: Maryland');
   await assert.rejects(() => syncSource(src), /USAJOBS_API_KEY/);
@@ -279,6 +348,21 @@ test('admins manage sources; others cannot', async () => {
   assert.match(bogus.json.error || bogus.text, /No Workday job board/);
   const offsite = await call('adm', 'POST', '/api/admin/job-sources', { kind: 'workday', token: 'https://example.com/en-US/AcmeCareers' });
   assert.equal(offsite.status, 400);
+  const sr = await call('adm', 'POST', '/api/admin/job-sources', { kind: 'smartrecruiters', token: 'https://jobs.smartrecruiters.com/AcmeCo' });
+  assert.equal(sr.status, 200, sr.text);
+  assert.equal(sr.data.token, 'AcmeCo');
+  assert.equal(sr.data.name, 'Acme Co');
+  const srBad = await call('adm', 'POST', '/api/admin/job-sources', { kind: 'smartrecruiters', token: 'NoSuchCo' });
+  assert.equal(srBad.status, 400);
+  assert.match(srBad.json.error || srBad.text, /No open jobs on SmartRecruiters/);
+  const wk = await call('adm', 'POST', '/api/admin/job-sources', { kind: 'workable', token: 'https://apply.workable.com/acmework/' });
+  assert.equal(wk.status, 200, wk.text);
+  assert.equal(wk.data.token, 'acmework');
+  assert.equal(wk.data.preview, 1);
+  const wkBad = await call('adm', 'POST', '/api/admin/job-sources', { kind: 'workable', token: 'nosuchco' });
+  assert.equal(wkBad.status, 400);
+  const ws = await call('adm', 'POST', '/api/admin/job-sources', { kind: 'workable_search', location: 'Baltimore, MD' });
+  assert.equal(ws.status, 200, ws.text);
   const off = await call('adm', 'PUT', '/api/admin/job-sources/greenhouse-tasty', { enabled: false });
   assert.equal(off.status, 200);
   assert.equal(store.filter('Job', { source_id: 'greenhouse-tasty' }).filter((j) => j.status === 'active').length, 0);

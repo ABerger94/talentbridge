@@ -87,7 +87,7 @@ export default function JobCard({ job, matchScore, index = 0 }) {
                {job.imported ? (
                  <span className="sm:ml-1 inline-flex items-center gap-1 rounded-full bg-secondary px-2 py-0.5 text-[11px] font-medium">
                    <ExternalLink className="w-3 h-3" aria-hidden="true" />
-                   {job.source_label && !/greenhouse|lever|ashby|company site/i.test(job.source_label) ? `via ${job.source_label}` : "Apply on company site"}
+                   {job.source_label && !/^(greenhouse|lever|ashby|workday|smartrecruiters|company site)$/i.test(job.source_label) ? `via ${job.source_label}` : "Apply on company site"}
                  </span>
                ) : (
                  <span className="sm:ml-1 rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">Posted on TalentBridge</span>

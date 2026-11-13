@@ -68,7 +68,8 @@ function toRow(job) {
     salary_min: Number(job.salary_min) || null,
     salary_max: Number(job.salary_max) || null,
     posted: job.posted_date || job.created_date || new Date().toISOString(),
-    source_label: job.imported ? (job.attribution?.label || job.source_name || 'Company site') : null,
+    // Company boards (Greenhouse, Workday...) link straight to the employer.
+    source_label: job.imported ? (job.attribution?.label || 'Company site') : null,
     skills: JSON.stringify(skills),
     snippet,
     text: [job.title, job.company, job.location, skills.join(' '), plainSnippet(job.description, 2500), job.qualifications && plainSnippet(job.qualifications, 600)]

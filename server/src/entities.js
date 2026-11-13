@@ -38,7 +38,7 @@ function allRecords(entity) {
 // Indexes for the lookups the app makes most (owner, job, employer, seeker,
 // status). Record fields live in the JSON `data` column, so these are
 // expression indexes on json_extract — the same expressions sqlFilter emits.
-const INDEXED_FIELDS = ['job_id', 'employer_user_id', 'seeker_profile_id', 'status', 'source_id'];
+const INDEXED_FIELDS = ['job_id', 'employer_user_id', 'seeker_profile_id', 'status', 'source_id', 'external_url'];
 db.exec(`
 CREATE INDEX IF NOT EXISTS records_entity_owner ON records (entity, created_by_id);
 ${INDEXED_FIELDS.map((f) => `CREATE INDEX IF NOT EXISTS records_${f} ON records (entity, json_extract(data, '$.${f}'));`).join('\n')}

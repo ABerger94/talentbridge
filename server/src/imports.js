@@ -22,6 +22,9 @@ const KINDS = {
   lever: { label: 'Lever', company: true, minGapMs: 20 * 60 * 60 * 1000 },
   ashby: { label: 'Ashby', company: true, minGapMs: 20 * 60 * 60 * 1000 },
   workday: { label: 'Workday', company: true, minGapMs: 20 * 60 * 60 * 1000 },
+  smartrecruiters: { label: 'SmartRecruiters', company: true, minGapMs: 20 * 60 * 60 * 1000 },
+  workable: { label: 'Workable', company: true, minGapMs: 20 * 60 * 60 * 1000 },
+  workable_search: { label: 'Workable job search', minGapMs: 6 * 60 * 60 * 1000 },
   remotive: { label: 'Remotive', company: false, minGapMs: 6 * 60 * 60 * 1000 },
   usajobs: { label: 'USAJOBS', company: false, minGapMs: 20 * 60 * 60 * 1000, env: ['USAJOBS_API_KEY', 'USAJOBS_EMAIL'] },
   adzuna: { label: 'Adzuna', company: false, minGapMs: 20 * 60 * 60 * 1000, env: ['ADZUNA_APP_ID', 'ADZUNA_APP_KEY'] },
@@ -104,6 +107,25 @@ const DEFAULT_SOURCES = [
   ['workday', 'ingredion.wd1.myworkdayjobs.com/IngredionCareers', 'Ingredion', MAX_PER_SOURCE],
   ['workday', 'conagrabrands.wd1.myworkdayjobs.com/Careers_US', 'Conagra Brands', MAX_PER_SOURCE],
   ['workday', 'troweprice.wd5.myworkdayjobs.com/TRowePrice', 'T. Rowe Price', MAX_PER_SOURCE],
+  // Maryland / DC / Virginia employers on Workday (verified live 2026-11-13).
+  ['workday', 'leidos.wd5.myworkdayjobs.com/External', 'Leidos', MAX_PER_SOURCE],
+  ['workday', 'bah.wd1.myworkdayjobs.com/BAH_Jobs', 'Booz Allen Hamilton', MAX_PER_SOURCE],
+  ['workday', 'gdit.wd5.myworkdayjobs.com/External_Career_Site', 'GDIT', MAX_PER_SOURCE],
+  ['workday', 'astrazeneca.wd3.myworkdayjobs.com/Careers', 'AstraZeneca', MAX_PER_SOURCE],
+  ['workday', 'ciena.wd5.myworkdayjobs.com/Careers', 'Ciena', MAX_PER_SOURCE],
+  ['workday', 'fanniemae.wd1.myworkdayjobs.com/FanniemaeCareers', 'Fannie Mae', MAX_PER_SOURCE],
+  ['workday', 'freddiemac.wd5.myworkdayjobs.com/External', 'Freddie Mac', MAX_PER_SOURCE],
+  // SmartRecruiters companies with US openings (verified live 2026-11-13).
+  ['smartrecruiters', 'AbbVie', 'AbbVie', MAX_PER_SOURCE], ['smartrecruiters', 'BoschGroup', 'Bosch', MAX_PER_SOURCE],
+  ['smartrecruiters', 'Continental', 'Continental', MAX_PER_SOURCE], ['smartrecruiters', 'Dominos', 'Domino’s', MAX_PER_SOURCE],
+  ['smartrecruiters', 'Equinox', 'Equinox', MAX_PER_SOURCE], ['smartrecruiters', 'Eurofins', 'Eurofins', MAX_PER_SOURCE],
+  ['smartrecruiters', 'Experian', 'Experian', MAX_PER_SOURCE], ['smartrecruiters', 'SGS', 'SGS', MAX_PER_SOURCE],
+  ['smartrecruiters', 'ServiceNow', 'ServiceNow', MAX_PER_SOURCE], ['smartrecruiters', 'WesternDigital', 'Western Digital', MAX_PER_SOURCE],
+  ['smartrecruiters', 'Wix2', 'Wix', MAX_PER_SOURCE],
+  // Workable's job search: smaller local employers the big boards miss.
+  ['workable_search', JSON.stringify({ location: 'Maryland' }), 'Workable: Maryland', MAX_PER_SOURCE],
+  ['workable_search', JSON.stringify({ location: 'Washington, DC' }), 'Workable: Washington, DC', MAX_PER_SOURCE],
+  ['workable_search', JSON.stringify({ location: 'Virginia' }), 'Workable: Virginia', MAX_PER_SOURCE],
 ];
 
 db.exec(`
@@ -159,6 +181,8 @@ function fail(status, message) {
 
 const env = (n) => (process.env[n] || '').trim();
 const REGION = new RegExp(env('TB_JOB_REGION') || '\\b(MD|Maryland|Baltimore|Bethesda|Rockville|Silver Spring|Columbia|Annapolis|Frederick|Hanover|Towson|DC|D\\.C\\.|District of Columbia|Washington, D|VA|Virginia|Arlington|Alexandria|Reston|McLean|Tysons|Herndon|Fairfax)\\b', 'i');
+// States searched first where a source can filter by state (SmartRecruiters).
+const LOCAL_STATES = (env('TB_JOB_STATES') || 'MD,DC,VA').split(',').map((x) => x.trim()).filter(Boolean);
 const missingEnv = (kind) => (KINDS[kind].env || []).filter((n) => !env(n));
 
 // --- Text helpers ------------------------------------------------------------
@@ -443,6 +467,104 @@ const FETCHERS = {
       posted_date: info.startDate ? new Date(`${info.startDate}T12:00:00Z`).toISOString() : job.posted_date,
     };
   },
+  // SmartRecruiters: public postings API, filtered to the US. The list has
+  // no descriptions, so new postings are read one by one (smartrecruitersDetail).
+  async smartrecruiters(src) {
+    const id = encodeURIComponent(src.token);
+    // Local states first (big boards list thousands of US roles), then the
+    // newest anywhere in the US.
+    const local = await Promise.all(LOCAL_STATES.map((st) => getJSON(`https://api.smartrecruiters.com/v1/companies/${id}/postings?country=us&region=${encodeURIComponent(st)}&limit=100`)
+      .then((p) => p.content || []).catch(() => [])));
+    const rows = local.flat();
+    for (let offset = 0; offset < 300; offset += 100) {
+      const page = await getJSON(`https://api.smartrecruiters.com/v1/companies/${id}/postings?country=us&limit=100&offset=${offset}`);
+      rows.push(...(page.content || []));
+      if ((page.content || []).length < 100 || offset + 100 >= (page.totalFound || 0)) break;
+    }
+    const seen = new Set();
+    return rows.filter((j) => j.id && j.name && !seen.has(j.id) && seen.add(j.id) && String(j.location?.country || 'us').toLowerCase() === 'us').map((j) => {
+      const l = j.location || {};
+      const location = l.remote && !l.city ? 'Remote' : [l.city, l.region].filter(Boolean).join(', ') || String(l.fullLocation || '').replace(/,\s*United States$/, '');
+      return {
+        external_id: String(j.id),
+        title: String(j.name).trim(),
+        company: src.name,
+        location,
+        work_type: l.remote ? 'remote' : l.hybrid ? 'hybrid' : 'onsite',
+        employment_type: employmentOf(j.typeOfEmployment?.label),
+        description: null,
+        external_url: safeUrl(`https://jobs.smartrecruiters.com/${id}/${encodeURIComponent(j.id)}`),
+        posted_date: j.releasedDate || null,
+        needsDetail: true,
+      };
+    });
+  },
+  async smartrecruitersDetail(src, job) {
+    const d = await getJSON(`https://api.smartrecruiters.com/v1/companies/${encodeURIComponent(src.token)}/postings/${encodeURIComponent(job.external_id)}`);
+    const sec = d.jobAd?.sections || {};
+    const parts = ['jobDescription', 'qualifications', 'additionalInformation']
+      .filter((k) => sec[k]?.text)
+      .map((k) => `**${decode(sec[k].title || '')}**\n\n${htmlToMarkdown(sec[k].text)}`);
+    const description = parts.join('\n\n').slice(0, DESCRIPTION_MAX);
+    return { ...job, description, ...salaryOf(description.match(/\$[\d,.]+[kK]?\s*(?:-|–|to)\s*\$?[\d,.]+[kK]?[^\n]{0,20}/)?.[0]), external_url: safeUrl(d.postingUrl) || job.external_url };
+  },
+  // Workable: one company's public job widget (descriptions included).
+  async workable(src) {
+    const d = await getJSON(`https://apply.workable.com/api/v1/widget/accounts/${encodeURIComponent(src.token)}?details=true`);
+    return (d.jobs || []).map((j) => {
+      const us = (j.locations || []).find((l) => l.countryCode === 'US' && !l.hidden)
+        || (j.country === 'United States' ? { city: j.city, region: j.state } : null);
+      if (!us) return null;
+      return {
+        external_id: String(j.shortcode),
+        title: String(j.title || '').trim(),
+        company: src.name,
+        location: [us.city, us.region].filter(Boolean).join(', ') || (j.telecommuting ? 'Remote' : 'United States'),
+        work_type: j.telecommuting ? 'remote' : workTypeOf(j.title),
+        employment_type: employmentOf(j.employment_type),
+        description: htmlToMarkdown(j.description),
+        ...salaryOf(String(j.description || '').replace(/<[^>]+>/g, ' ')),
+        external_url: safeUrl(j.url || j.shortlink),
+        posted_date: j.published_on ? new Date(`${j.published_on}T12:00:00Z`).toISOString() : null,
+      };
+    }).filter((j) => j && j.external_id && j.title);
+  },
+  // Workable's public job search across every employer that hires on
+  // Workable: mostly smaller companies the big boards miss. 20 per page.
+  async workable_search(src) {
+    const q = parseQuery(src.token);
+    const params = new URLSearchParams();
+    if (q.location) params.set('location', q.location);
+    if (q.keywords) params.set('query', q.keywords);
+    const rows = [];
+    let pageToken = '';
+    for (let i = 0; i < 15; i += 1) {
+      if (pageToken) params.set('pageToken', pageToken);
+      const page = await getJSON(`https://jobs.workable.com/api/v1/jobs?${params}`);
+      rows.push(...(page.jobs || []));
+      pageToken = page.nextPageToken;
+      if (!pageToken || !(page.jobs || []).length) break;
+    }
+    return rows
+      .filter((j) => j.id && j.title && j.state !== 'closed' && /united states/i.test(j.location?.countryName || (j.locations || []).join(' ')))
+      .map((j) => {
+        const html = [j.description, j.requirementsSection && `<h3>Requirements</h3>${j.requirementsSection}`, j.benefitsSection && `<h3>Benefits</h3>${j.benefitsSection}`].filter(Boolean).join('');
+        const loc = j.location || {};
+        return {
+          external_id: String(j.id),
+          title: String(j.title).trim(),
+          company: String(j.company?.title || '').trim(),
+          location: [loc.city, loc.subregion].filter(Boolean).join(', ') || (j.workplace === 'remote' ? 'Remote' : ''),
+          work_type: j.workplace === 'remote' ? 'remote' : j.workplace === 'hybrid' ? 'hybrid' : 'onsite',
+          employment_type: employmentOf(j.employmentType),
+          description: htmlToMarkdown(html),
+          ...salaryOf(String(html).replace(/<[^>]+>/g, ' ')),
+          external_url: safeUrl(j.url),
+          posted_date: j.created || null,
+          attribution: { label: 'Workable', url: 'https://jobs.workable.com' },
+        };
+      });
+  },
   async lever(src) {
     const data = await getJSON(`https://api.lever.co/v0/postings/${encodeURIComponent(src.token)}?mode=json`);
     return (Array.isArray(data) ? data : [])
@@ -593,6 +715,19 @@ const FETCHERS = {
 };
 
 // --- Sync one source -----------------------------------------------------------
+function withoutDuplicates(src, jobs) {
+  const urls = [...new Set(jobs.map((j) => j.external_url).filter(Boolean))];
+  const taken = new Set();
+  for (let i = 0; i < urls.length; i += 200) {
+    const chunk = urls.slice(i, i + 200);
+    const rows = db.prepare(`SELECT json_extract(data, '$.external_url') AS url FROM records WHERE entity = 'Job'
+      AND json_extract(data, '$.external_url') IN (${chunk.map(() => '?').join(', ')})
+      AND json_extract(data, '$.status') = 'active' AND json_extract(data, '$.source_id') != ?`).all(...chunk, src.id);
+    for (const r of rows) taken.add(r.url);
+  }
+  return jobs.filter((j) => !taken.has(j.external_url));
+}
+
 function existingJobs(sourceId) {
   return db.prepare("SELECT id, data FROM records WHERE entity = 'Job' AND json_extract(data, '$.source_id') = ?").all(sourceId)
     .map((r) => ({ id: r.id, ...JSON.parse(r.data || '{}') }));
@@ -670,7 +805,13 @@ async function syncSource(src) {
   let fresh = wanted.filter((j) => !byKey.has(`${src.kind}:${src.token}:${j.external_id}`));
   // Boards whose lists omit descriptions: fetch details for new jobs only.
   const detail = FETCHERS[`${src.kind}Detail`];
+  // The same posting can come from two sources (overlapping searches, an
+  // aggregator repeating a company board): keep the copy already listed.
+  fresh = withoutDuplicates(src, fresh);
   if (detail) fresh = (await mapLimit(fresh, 8, (j) => detail(src, j))).filter(Boolean);
+  // Again right before saving (no await in between), since other sources may
+  // have saved the same posting while details were being fetched.
+  if (detail) fresh = withoutDuplicates(src, fresh);
   if (fresh.length) insertJobs(fresh.map((j) => toRecord(src, j, now)));
 
   // Jobs back in the feed after being closed reopen; gone ones close.
@@ -748,10 +889,16 @@ async function addSource(body) {
     workday = parseWorkday(body.token);
     if (!workday) throw fail(400, 'Paste the company’s Workday careers address, e.g. https://ingredion.wd1.myworkdayjobs.com/en-US/IngredionCareers');
     token = workday.token;
+  } else if (kind === 'smartrecruiters') {
+    // Company identifiers are case-sensitive ("BoschGroup").
+    token = String(body.token || '').trim();
+    const m = token.match(/(?:jobs|careers)\.smartrecruiters\.com\/([A-Za-z0-9_-]+)/i) || token.match(/api\.smartrecruiters\.com\/v1\/companies\/([A-Za-z0-9_-]+)/i);
+    if (m) token = m[1];
+    if (!/^[A-Za-z0-9_-]{2,80}$/.test(token)) throw fail(400, 'Enter the company’s SmartRecruiters name, e.g. BoschGroup from jobs.smartrecruiters.com/BoschGroup');
   } else if (KINDS[kind].company) {
     token = String(body.token || '').trim().toLowerCase();
     // Accept a pasted board URL as well as the bare name.
-    const m = token.match(/(?:boards\.greenhouse\.io|job-boards\.greenhouse\.io|jobs\.lever\.co|jobs\.ashbyhq\.com)\/([a-z0-9_-]+)/);
+    const m = token.match(/(?:boards\.greenhouse\.io|job-boards\.greenhouse\.io|jobs\.lever\.co|jobs\.ashbyhq\.com|apply\.workable\.com)\/(?:api\/v1\/widget\/accounts\/)?([a-z0-9_-]+)/);
     if (m) token = m[1];
     if (!/^[a-z0-9_-]{2,80}$/.test(token)) throw fail(400, 'Enter the company’s board name (the part after the domain in its jobs URL)');
   } else if (kind !== 'remotive') {
@@ -774,6 +921,18 @@ async function addSource(body) {
     });
     src.preview = probe.us ?? probe.total;
     if (!body.name) src.name = workday.tenant.charAt(0).toUpperCase() + workday.tenant.slice(1);
+  } else if (kind === 'smartrecruiters') {
+    // Unknown names return an empty list, not a 404: require open postings.
+    const base = `https://api.smartrecruiters.com/v1/companies/${encodeURIComponent(token)}/postings?limit=1`;
+    const [all, us] = await Promise.all([getJSON(base), getJSON(`${base}&country=us`)]);
+    if (!all.totalFound) throw fail(400, `No open jobs on SmartRecruiters for “${token}”. Check the name in the company’s jobs.smartrecruiters.com link (capitals matter).`);
+    src.preview = us.totalFound || 0;
+    if (!body.name && all.content?.[0]?.company?.name) src.name = all.content[0].company.name;
+  } else if (kind === 'workable') {
+    const d = await getJSON(`https://apply.workable.com/api/v1/widget/accounts/${encodeURIComponent(token)}`)
+      .catch((e) => { throw fail(400, e.status === 404 ? `No Workable careers page called “${token}”. Check the name in the company’s apply.workable.com link.` : e.message); });
+    src.preview = (d.jobs || []).filter((j) => (j.locations || []).some((l) => l.countryCode === 'US') || j.country === 'United States').length;
+    if (!body.name && d.name) src.name = d.name;
   } else if (KINDS[kind].company) {
     const jobs = await FETCHERS[kind]({ ...src }).catch((e) => { throw fail(400, e.status === 404 ? `No ${KINDS[kind].label} board called “${token}”` : e.message); });
     src.preview = jobs.length;
