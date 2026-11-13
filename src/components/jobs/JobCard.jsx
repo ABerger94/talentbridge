@@ -36,13 +36,13 @@ export default function JobCard({ job, matchScore, index = 0 }) {
               )}
             </div>
             <div className="flex-1 min-w-0">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <h3 className="font-semibold text-base group-hover:text-primary transition-colors truncate">{job.title}</h3>
-                  <p className="text-sm text-muted-foreground mt-0.5">{job.company}</p>
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
+                <div className="min-w-0">
+                  <h3 className="font-semibold text-base leading-snug group-hover:text-primary transition-colors line-clamp-2 break-words">{job.title}</h3>
+                  <p className="text-sm text-muted-foreground mt-0.5 truncate">{job.company}</p>
                 </div>
                 {matchScore && (
-                  <Badge className="bg-accent/10 text-accent border-accent/20 shrink-0 gap-1">
+                  <Badge className="bg-accent/10 text-accent border-accent/20 shrink-0 gap-1 self-start">
                     <Zap className="w-3 h-3" />
                     {matchScore}% match
                   </Badge>
@@ -50,8 +50,8 @@ export default function JobCard({ job, matchScore, index = 0 }) {
               </div>
               <div className="flex flex-wrap gap-2 mt-3">
                 {job.location && (
-                  <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                    <MapPin className="w-3 h-3" /> {job.location}
+                  <span className="flex items-center gap-1 text-xs text-muted-foreground min-w-0 max-w-full">
+                    <MapPin className="w-3 h-3 shrink-0" /> <span className="truncate">{job.location}</span>
                   </span>
                 )}
                 {job.work_type && (
@@ -81,16 +81,16 @@ export default function JobCard({ job, matchScore, index = 0 }) {
                   )}
                 </div>
               )}
-              <div className="flex items-center gap-1 mt-3 text-xs text-muted-foreground">
+              <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1.5 mt-3 text-xs text-muted-foreground">
                <Clock className="w-3 h-3" />
                Posted {job.posted_date || job.created_date ? formatDistanceToNow(new Date(job.posted_date || job.created_date)) + " ago" : "recently"}
                {job.imported ? (
-                 <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-secondary px-2 py-0.5 text-[11px] font-medium">
+                 <span className="sm:ml-1 inline-flex items-center gap-1 rounded-full bg-secondary px-2 py-0.5 text-[11px] font-medium">
                    <ExternalLink className="w-3 h-3" aria-hidden="true" />
                    {job.source_label && !/greenhouse|lever|ashby|company site/i.test(job.source_label) ? `via ${job.source_label}` : "Apply on company site"}
                  </span>
                ) : (
-                 <span className="ml-2 rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">Posted on TalentBridge</span>
+                 <span className="sm:ml-1 rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">Posted on TalentBridge</span>
                )}
               </div>
             </div>
