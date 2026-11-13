@@ -199,9 +199,12 @@ test('AI fairness check scores identity variants together and reports the spread
   process.env.TB_GEMINI_MODELS = 'test-model';
   let prompt = '';
   const graphPrompts = [];
+  const temps = [];
   globalThis.fetch = async (url, init) => {
     if (!String(url).includes('generativelanguage.googleapis.com')) return realFetch(url, init);
-    const text = JSON.parse(init.body).contents[0].parts[0].text;
+    const sentBody = JSON.parse(init.body);
+    temps.push(sentBody.generationConfig?.temperature);
+    const text = sentBody.contents[0].parts[0].text;
     const reply = (obj) => new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: JSON.stringify(obj) }] } }] }));
     if (text.includes('Capability Graph engine')) {
       graphPrompts.push(text);
@@ -229,10 +232,17 @@ test('AI fairness check scores identity variants together and reports the spread
     assert.equal(res.data.rows.find((r) => r.variant === 'Older worker').difference, -20);
     // Matching now sees the full profile: strengths with depth levels.
     assert.match(prompt, /Root cause investigation \(depth 4\/5\)/);
-    // Depth levels: one graph per variant, the bias caught on the same capability.
-    assert.equal(graphPrompts.length, 8);
+    // Depth levels: one graph per variant (three controls), the bias caught
+    // on the same capability.
+    assert.equal(graphPrompts.length, 9);
     assert.ok(graphPrompts.some((t) => t.includes('I use a wheelchair')));
+    // The test candidate's strengths come with measured results.
+    assert.ok(graphPrompts[0].includes('Rework fell from about 6% of batches to under 1%'));
+    // Same input, same answer: graphs and scoring ask for temperature 0.
+    assert.equal(temps.length, 10);
+    assert.ok(temps.every((t) => t === 0), JSON.stringify(temps));
     const depth = res.data.depth;
+    assert.equal(depth.controls, 3);
     assert.equal(depth.stable, 3);
     assert.equal(depth.passed, false);
     assert.deepEqual(depth.flagged, ['Disability']);
@@ -243,6 +253,23 @@ test('AI fairness check scores identity variants together and reports the spread
     const sys = await call(tokenFor('fairadm'), 'GET', '/api/admin/system');
     assert.equal(sys.data.fairness.worst_difference, 20);
     assert.equal(sys.data.fairness.depth.passed, false);
+    // One run isn't a pattern yet.
+    assert.equal(res.data.patterns.runs, 1);
+    assert.deepEqual(res.data.patterns.flagged, []);
+    // Two more runs with the same bias: the groups docked every time are a pattern.
+    await call(tokenFor('fairadm'), 'POST', '/api/admin/ai/fairness', {});
+    const third = await call(tokenFor('fairadm'), 'POST', '/api/admin/ai/fairness', {});
+    const pat = third.data.patterns;
+    assert.equal(pat.runs, 3);
+    assert.deepEqual(pat.flagged.sort(), ['Disability', 'Older worker']);
+    const older = pat.rows.find((r) => r.variant === 'Older worker');
+    assert.equal(older.match.direction, 'lower');
+    assert.equal(older.match.lower, 3);
+    assert.equal(older.match.mean, -20);
+    assert.equal(pat.rows.find((r) => r.variant === 'Disability').depth.direction, 'lower');
+    assert.equal(pat.rows.find((r) => r.variant === 'Religion').pattern, false);
+    const sys2 = await call(tokenFor('fairadm'), 'GET', '/api/admin/system');
+    assert.equal(sys2.data.fairness_patterns.runs, 3);
   } finally {
     globalThis.fetch = realFetch;
   }
@@ -376,4 +403,32 @@ test('the Capability Graph is built on the server and the rubric is enforced', a
   } finally {
     globalThis.fetch = realFetch;
   }
+});
+
+test('fairness patterns: rotating one-off flags are noise, a steady drop is a pattern', () => {
+  const { fairnessPatterns } = require('../src/system.js');
+  const { audit } = require('../src/audit.js');
+  const groups = ['Woman, parent', 'Black-coded name', 'Immigrant', 'Older worker', 'Disability', 'Religion'];
+  // Like real runs: a different group dips a level on a borderline capability
+  // each time, while "Older worker" averages a little lower in every run.
+  const runs = [
+    { dip: 'Immigrant', older: -0.4 }, { dip: 'Black-coded name', older: -0.3 }, { dip: 'Disability', older: -0.4 },
+    { dip: 'Woman, parent', older: -0.2 }, { dip: 'Religion', older: -0.3 }, { dip: 'Immigrant', older: -0.4 },
+  ];
+  for (const r of runs) {
+    audit({ id: 'x' }, 'ai.fairness_check', {}, {
+      rows: [{ variant: 'Control', difference: 0 }, ...groups.map((g) => ({ variant: g, difference: g === r.dip ? -2 : 1 }))],
+      depth: { rows: [
+        { variant: 'Control', mean_level: 3, mean_delta: 0, changes: [] },
+        ...groups.map((g) => ({ variant: g, mean_level: 3, mean_delta: g === 'Older worker' ? r.older : g === r.dip ? -0.2 : 0, changes: g === r.dip ? [{ capability: 'Root cause investigation', control: 4, variant: 3 }] : [] })),
+      ] },
+    });
+  }
+  const p = fairnessPatterns();
+  assert.equal(p.runs, 6);
+  assert.deepEqual(p.flagged, ['Older worker']);
+  const older = p.rows.find((r) => r.variant === 'Older worker');
+  assert.equal(older.depth.direction, 'lower');
+  assert.equal(older.depth.lower, 6);
+  assert.equal(p.rows.find((r) => r.variant === 'Immigrant').pattern, false, 'flagged twice, but not consistently');
 });

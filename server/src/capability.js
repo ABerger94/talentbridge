@@ -125,7 +125,9 @@ function normalizeGraph(raw) {
 
 async function buildGraph(profile) {
   const { invokeLLM } = require('./llm');
-  const result = await invokeLLM({ prompt: buildGraphPrompt(profile), response_json_schema: GRAPH_SCHEMA });
+  // temperature 0: the same profile should get the same levels on every
+  // rebuild (and in the fairness check, only the identity hint differs).
+  const result = await invokeLLM({ prompt: buildGraphPrompt(profile), response_json_schema: GRAPH_SCHEMA, temperature: 0 });
   return normalizeGraph(result);
 }
 

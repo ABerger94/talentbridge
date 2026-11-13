@@ -44,6 +44,44 @@ function Stat({ label, value }) {
   );
 }
 
+// Across recent runs: a group that moves the same way run after run.
+function FairnessPatterns({ patterns }) {
+  const fmt = (m, unit) => (m.n ? `${m.mean > 0 ? "+" : ""}${m.mean}${unit} · lower in ${m.lower} of ${m.n}${m.higher ? `, higher in ${m.higher}` : ""}` : "—");
+  return (
+    <div className="space-y-2 pt-3 border-t">
+      <h4 className="text-sm font-semibold">Patterns across your last {patterns.runs} {patterns.runs === 1 ? "run" : "runs"}</h4>
+      {patterns.runs < patterns.min_runs ? (
+        <p className="text-xs text-muted-foreground">
+          Run the check at least {patterns.min_runs} times to see patterns ({patterns.runs} so far). A single flag can be noise; a group that comes out lower in run after run is what bias looks like.
+        </p>
+      ) : (
+        <>
+          <p className={`text-xs ${patterns.flagged.length ? "text-amber-800" : "text-emerald-800"}`}>
+            {patterns.flagged.length
+              ? `Consistent pattern: ${patterns.flagged.join(", ")}. Worth reviewing the prompts and model for this.`
+              : "No consistent pattern: no group moved the same way run after run."}
+            <span className="block text-muted-foreground mt-0.5">Rule: {patterns.rule}.</span>
+          </p>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead><tr className="text-left text-muted-foreground"><th className="py-1 pr-2">Variant</th><th className="pr-2">Match score vs control</th><th>Avg depth vs control</th></tr></thead>
+              <tbody>
+                {patterns.rows.map((r) => (
+                  <tr key={r.variant} className="border-t">
+                    <td className={`py-1 pr-2 whitespace-nowrap ${r.pattern ? "text-amber-700 font-semibold" : ""}`}>{r.variant}</td>
+                    <td className={`pr-2 tabular-nums ${r.match.direction ? "text-amber-700 font-semibold" : "text-muted-foreground"}`}>{fmt(r.match, " pts")}</td>
+                    <td className={`tabular-nums ${r.depth.direction ? "text-amber-700 font-semibold" : "text-muted-foreground"}`}>{fmt(r.depth, " levels")}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 // Depth levels half of the fairness check (Capability Graph, 1-5 rubric).
 function DepthResults({ depth }) {
   return (
@@ -51,9 +89,9 @@ function DepthResults({ depth }) {
       <h4 className="text-sm font-semibold">Capability Graph depth levels</h4>
       <p className={`text-xs ${depth.passed === false ? "text-amber-800" : depth.inconclusive ? "text-muted-foreground" : "text-emerald-800"}`}>
         {depth.inconclusive
-          ? depth.reason || "Inconclusive: the two control graphs didn’t agree on any capability, so there was nothing stable to compare. Run it again."
+          ? depth.reason || "Inconclusive: the control graphs didn’t agree on any capability, so there was nothing stable to compare. Run it again."
           : depth.passed
-            ? `No variant moved a capability by ${depth.threshold} level or more (compared ${depth.stable} capabilities both controls rated the same).`
+            ? `No variant moved a capability by ${depth.threshold} level or more (compared ${depth.stable} capabilities ${depth.controls === 2 || !depth.controls ? "both" : "all three"} controls rated the same).`
             : `Review needed: ${depth.flagged.join(", ")} moved a capability by ${depth.threshold} level or more.`}
         {depth.noise > 0 && ` The controls themselves disagreed on ${depth.noise === 1 ? "1 capability, which was" : `${depth.noise} capabilities, which were`} left out.`}
       </p>
@@ -117,6 +155,7 @@ export default function SystemTab() {
   if (isLoading || !data) return <Skeleton className="h-64 rounded-xl" />;
   const { health, counts, email_7d: mail, failed_emails: failed, errors, audit } = data;
   const fair = fairness.data || data.fairness;
+  const patterns = fairness.data?.patterns || data.fairness_patterns;
   const users = counts.users || {};
 
   return (
@@ -187,7 +226,8 @@ export default function SystemTab() {
         <p className="text-xs text-muted-foreground">
           Runs identical made-up candidates through the AI for one of your live roles. Each differs only by one sentence hinting at gender,
           ethnicity, nationality, age, disability, or religion. It checks both match scores (0–100) and the depth levels (1–5) in each
-          candidate’s Capability Graph. A fair model treats them all the same. Uses 9 AI calls and takes up to a minute.
+          candidate’s Capability Graph, against three identical controls. A fair model treats them all the same. One run can be noise, so the
+          patterns below look across your recent runs. Uses 10 AI calls and takes up to a minute.
         </p>
         {fair && (
           <div className="space-y-2">
@@ -222,6 +262,7 @@ export default function SystemTab() {
               </table>
             </div>
             {fair.depth && <DepthResults depth={fair.depth} />}
+            {patterns && <FairnessPatterns patterns={patterns} />}
           </div>
         )}
       </Card>

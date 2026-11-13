@@ -198,8 +198,9 @@ function parseJson(text, label) {
   }
 }
 
-async function callGemini(key, model, { prompt, response_json_schema }, timeoutMs) {
+async function callGemini(key, model, { prompt, response_json_schema, temperature }, timeoutMs) {
   const body = { contents: [{ parts: [{ text: prompt }] }], generationConfig: {} };
+  if (typeof temperature === 'number') body.generationConfig.temperature = temperature;
   if (response_json_schema) {
     body.generationConfig.responseMimeType = 'application/json';
     body.generationConfig.responseSchema = sanitizeSchema(response_json_schema);
@@ -237,9 +238,10 @@ function messageText(content) {
   return '';
 }
 
-async function callCompat(p, key, model, { prompt, response_json_schema }, timeoutMs, jsonMode = p.json) {
+async function callCompat(p, key, model, { prompt, response_json_schema, temperature }, timeoutMs, jsonMode = p.json) {
   let content = prompt;
   const body = { model, messages: [] };
+  if (typeof temperature === 'number') body.temperature = temperature;
   if (response_json_schema) {
     if (jsonMode === 'json_schema') {
       body.response_format = {
@@ -268,7 +270,7 @@ async function callCompat(p, key, model, { prompt, response_json_schema }, timeo
     const text = (await res.text()).slice(0, 200).replace(/\s+/g, ' ');
     // Some models reject json_schema; retry once in plain JSON mode.
     if (res.status === 400 && jsonMode === 'json_schema' && /response_format|json_schema|schema/i.test(text)) {
-      return callCompat(p, key, model, { prompt, response_json_schema }, timeoutMs, 'json_object');
+      return callCompat(p, key, model, { prompt, response_json_schema, temperature }, timeoutMs, 'json_object');
     }
     if (res.status === 429) throw new AttemptError(`rate limited/quota (429): ${text}`, { status: 429, benchMs: 60_000 });
     if (res.status === 401 || res.status === 403) throw new AttemptError(`key rejected (${res.status}): ${text}`, { status: res.status, benchMs: 10 * 60_000, benchScope: 'key' });
@@ -375,7 +377,11 @@ function buildAttempts() {
   return attempts;
 }
 
-async function invokeLLM({ prompt: rawPrompt, response_json_schema }) {
+// temperature: pass 0 where the same input should give the same answer
+// (Capability Graphs, match scores). Sent to Gemini and OpenAI-compatible
+// providers; Claude calls leave it unset, since newer Claude models can
+// reject it alongside the effort setting used here.
+async function invokeLLM({ prompt: rawPrompt, response_json_schema, temperature }) {
   // Every call starts with the untrusted-text / fairness rules (aisafety.js).
   const prompt = require('./aisafety').PREAMBLE + String(rawPrompt || '');
   const attempts = buildAttempts();
@@ -400,7 +406,7 @@ async function invokeLLM({ prompt: rawPrompt, response_json_schema }) {
     // A key rejected earlier in this same call won't work for another model.
     if (failedKeys.has(attempt.keyId)) continue;
     try {
-      return await attempt.run({ prompt, response_json_schema }, Math.min(ATTEMPT_TIMEOUT_MS, remaining - 1000));
+      return await attempt.run({ prompt, response_json_schema, temperature }, Math.min(ATTEMPT_TIMEOUT_MS, remaining - 1000));
     } catch (e) {
       const detail = e instanceof AttemptError ? e.message : `unexpected: ${e.message}`;
       if (e instanceof AttemptError && e.benchMs) {
