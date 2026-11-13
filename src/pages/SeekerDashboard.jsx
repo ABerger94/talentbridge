@@ -165,7 +165,9 @@ export default function SeekerDashboard() {
       setStoriesSaving(false);
     }
   };
-  const goToStories = () => document.getElementById("proof-stories")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  // Answering a follow-up question opens a story form for that question.
+  const [storyRequest, setStoryRequest] = useState(null);
+  const answerQuestion = (question) => setStoryRequest({ question, nonce: Date.now() });
 
   // Saves immediately (used by resume upload): persists the given fields plus
   // any unsaved edits on the form. Returns true on success.
@@ -563,11 +565,11 @@ Return the top matches with specific reasoning.`,
               </div>
             )}
 
-            {capabilityGraph && <CapabilityGraphView graph={capabilityGraph} onAddStory={goToStories} />}
+            {capabilityGraph && <CapabilityGraphView graph={capabilityGraph} onAnswer={answerQuestion} stories={profile?.proof_stories || []} />}
           </Card>
 
           <Card className="p-4 sm:p-6" id="proof-stories">
-            <ProofStories stories={profile?.proof_stories || []} onSave={saveStories} saving={storiesSaving} />
+            <ProofStories stories={profile?.proof_stories || []} onSave={saveStories} saving={storiesSaving} request={storyRequest} />
           </Card>
         </TabsContent>
 
