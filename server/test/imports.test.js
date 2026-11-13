@@ -219,6 +219,35 @@ test('suggestions rank roles by overlap with the profile', async () => {
   assert.ok(titles.indexOf('Senior QA Analyst') < titles.indexOf('Clinical Operations Lead') || !titles.includes('Clinical Operations Lead'));
 });
 
+test('suggestions honor the seeker\'s filters and report the pool size', async () => {
+  const base = store.create('Job', { title: 'QA Food Safety Tech', company: 'Mill Co', location: 'Frederick, MD', status: 'active', work_type: 'onsite', employment_type: 'full_time', salary_min: 45000, salary_max: 52000, skills: ['HACCP'] }, 'emp');
+  const remote = store.create('Job', { title: 'Remote QA Lead', company: 'Cloud Co', location: 'Remote', status: 'active', work_type: 'remote', employment_type: 'contract', salary_min: 90000, salary_max: 120000, skills: ['QA'] }, 'emp');
+  const nopay = store.create('Job', { title: 'HACCP Coordinator', company: 'Quiet Co', location: 'Austin, TX', status: 'active', work_type: 'onsite', skills: ['HACCP'] }, 'emp');
+  const ids = async (qs) => {
+    const r = await call('seek', 'GET', `/api/jobs/suggested?${qs}`);
+    assert.equal(r.status, 200);
+    return { ids: r.json.data.map((j) => j.id), pool: r.json.pool };
+  };
+  const all = await ids('');
+  assert.ok(all.ids.includes(base.id) && all.ids.includes(remote.id));
+  const rem = await ids('work_type=remote');
+  assert.ok(rem.ids.includes(remote.id) && !rem.ids.includes(base.id));
+  assert.ok(rem.pool >= 1 && rem.pool < all.pool);
+  const md = await ids('location=maryland');
+  assert.ok(md.ids.includes(base.id) && !md.ids.includes(remote.id));
+  // Pay: listed pay must reach the minimum; unlisted pay is kept.
+  const pay = await ids('min_salary=80000');
+  assert.ok(pay.ids.includes(remote.id) && !pay.ids.includes(base.id));
+  assert.ok(pay.ids.includes(nopay.id), 'roles without listed pay are kept');
+  const contract = await ids('employment_type=contract&origin=direct');
+  assert.deepEqual(contract.ids, [remote.id]);
+  const bogus = await ids('work_type=spaceship&posted_within=abc');
+  assert.equal(bogus.pool, all.pool, 'unknown filter values are ignored');
+  store.remove('Job', base.id);
+  store.remove('Job', remote.id);
+  store.remove('Job', nopay.id);
+});
+
 test('imported jobs: no in-app applications, noindex page, not in sitemap', async () => {
   const cook = store.filter('Job', { source_id: 'greenhouse-tasty' }).find((j) => j.title === 'Line Cook');
   const apply = await call('seek', 'POST', '/api/entities/JobApplication', { job_id: cook.id });

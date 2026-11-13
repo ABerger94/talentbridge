@@ -19,6 +19,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import ProfileChecklist from "@/components/seeker/ProfileChecklist";
 import { JobAlertNudge } from "@/components/seeker/JobAlertSettings";
 import JobCard from "@/components/jobs/JobCard";
+import MatchFilters, { loadMatchFilters, saveMatchFilters } from "@/components/seeker/MatchFilters";
 import { normalizePercent, normalizeCapabilityGraph } from "@/lib/scales";
 import ResumeUploader from "@/components/resume/ResumeUploader";
 import ResumeCritique from "@/components/resume/ResumeCritique";
@@ -72,12 +73,25 @@ export default function SeekerDashboard() {
     },
   });
 
-  // The open roles most relevant to this profile (from every source,
-  // including employers' own job boards), for AI matching.
-  const { data: jobs = [] } = useQuery({
-    queryKey: ["suggestedJobs"],
-    queryFn: () => base44.jobs.suggested(25),
+  // Filters for the match pool (location, work type, pay...). Remembered on
+  // this device; the typed location waits for a pause before refetching.
+  const [matchFilters, setMatchFiltersState] = useState(loadMatchFilters);
+  const setMatchFilters = (f) => { setMatchFiltersState(f); saveMatchFilters(f); };
+  const [poolFilters, setPoolFilters] = useState(matchFilters);
+  useEffect(() => {
+    const t = setTimeout(() => setPoolFilters(matchFilters), 350);
+    return () => clearTimeout(t);
+  }, [matchFilters]);
+  const filtersKey = JSON.stringify(poolFilters);
+
+  // The open roles most relevant to this profile that fit the filters (from
+  // every source, including employers' own job boards), for AI matching.
+  const { data: suggested, isFetching: poolLoading } = useQuery({
+    queryKey: ["suggestedJobs", poolFilters],
+    queryFn: () => base44.jobs.suggested(25, poolFilters),
+    placeholderData: (prev) => prev,
   });
+  const jobs = suggested?.data || [];
 
   const { data: invitations = [] } = useQuery({
     queryKey: ["myInvitations"],
@@ -246,11 +260,17 @@ IMPORTANT: Rate each core execution vector's "strength" as an integer from 0 to 
       toast.error("Fill in your profile first for better matches.");
       return;
     }
+    if (!jobs.length) {
+      toast.error("No open roles fit your filters. Try loosening them.");
+      return;
+    }
     setMatchLoading(true);
+    const pool = jobs.slice(0, 25);
+    const poolKey = filtersKey;
     try {
-      const jobSummaries = jobs.slice(0, 25).map(j => ({
+      const jobSummaries = pool.map(j => ({
         id: j.id, title: j.title, company: j.company, skills: j.skills,
-        work_type: j.work_type, experience_level: j.experience_level,
+        location: j.location, work_type: j.work_type, employment_type: j.employment_type, experience_level: j.experience_level,
         culture_values: j.culture_values, description: (j.snippet || j.description)?.slice(0, 200),
         qualifications: j.qualifications?.slice(0, 200),
       }));
@@ -293,9 +313,14 @@ Return the top matches with specific reasoning.`,
           }
         }
       });
+      // Keep the roles these matches were drawn from, so changing the
+      // filters afterwards doesn't make the shown matches disappear.
+      const ids = new Set(pool.map((j) => j.id));
       setAiMatches({
         ...result,
-        matches: result?.matches?.map((m) => ({ ...m, score: normalizePercent(m?.score) })),
+        jobs: pool,
+        filtersKey: poolKey,
+        matches: result?.matches?.filter((m) => ids.has(m?.job_id)).map((m) => ({ ...m, score: normalizePercent(m?.score) })),
       });
     } catch (err) {
       console.error("getAiMatches failed", err);
@@ -637,11 +662,34 @@ Return the top matches with specific reasoning.`,
                   Matched on capability alignment and problem-solving overlap — not keyword counting.
                 </p>
               </div>
-              <Button size="sm" className="gap-2 sm:gap-2 w-full sm:w-auto" onClick={getAiMatches} disabled={matchLoading}>
+              {/* On phones the button sits under the filters instead. */}
+              <div className="hidden sm:block">
+              <Button size="sm" className="gap-2 w-full sm:w-auto" onClick={getAiMatches} disabled={matchLoading || poolLoading || !jobs.length}>
+                {matchLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                Find Matches
+              </Button>
+              </div>
+            </div>
+
+            <MatchFilters filters={matchFilters} onChange={setMatchFilters} pool={suggested?.pool} />
+            <div className="sm:hidden mb-4">
+              <Button size="sm" className="gap-2 w-full sm:w-auto" onClick={getAiMatches} disabled={matchLoading || poolLoading || !jobs.length}>
                 {matchLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
                 Find Matches
               </Button>
             </div>
+
+            {!poolLoading && suggested && !jobs.length && (
+              <p className="text-sm text-muted-foreground mb-4">
+                {suggested.pool ? "None of the roles that fit these filters overlap with your profile yet. Try loosening a filter or adding skills to your profile." : "No open roles fit these filters. Try loosening one."}
+              </p>
+            )}
+
+            {aiMatches && aiMatches.filtersKey !== filtersKey && (
+              <p className="text-xs rounded-lg border border-amber-200 bg-amber-50 text-amber-900 px-3 py-2 mb-4">
+                These matches are from your earlier filters. Tap Find Matches to update them.
+              </p>
+            )}
 
             {aiMatches?.search_insight && (
               <div className="p-3 bg-primary/5 rounded-lg border border-primary/10 mb-4">
@@ -655,7 +703,7 @@ Return the top matches with specific reasoning.`,
             {aiMatches?.matches?.length > 0 && (
               <div className="space-y-4">
                 {aiMatches.matches.map(match => {
-                  const job = jobs.find(j => j.id === match.job_id);
+                  const job = aiMatches.jobs.find(j => j.id === match.job_id);
                   if (!job) return null;
                   return (
                     <div key={match.job_id} className="space-y-2">
