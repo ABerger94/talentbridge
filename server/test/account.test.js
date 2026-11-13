@@ -181,12 +181,14 @@ test('server errors are grouped and listed for admins', async () => {
   monitor.captureServerError(Object.assign(new Error('Boom 456'), { stack: err.stack }), { method: 'GET', path: '/x' });
   const r = await call(null, 'POST', '/api/client-errors', { message: 'TypeError: x is undefined', url: 'https://site/jobs?q=1' });
   assert.equal(r.status, 204);
+  await call(null, 'POST', '/api/client-errors', { message: 'Error: Error invoking postMessage: Java object is gone', stack: 'at sendDataToNative (iabjs://navigation_performance_logger_android:1:11722)' });
   addUser('sysadm', 'admin');
   const sys = await call(tokenFor('sysadm'), 'GET', '/api/admin/system');
   assert.equal(sys.status, 200);
   const boom = sys.data.errors.find((e) => e.message.startsWith('Boom'));
   assert.equal(boom.count, 2);
   assert.ok(sys.data.errors.some((e) => e.source === 'client' && e.path === '/jobs'));
+  assert.ok(!sys.data.errors.some((e) => /Java object is gone/.test(e.message)));
   assert.equal(sys.data.health.storage.backend, 'database');
   assert.equal((await call(tokenFor('up'), 'GET', '/api/admin/system')).status, 403);
 });
