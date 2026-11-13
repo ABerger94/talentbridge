@@ -7,15 +7,18 @@ import {
 import { useAuth } from "@/lib/AuthContext";
 
 // A sample Capability Graph (same shape the app stores on a seeker profile:
-// core_execution_vectors with strength + evidence, and adjacent_zones).
+// core_execution_vectors with a 1-5 depth level from the rubric in
+// lib/capabilityRubric, evidence, and whether it sets them apart).
+// Routine work (audits, training) shows as expected, not as a strength.
 // Illustrative only, and labeled as a sample on the page.
 const SAMPLE_VECTORS = [
-  { vector: "Root-cause investigation", strength: 94, evidence: "Closed 120+ non-conformances with documented corrective actions across two plants.", pos: { left: "50%", top: "13%" } },
-  { vector: "Audit readiness", strength: 88, evidence: "Led three SQF audits with zero major findings.", pos: { left: "80%", top: "36%" } },
-  { vector: "Lab method validation", strength: 81, evidence: "Validated six microbiology methods to ISO 17025.", pos: { left: "75%", top: "83%" } },
-  { vector: "Process systems", strength: 86, evidence: "Rebuilt release testing so batch holds dropped by about a third.", pos: { left: "25%", top: "83%" } },
-  { vector: "Team training", strength: 74, evidence: "Trained 40+ line staff on HACCP and sanitation SOPs.", pos: { left: "19%", top: "36%" } },
+  { vector: "Root-cause investigation", level: 4, apart: true, evidence: "Traced a recurring Listeria positive to a drain design flaw; redesign ended two years of repeat findings.", pos: { left: "50%", top: "13%" } },
+  { vector: "Audit readiness", level: 2, apart: false, evidence: "Runs scheduled SQF audits; expected at this experience.", pos: { left: "80%", top: "36%" } },
+  { vector: "Lab method validation", level: 3, apart: true, evidence: "Built and validated six microbiology methods to ISO 17025.", pos: { left: "75%", top: "83%" } },
+  { vector: "Process systems", level: 4, apart: true, evidence: "Trended hold data and rebuilt release testing; batch holds dropped by about a third.", pos: { left: "25%", top: "83%" } },
+  { vector: "Team training", level: 2, apart: false, evidence: "Trains line staff on HACCP and sanitation SOPs.", pos: { left: "19%", top: "36%" } },
 ];
+const LEVEL_NAMES = { 1: "Executes", 2: "Maintains", 3: "Builds", 4: "Improves", 5: "Leads" };
 // Edge end points in the SVG's 560×470 space, matching the node positions.
 const EDGES = [[280, 62], [468, 170], [420, 388], [140, 388], [92, 170]];
 
@@ -76,7 +79,7 @@ function CapabilityGraphDemo() {
             >
               <span className="hidden sm:inline">{v.vector}</span>
               <span className="sm:hidden">{v.vector.split(" ")[0]}</span>
-              <span className={`rounded-md px-1.5 py-1 text-[11px] sm:text-xs font-bold leading-none text-primary ${on ? "bg-white" : "bg-[#F1EBFD]"}`}>{v.strength}</span>
+              <span className={`rounded-md px-1.5 py-1 text-[11px] sm:text-xs font-bold leading-none text-primary ${on ? "bg-white" : "bg-[#F1EBFD]"}`}>{v.level}/5</span>
             </button>
           );
         })}
@@ -91,11 +94,12 @@ function CapabilityGraphDemo() {
       <div className="mt-2.5 rounded-2xl border border-[#ECE6FA] bg-[#FAF8FE] px-4 py-4 text-[#15172A]" aria-live="polite">
         <div className="flex items-baseline justify-between gap-3">
           <span className="text-[15px] font-bold">{current.vector}</span>
-          <span className="text-[13px] font-bold text-primary">{current.strength} / 100</span>
+          <span className="text-[13px] font-bold text-primary">{current.level} · {LEVEL_NAMES[current.level]}</span>
         </div>
-        <div className="mt-2.5 h-2 overflow-hidden rounded-full bg-[#EEE9F8]" role="img" aria-label={`Strength ${current.strength} out of 100`}>
-          <div className="h-full rounded-full bg-primary transition-[width] duration-500" style={{ width: `${current.strength}%` }} />
+        <div className="mt-2.5 flex gap-1" role="img" aria-label={`Depth level ${current.level} of 5: ${LEVEL_NAMES[current.level]}`}>
+          {[1, 2, 3, 4, 5].map((n) => <span key={n} className={`h-2 flex-1 rounded-full transition-colors duration-500 ${n <= current.level ? "bg-primary" : "bg-[#EEE9F8]"}`} />)}
         </div>
+        <p className={`mt-2 text-xs font-semibold ${current.apart ? "text-[#0B7A66]" : "text-[#4A4D61]"}`}>{current.apart ? "Sets them apart" : "Expected at this experience level"}</p>
         <p className="mt-2.5 text-sm leading-relaxed text-[#4A4D61]"><strong className="text-[#15172A]">Evidence:</strong> {current.evidence}</p>
         <p className="mt-1.5 text-xs text-[#4A4D61]">Could also move into: Pharma QA, Supply-chain quality</p>
       </div>
@@ -188,7 +192,7 @@ function HowItWorks() {
       ),
     },
     {
-      n: 2, title: "AI builds your Capability Graph", text: "Each skill gets a strength and the evidence behind it, plus nearby fields you could move into.",
+      n: 2, title: "AI builds your Capability Graph", text: "Each capability gets a depth level on a published rubric and the evidence behind it, and routine work is separated from what sets you apart.",
       visual: (
         <StepVisual>
           <div className="flex flex-1 flex-col justify-center gap-3">

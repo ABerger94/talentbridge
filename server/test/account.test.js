@@ -273,3 +273,37 @@ test('application assessment is blind, flags injected text, and only the server 
     globalThis.fetch = realFetch;
   }
 });
+
+test('proof stories are bounded and feed blind capability evidence', async () => {
+  addUser('ps', 'job_seeker');
+  const t = tokenFor('ps');
+  const long = 'x'.repeat(5000);
+  const created = await call(t, 'POST', '/api/entities/SeekerProfile', {
+    full_name: 'Pat Story',
+    proof_stories: [
+      { prompt_id: 'investigation', situation: 'Repeat positives', action: 'Traced it to a drain design flaw', result: 'Zero repeats in two years' },
+      { prompt_id: 'not-a-prompt', action: long },
+      { prompt_id: 'risk', situation: 'only a situation' },
+      ...Array.from({ length: 8 }, (_, i) => ({ prompt_id: 'data', action: `story ${i}` })),
+    ],
+    capability_graph: { rubric_version: 2, core_execution_vectors: [
+      { vector: 'Root cause investigation', level: 4, evidence_type: 'demonstrated', differentiator: true },
+      { vector: 'Audit execution', level: 2, evidence_type: 'described', differentiator: false },
+    ] },
+  });
+  assert.equal(created.status, 200);
+  const stories = created.data.proof_stories;
+  assert.ok(stories.length <= 6, 'at most six stories');
+  assert.equal(stories[1].prompt_id, 'built', 'unknown prompts fall back');
+  assert.equal(stories[1].action.length, 1200, 'long text is cut');
+  assert.ok(!stories.some((x) => x.situation === 'only a situation'), 'stories need an action or result');
+  const updated = await call(t, 'PUT', `/api/entities/SeekerProfile/${created.data.id}`, { proof_stories: 'not a list' });
+  assert.equal(updated.status, 200);
+  assert.deepEqual(updated.data.proof_stories, []);
+
+  const { blindProfile } = require('../src/aisafety.js');
+  const b = blindProfile({ ...created.data, proof_stories: stories });
+  assert.deepEqual(b.capabilities[0], { name: 'Root cause investigation', depth_level: 4, evidence: 'demonstrated', sets_apart: true });
+  assert.equal(b.proof_stories[0].what_they_did, 'Traced it to a drain design flaw');
+  assert.ok(!JSON.stringify(b).includes('Pat Story'), 'still blind');
+});

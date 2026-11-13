@@ -1,4 +1,6 @@
 import React, { useState } from "react";
+import { normalizeGraph } from "@/lib/capabilityRubric";
+import { LevelBadge, EvidenceBadge, RubricDialog } from "@/components/seeker/CapabilityGraphView";
 import { Link } from "react-router-dom";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -11,7 +13,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import {
-  Briefcase, Users, Plus, Eye, Clock, Layers, Send, Pencil, Trash2, Building2, Lock
+  Briefcase, Users, Plus, Eye, Clock, Layers, Send, Pencil, Trash2, Building2, Lock, HelpCircle
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import CandidatePipeline from "@/components/employer/CandidatePipeline";
@@ -416,7 +418,9 @@ export default function EmployerDashboard() {
               </Card>
             ) : (
               exploreSeekers.map(seeker => {
-                const vectors = (seeker.capability_graph?.core_execution_vectors || []).slice(0, 3);
+                const graph = normalizeGraph(seeker.capability_graph);
+                const vectors = graph?.core_execution_vectors || [];
+                const apart = vectors.filter((v) => v.differentiator).slice(0, 3);
                 return (
                 <Card key={seeker.id} className="p-5 space-y-3">
                   <div className="flex items-start justify-between gap-3">
@@ -429,10 +433,25 @@ export default function EmployerDashboard() {
                           <Badge variant="outline" className="text-[11px] bg-primary/5 text-primary border-primary/20">Capability Graph built ✓</Badge>
                         )}
                         {seeker.has_resume && <Badge variant="outline" className="text-[11px]">Resume on file</Badge>}
-                        {vectors.map((v, i) => (
+                        {apart.length === 0 && vectors.slice(0, 3).map((v, i) => (
                           <Badge key={i} variant="secondary" className="text-[11px]">{v.vector}</Badge>
                         ))}
                       </div>
+                      {apart.length > 0 && (
+                        <div className="mt-2.5 space-y-1.5">
+                          <div className="flex items-center gap-1">
+                            <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Sets them apart</p>
+                            <RubricDialog trigger={<button type="button" className="text-muted-foreground hover:text-foreground" aria-label="How capabilities are assessed"><HelpCircle className="w-3.5 h-3.5" /></button>} />
+                          </div>
+                          {apart.map((v, i) => (
+                            <div key={i} className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                              <span className="text-xs font-medium">{v.vector}</span>
+                              <LevelBadge level={v.level} />
+                              <EvidenceBadge type={v.evidence_type} />
+                            </div>
+                          ))}
+                        </div>
+                      )}
                       {linksOf(seeker).length > 0 && <div className="mt-2"><ProfessionalLinks links={linksOf(seeker)} /></div>}
                     </div>
                     {seeker.best_score != null && (
