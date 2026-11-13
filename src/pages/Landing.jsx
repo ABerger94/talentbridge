@@ -11,12 +11,16 @@ import { useAuth } from "@/lib/AuthContext";
 // lib/capabilityRubric, evidence, and whether it sets them apart).
 // Routine work (audits, training) shows as expected, not as a strength.
 // Illustrative only, and labeled as a sample on the page.
+// Order matches EDGES (clockwise from the top). The adjacent fields (green)
+// branch off the strengths they come from, never off routine work:
+// Pharma QA from lab method validation, supply-chain quality from process
+// systems. The two level-2 skills sit at the bottom.
 const SAMPLE_VECTORS = [
   { vector: "Root-cause investigation", level: 4, apart: true, evidence: "Traced a recurring Listeria positive to a drain design flaw; redesign ended two years of repeat findings.", pos: { left: "50%", top: "13%" } },
-  { vector: "Audit readiness", level: 2, apart: false, evidence: "Runs scheduled SQF audits; expected at this experience.", pos: { left: "80%", top: "36%" } },
-  { vector: "Lab method validation", level: 3, apart: true, evidence: "Built and validated six microbiology methods to ISO 17025.", pos: { left: "75%", top: "83%" } },
-  { vector: "Process systems", level: 4, apart: true, evidence: "Trended hold data and rebuilt release testing; batch holds dropped by about a third.", pos: { left: "25%", top: "83%" } },
-  { vector: "Team training", level: 2, apart: false, evidence: "Trains line staff on HACCP and sanitation SOPs.", pos: { left: "19%", top: "36%" } },
+  { vector: "Lab method validation", level: 3, apart: true, evidence: "Built and validated six microbiology methods to ISO 17025.", leadsTo: "Pharma QA", pos: { left: "80%", top: "36%" } },
+  { vector: "Audit readiness", level: 2, apart: false, evidence: "Runs scheduled SQF audits; expected at this experience.", pos: { left: "75%", top: "83%" } },
+  { vector: "Team training", level: 2, apart: false, evidence: "Trains line staff on HACCP and sanitation SOPs.", pos: { left: "25%", top: "83%" } },
+  { vector: "Process systems", level: 4, apart: true, evidence: "Trended hold data and rebuilt release testing; batch holds dropped by about a third.", leadsTo: "Supply-chain quality", pos: { left: "19%", top: "36%" } },
 ];
 const LEVEL_NAMES = { 1: "Executes", 2: "Maintains", 3: "Builds", 4: "Improves", 5: "Leads" };
 // Edge end points in the SVG's 560×470 space, matching the node positions.
@@ -73,7 +77,8 @@ function CapabilityGraphDemo() {
               onClick={() => { setSelected(i); setTouched(true); }}
               aria-pressed={on}
               className={`tb-pop absolute flex items-center gap-1.5 sm:gap-2 whitespace-nowrap rounded-full border-[1.5px] px-2.5 py-1.5 sm:px-3.5 sm:py-2.5 text-[11px] sm:text-sm font-semibold shadow-[0_6px_18px_rgba(39,22,90,0.08)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
-                on ? "border-primary bg-[#F1EBFD] text-[#15172A] ring-4 ring-primary/15" : "border-[#E2DCF3] bg-white text-[#15172A] hover:border-primary"
+                on ? "border-primary bg-[#F1EBFD] text-[#15172A] ring-4 ring-primary/15"
+                  : v.apart ? "border-[#CDBDF5] bg-white text-[#15172A] hover:border-primary" : "border-[#ECE8F5] bg-[#FBFAFE] text-[#6B6E80] hover:border-primary"
               }`}
               style={{ ...v.pos, animationDelay: `${0.35 + i * 0.15}s` }}
             >
@@ -101,7 +106,9 @@ function CapabilityGraphDemo() {
         </div>
         <p className={`mt-2 text-xs font-semibold ${current.apart ? "text-[#0B7A66]" : "text-[#4A4D61]"}`}>{current.apart ? "Sets them apart" : "Expected at this experience level"}</p>
         <p className="mt-2.5 text-sm leading-relaxed text-[#4A4D61]"><strong className="text-[#15172A]">Evidence:</strong> {current.evidence}</p>
-        <p className="mt-1.5 text-xs text-[#4A4D61]">Could also move into: Pharma QA, Supply-chain quality</p>
+        <p className="mt-1.5 text-xs text-[#4A4D61]">
+          {current.leadsTo ? <>This strength opens a path into <strong className="text-[#0B6E5C]">{current.leadsTo}</strong>.</> : "Could also move into: Pharma QA, Supply-chain quality"}
+        </p>
       </div>
 
       <div className="mt-3.5 flex flex-wrap gap-2.5">
