@@ -17,6 +17,7 @@ let ghJobs = [
   { id: 2, title: 'Senior QA Analyst', absolute_url: 'https://careers.example/jobs/2', location: { name: 'Remote - US' }, first_published: '2026-11-09T10:00:00Z' },
   { id: 3, title: 'Barista', absolute_url: 'https://careers.example/jobs/3', location: { name: 'London, UK' }, first_published: '2026-11-08T10:00:00Z' },
 ];
+const wdCalls = [];
 const realFetch = globalThis.fetch;
 globalThis.fetch = async (url, init) => {
   const u = String(url);
@@ -26,6 +27,33 @@ globalThis.fetch = async (url, init) => {
       return new Response(JSON.stringify({ content: '&lt;h3&gt;About&lt;/h3&gt;&lt;p&gt;Pay: $20 - $25 per hour. &lt;strong&gt;HACCP&lt;/strong&gt; a plus.&lt;/p&gt;&lt;script&gt;x&lt;/script&gt;' }));
     }
     return new Response(JSON.stringify({ jobs: ghJobs }));
+  }
+  if (u.includes('acme.wd5.myworkdayjobs.com/wday/cxs/acme/')) {
+    if (!u.includes('/AcmeCareers')) return new Response('{}', { status: 404 });
+    if (init?.method === 'POST') {
+      wdCalls.push(JSON.parse(init.body));
+      const { offset, limit } = JSON.parse(init.body);
+      const all = Array.from({ length: 25 }, (_, i) => ({
+        title: `Plant Operator ${i + 1}`,
+        externalPath: `/job/Cedar-Rapids-IA/Plant-Operator-${i + 1}_R-${100 + i}`,
+        locationsText: i === 0 ? '2 Locations' : 'Cedar Rapids, IA',
+        postedOn: i === 0 ? 'Posted Yesterday' : 'Posted 30+ Days Ago',
+        bulletFields: [`R-${100 + i}`],
+      }));
+      return new Response(JSON.stringify({
+        total: offset === 0 ? all.length : 0, // like Workday: only the first page says
+        jobPostings: all.slice(offset, offset + limit),
+        facets: [{ facetParameter: 'Country', values: [{ descriptor: 'Canada', id: 'ca1', count: 3 }, { descriptor: 'United States of America', id: 'us1', count: 25 }] }],
+      }));
+    }
+    const n = Number(u.match(/Plant-Operator-(\d+)_/)[1]);
+    return new Response(JSON.stringify({ jobPostingInfo: {
+      title: `Plant Operator ${n}`,
+      jobDescription: '<p>Run the mill. <b>Pay:</b> $22 - $28 per hour.</p>',
+      location: 'Cedar Rapids, IA', additionalLocations: n === 1 ? ['Decatur, IL'] : undefined,
+      startDate: '2026-11-12', timeType: 'Full time',
+      jobRequisitionLocation: { country: { alpha2Code: n === 2 ? 'CA' : 'US' } },
+    } }));
   }
   if (u.includes('api.lever.co')) {
     return new Response(JSON.stringify([{ id: 'lv1', text: 'Clinical Operations Lead', hostedUrl: 'https://jobs.lever.co/x/lv1', categories: { location: 'New York, NY', commitment: 'Full-time' }, country: 'US', workplaceType: 'hybrid', description: '<p>Run clinics.</p>', lists: [{ text: 'You will', content: '<li>Hire</li>' }], createdAt: Date.parse('2026-11-01') }]));
@@ -37,7 +65,7 @@ const app = require('../src/index.js');
 const { db } = require('../src/db.js');
 const { store } = require('../src/entities.js');
 const { signToken } = require('../src/auth.js');
-const { syncSource, runImports, htmlToMarkdown, looksUS, salaryOf } = require('../src/imports.js');
+const { syncSource, runImports, htmlToMarkdown, looksUS, salaryOf, parseWorkday } = require('../src/imports.js');
 const jobindex = require('../src/jobindex.js');
 
 let base;
@@ -116,6 +144,41 @@ test('lever sync maps commitment, workplace and sections', async () => {
   assert.match(job.description, /\*\*You will\*\*\n- Hire/);
 });
 
+test('workday: careers URLs parse to host/site, and only Workday hosts', () => {
+  const w = parseWorkday('https://ingredion.wd1.myworkdayjobs.com/en-US/IngredionCareers');
+  assert.deepEqual(w, { host: 'ingredion.wd1.myworkdayjobs.com', tenant: 'ingredion', site: 'IngredionCareers', token: 'ingredion.wd1.myworkdayjobs.com/IngredionCareers' });
+  assert.equal(parseWorkday('ingredion.wd1.myworkdayjobs.com/IngredionCareers/job/Bedford-Park-IL/Lead_Req-1').token, w.token);
+  assert.equal(parseWorkday('https://ingredion.wd1.myworkdayjobs.com/wday/cxs/ingredion/IngredionCareers/jobs').token, w.token);
+  assert.equal(parseWorkday('https://evil.example.com/en-US/IngredionCareers'), null);
+  assert.equal(parseWorkday('https://myworkdayjobs.com.evil.com/x'), null);
+  assert.equal(parseWorkday('https://ingredion.wd1.myworkdayjobs.com/'), null);
+});
+
+test('workday sync pages through the US filter, reads details, links to the job page', async () => {
+  wdCalls.length = 0;
+  const src = source('workday', 'acme.wd5.myworkdayjobs.com/AcmeCareers', 'Acme Foods', 100);
+  const r = await syncSource(src);
+  // Page size 20 with the US Country facet applied: 25 postings take two pages.
+  const pages = wdCalls.filter((b) => b.limit === 20);
+  assert.deepEqual(pages.map((b) => b.offset), [0, 20]);
+  assert.deepEqual(pages[0].appliedFacets, { Country: ['us1'] });
+  assert.equal(r.found, 25);
+  const jobs = store.filter('Job', { source_id: src.id });
+  assert.equal(jobs.length, 24, 'the posting whose details say Canada is dropped');
+  const one = jobs.find((j) => j.title === 'Plant Operator 1');
+  assert.equal(one.company, 'Acme Foods');
+  assert.equal(one.location, 'Cedar Rapids, IA + 1 more');
+  assert.equal(one.external_url, 'https://acme.wd5.myworkdayjobs.com/en-US/AcmeCareers/job/Cedar-Rapids-IA/Plant-Operator-1_R-100');
+  assert.equal(one.employment_type, 'full_time');
+  assert.equal(one.salary_min, 22 * 2080);
+  assert.match(one.description, /Run the mill/);
+  assert.equal(one.posted_date.slice(0, 10), '2026-11-12');
+  assert.equal(one.external_key, 'workday:acme.wd5.myworkdayjobs.com/AcmeCareers:R-100');
+  // Leave the later tests the same data as before.
+  for (const j of jobs) store.remove('Job', j.id);
+  db.prepare('DELETE FROM job_sources WHERE id = ?').run(src.id);
+});
+
 test('keyed sources wait for their keys and report it', async () => {
   const src = source('usajobs', '{"location":"Maryland"}', 'USAJOBS: Maryland');
   await assert.rejects(() => syncSource(src), /USAJOBS_API_KEY/);
@@ -174,6 +237,16 @@ test('admins manage sources; others cannot', async () => {
   assert.equal(added.data.token, 'newco');
   const dup = await call('adm', 'POST', '/api/admin/job-sources', { kind: 'greenhouse', token: 'newco' });
   assert.equal(dup.status, 409);
+  const wd = await call('adm', 'POST', '/api/admin/job-sources', { kind: 'workday', token: 'https://acme.wd5.myworkdayjobs.com/en-US/AcmeCareers' });
+  assert.equal(wd.status, 200, wd.text);
+  assert.equal(wd.data.token, 'acme.wd5.myworkdayjobs.com/AcmeCareers');
+  assert.equal(wd.data.name, 'Acme');
+  assert.equal(wd.data.preview, 25);
+  const bogus = await call('adm', 'POST', '/api/admin/job-sources', { kind: 'workday', token: 'https://acme.wd5.myworkdayjobs.com/en-US/NoSuchSite' });
+  assert.equal(bogus.status, 400);
+  assert.match(bogus.json.error || bogus.text, /No Workday job board/);
+  const offsite = await call('adm', 'POST', '/api/admin/job-sources', { kind: 'workday', token: 'https://example.com/en-US/AcmeCareers' });
+  assert.equal(offsite.status, 400);
   const off = await call('adm', 'PUT', '/api/admin/job-sources/greenhouse-tasty', { enabled: false });
   assert.equal(off.status, 200);
   assert.equal(store.filter('Job', { source_id: 'greenhouse-tasty' }).filter((j) => j.status === 'active').length, 0);
