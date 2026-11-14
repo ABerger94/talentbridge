@@ -318,10 +318,35 @@ function salaryOf(text) {
   return { salary_min: Math.round(lo), salary_max: Math.round(hi) };
 }
 
+// Boards sometimes answer with a web page instead of data: Workday redirects
+// a board that's down for maintenance to its status page. Redirects are
+// followed by hand so that one is recognized without loading the page, and
+// the message says so plainly. A failed fetch never closes the jobs already
+// imported; the source is retried on the next run.
 async function getJSON(url, init = {}) {
-  const res = await fetch(url, { ...init, signal: AbortSignal.timeout(FETCH_TIMEOUT_MS), headers: { Accept: 'application/json', ...(init.headers || {}) } });
-  if (!res.ok) throw fail(res.status === 404 ? 404 : 502, `${new URL(url).host} answered HTTP ${res.status}`);
-  return res.json();
+  const host = new URL(url).host;
+  let target = url;
+  let opts = { ...init };
+  let res;
+  for (let hop = 0; ; hop += 1) {
+    res = await fetch(target, { ...opts, redirect: 'manual', signal: AbortSignal.timeout(FETCH_TIMEOUT_MS), headers: { Accept: 'application/json', ...(init.headers || {}) } });
+    if (res.status < 300 || res.status >= 400) break;
+    const next = res.headers.get('location');
+    if (!next || hop >= 4) throw fail(502, `${host} answered HTTP ${res.status}`);
+    target = new URL(next, target).toString();
+    if (/maintenance|outage/i.test(target)) {
+      throw fail(503, `${host} is down for maintenance. Jobs already imported stay listed; it will try again on the next run.`);
+    }
+    // As browsers do: 303 (and 301/302 after a POST) continue as a GET.
+    if (res.status === 303 || ((res.status === 301 || res.status === 302) && (opts.method || 'GET') !== 'GET')) opts = { ...opts, method: 'GET', body: undefined };
+  }
+  if (!res.ok) throw fail(res.status === 404 ? 404 : 502, `${host} answered HTTP ${res.status}`);
+  const text = await res.text();
+  try {
+    return JSON.parse(text);
+  } catch {
+    throw fail(502, `${host} sent a web page instead of job data. The board may be down or moved; jobs already imported stay listed.`);
+  }
 }
 
 async function mapLimit(items, n, fn) {
