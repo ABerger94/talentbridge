@@ -207,8 +207,16 @@ async function profilePage(req, res, next) {
     const url = appUrl(`/p/${encodeURIComponent(req.params.slug)}`);
     const title = `${view.full_name}${view.headline ? ` · ${view.headline}` : ''} | TalentBridge`;
     const description = oneLine(view.capability_graph?.capability_headline || view.bio || `${view.full_name}’s Capability Graph on TalentBridge.`, 155);
-    const image = view.photo_url ? appUrl(view.photo_url) : appUrl('/og-image.png');
+    // A 1200x630 card (photo, name, headline, strengths), the shape link
+    // previews expect; its size is stated so it shows on the first share.
+    const { cardData, cardVersion } = require('./sharecard');
+    const version = cardVersion(cardData({ ...view, photo_file: p.photo_file }));
+    const image = appUrl(`/api/public/profiles/${encodeURIComponent(req.params.slug)}/card.png?v=${version}`);
     const head = headFor({ title, description, url, image, ld: null }).replace('content="website"', 'content="profile"')
+      + `\n    <meta property="og:image:width" content="1200" />`
+      + `\n    <meta property="og:image:height" content="630" />`
+      + `\n    <meta property="og:image:type" content="image/png" />`
+      + `\n    <meta property="og:image:alt" content="${esc(`${view.full_name}’s TalentBridge profile`)}" />`
       + '\n    <meta name="robots" content="noindex, nofollow" />';
     res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=120');
     res.type('html').send(render(html, head));
