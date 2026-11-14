@@ -23,6 +23,19 @@ const SAMPLE_VECTORS = [
   { vector: "Process systems", level: 4, apart: true, evidence: "Trended hold data and rebuilt release testing; batch holds dropped by about a third.", leadsTo: "Supply-chain quality", pos: { left: "19%", top: "36%" } },
 ];
 const LEVEL_NAMES = { 1: "Executes", 2: "Maintains", 3: "Builds", 4: "Improves", 5: "Leads" };
+
+// Five segments filled to a depth level (the rubric's 1-5 scale, never %).
+function DepthMeter({ level, delay = 0, className = "" }) {
+  return (
+    <span className={`flex gap-[3px] ${className}`} role="img" aria-label={`Depth level ${level} of 5: ${LEVEL_NAMES[level]}`}>
+      {[1, 2, 3, 4, 5].map((n) => (
+        <span key={n} className="h-2 flex-1 overflow-hidden rounded-full bg-[#EEE9F8]">
+          {n <= level && <span className={`tb-bar block h-full rounded-full ${level <= 2 ? "bg-[#B9AEDB]" : "bg-primary"}`} style={{ width: "100%", animationDelay: `${delay + n * 0.06}s` }} />}
+        </span>
+      ))}
+    </span>
+  );
+}
 // Edge end points in the SVG's 560×470 space, matching the node positions.
 const EDGES = [[280, 62], [468, 170], [420, 388], [140, 388], [92, 170]];
 
@@ -186,7 +199,8 @@ function StepVisual({ children }) {
 }
 
 function HowItWorks() {
-  const bars = [["Root-cause", 94], ["Audit readiness", 88], ["Team training", 74]];
+  // Depth levels (1-5) from the rubric; routine work (level 2) is muted.
+  const bars = [["Root-cause", 4], ["Lab validation", 3], ["Audit readiness", 2]];
   const steps = [
     {
       n: 1, title: "Upload your résumé", text: "PDF, Word, or text. Your profile fills itself in, and you edit anything that’s off.",
@@ -203,12 +217,14 @@ function HowItWorks() {
       visual: (
         <StepVisual>
           <div className="flex flex-1 flex-col justify-center gap-3">
-            {bars.map(([label, w], i) => (
-              <div key={label} className="flex items-center gap-2.5 text-xs font-semibold">
-                <span className="w-[110px] shrink-0">{label}</span>
-                <span className="h-2 flex-1 rounded-md bg-[#F1EEF8]"><span className="tb-bar block h-2 rounded-md bg-primary" style={{ width: `${w}%`, animationDelay: `${0.3 + i * 0.2}s` }} /></span>
+            {bars.map(([label, level], i) => (
+              <div key={label} className={`flex items-center gap-2.5 text-xs font-semibold ${level <= 2 ? "text-[#6B6E80]" : ""}`}>
+                <span className="w-[100px] shrink-0">{label}</span>
+                <DepthMeter level={level} delay={0.3 + i * 0.2} className="flex-1" />
+                <span className={`w-7 shrink-0 text-right ${level <= 2 ? "" : "text-primary"}`}>{level}/5</span>
               </div>
             ))}
+            <p className="text-[11px] font-medium text-muted-foreground">Depth levels: 1 Executes → 5 Leads</p>
           </div>
         </StepVisual>
       ),
@@ -267,11 +283,24 @@ function TwoReads() {
         <div className="rounded-3xl border-[1.5px] border-[#CDBDF4] bg-[#FCFAFF] p-7 text-[#15172A]">
           <div className="flex items-center gap-2 text-[13px] font-bold uppercase tracking-[0.06em] text-primary"><Check className="h-4 w-4" aria-hidden="true" />What TalentBridge sees</div>
           <ul className="mt-5 space-y-3 text-[15px] leading-snug">
-            <li><strong>Root-cause investigation · 94</strong><br /><span className="text-[#4A4D61]">Closed 120+ non-conformances with documented corrective actions</span></li>
-            <li><strong>Lab method validation · 81</strong><br /><span className="text-[#4A4D61]">Validated six micro methods to ISO 17025 (the LIMS gap is learnable)</span></li>
-            <li><strong>Adjacent field: Pharma QA</strong><br /><span className="text-[#4A4D61]">GMP and audit habits carry over directly</span></li>
+            {[
+              ["Root-cause investigation", 4, "Traced a recurring Listeria positive to a drain design flaw; the redesign ended two years of repeat findings"],
+              ["Lab method validation", 3, "Built and validated six microbiology methods to ISO 17025 (the LIMS gap is learnable)"],
+            ].map(([name, level, evidence]) => (
+              <li key={name}>
+                <span className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-2.5">
+                  <strong>{name}</strong>
+                  <span className="inline-flex items-center gap-1.5 text-[13px] font-bold text-primary">
+                    <DepthMeter level={level} className="w-16" /> {level} · {LEVEL_NAMES[level]}
+                  </span>
+                </span>
+                <span className="text-[#4A4D61]">{evidence}</span>
+              </li>
+            ))}
+            <li><strong>Adjacent field: Pharma QA</strong><br /><span className="text-[#4A4D61]">Lab method validation and GMP habits carry over directly</span></li>
           </ul>
-          <div className="mt-6 rounded-2xl bg-[#E3F6F1] p-4 text-[15px] font-semibold text-[#0B5E4F]">92% capability match · Invited to interview</div>
+          <p className="mt-3 text-xs text-[#4A4D61]">Depth on a published 5-level rubric, from 1 Executes to 5 Leads. Both are strengths that set this person apart.</p>
+          <div className="mt-5 rounded-2xl bg-[#E3F6F1] p-4 text-[15px] font-semibold text-[#0B5E4F]">92% match for this role · Invited to interview</div>
         </div>
       </div>
       <p className="mt-4 text-center text-xs text-muted-foreground">Example built from a sample profile.</p>
