@@ -378,7 +378,7 @@
       ]
     },
     "business": {
-      "label": "Business, sales & office",
+      "label": "Business, sales, real estate & office",
       "keywords": [
         "sales",
         "account executive",
@@ -411,40 +411,57 @@
         "insurance",
         "banking",
         "procurement",
-        "buyer"
+        "buyer",
+        "realtor",
+        "broker",
+        "brokerage",
+        "real estate agent",
+        "listing agent",
+        "buyer's agent",
+        "mortgage",
+        "loan officer",
+        "lender",
+        "underwriter",
+        "property manager",
+        "property management",
+        "leasing",
+        "escrow",
+        "title officer",
+        "title company"
       ],
       "prompts": [
         {
           "id": "investigation",
           "title": "A problem you got to the bottom of",
-          "hint": "A number that was off, a process that kept failing, or customers who kept leaving: how you found the cause and fixed it."
+          "hint": "A number that was off, a process that kept failing, or clients who kept walking away: how you found the cause and fixed it."
         },
         {
           "id": "risk",
           "title": "A risk you caught early",
-          "hint": "An error, compliance issue, unhappy client or slipping deal you saw coming, and what you did."
+          "hint": "An error, compliance issue, unhappy client or deal at risk that you saw coming, and what you did."
         },
         {
           "id": "emergency",
           "title": "A crisis you handled",
-          "hint": "An urgent deadline, an upset key customer or a launch going wrong: your role, your decisions, and how it ended."
+          "hint": "An urgent deadline, an upset key client, or a deal or closing going wrong: your role, your decisions, and how it ended."
         },
         {
           "id": "built",
           "title": "A process or program you built",
-          "hint": "A process, campaign, report or system you created or rebuilt, and the results it got."
+          "hint": "A process, campaign, pipeline or system you created or rebuilt, and the results it got."
         },
         {
           "id": "data",
           "title": "Numbers that changed a decision",
-          "hint": "Analysis you did that changed a budget, a strategy or how the team works, with the before and after."
+          "hint": "Market, sales or financial analysis you did that changed a price, a budget or a strategy, with the before and after."
         },
         {
           "id": "accountability",
           "title": "Getting others to deliver",
-          "hint": "Getting a team, vendor, client or leadership to own a problem and follow through."
+          "hint": "Getting a team, agents, vendors, clients or the other side of a deal to own a problem and follow through."
         }
-      ]
+      ],
+      "privacy_note": "Leave out client names, property addresses and anything else confidential."
     },
     "education": {
       "label": "Education",

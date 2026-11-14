@@ -23,7 +23,10 @@ const CASES = [
   [{ headline: 'Journeyman Electrician' }, 'skilled_trades'],
   [{ headline: '5th grade teacher', education: 'M.Ed. Curriculum and Instruction' }, 'education'],
   [{ headline: 'Account Executive', skills: ['Sales', 'Salesforce'] }, 'business'],
-  [{ headline: 'Barista' }, null],
+  [{ headline: 'Real Estate Broker' }, 'business'],
+  [{ headline: 'Licensed Realtor | Managing Broker' }, 'business'],
+  [{ headline: 'Mortgage Loan Officer' }, 'business'],
+  [{ headline: 'Barista', work_history: 'Changed my job title to shift lead' }, null],
   [{}, null],
 ];
 
