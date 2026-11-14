@@ -24,9 +24,9 @@ const KEY_HELP = {
 };
 const QUERY_FIELDS = {
   usajobs: [["location", "Location (e.g. Maryland)"], ["keyword", "Keyword (optional)"]],
-  adzuna: [["where", "Location (e.g. Baltimore)"], ["what", "Keywords (optional)"]],
-  jooble: [["location", "Location (e.g. Maryland)"], ["keywords", "Keywords (optional)"]],
-  workable_search: [["location", "Location (e.g. Maryland)"], ["keywords", "Keywords (optional)"]],
+  adzuna: [["where", "Location (e.g. Baltimore)"], ["what", "Keywords (optional)"], ["titles", "Only job titles with (optional, comma-separated)"], ["exclude_titles", "Skip job titles with (optional)"]],
+  jooble: [["location", "Location (e.g. Maryland)"], ["keywords", "Keywords (optional)"], ["titles", "Only job titles with (optional, comma-separated)"], ["exclude_titles", "Skip job titles with (optional)"]],
+  workable_search: [["location", "Location (e.g. Maryland)"], ["keywords", "Keywords (optional)"], ["titles", "Only job titles with (optional, comma-separated)"], ["exclude_titles", "Skip job titles with (optional)"]],
 };
 const PLACEHOLDER = {
   greenhouse: "e.g. sweetgreen",
@@ -128,7 +128,9 @@ function SourceRow({ s, onChanged }) {
     mutationFn: () => base44.admin.removeJobSource(s.id),
     onSuccess: (r) => { toast.success(`Removed ${s.name}${r.closed ? ` and closed its ${r.closed} listings` : ""}.`); onChanged(); },
   });
-  const detail = s.query ? Object.entries(s.query).map(([k, v]) => `${k}: ${v}`).join(" · ") : s.token;
+  // Long lists (keywords, title filters) show as a count rather than every word.
+  const show = (k, v) => (Array.isArray(v) ? (v.length > 6 ? `${k}: ${v.length} words` : `${k}: ${v.join(", ")}`) : `${k}: ${v}`);
+  const detail = s.query ? Object.entries(s.query).map(([k, v]) => show(k.replace("_", " "), v)).join(" · ") : s.token;
   return (
     <li className="py-3 flex flex-wrap items-center gap-x-4 gap-y-2">
       <div className="min-w-0 flex-1 basis-56">
