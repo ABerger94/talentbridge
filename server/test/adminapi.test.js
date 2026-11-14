@@ -176,7 +176,7 @@ test('the OpenAPI description and the key rules agree, operation by operation', 
     const concrete = p.replace(/\{[^}]+\}/g, 'abc123');
     const rule = ruleFor(method.toUpperCase(), concrete);
     assert.ok(rule, `${method} ${p} is documented but keys can't use it`);
-    assert.equal(rule[2], scope, `${method} ${p}: documented scope ${scope}, enforced ${rule[2]}`);
+    assert.deepEqual(rule[2], scope, `${method} ${p}: documented scope ${scope}, enforced ${rule[2]}`);
   }
   const { RULES } = require('../src/apikeys.js');
   for (const [method, re] of RULES) {

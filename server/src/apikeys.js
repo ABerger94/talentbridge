@@ -42,9 +42,13 @@ const SCOPES = {
   jobs: { label: 'Moderate jobs', detail: 'Close or reopen job postings.' },
   job_sources: { label: 'Manage job sources', detail: 'Add, change and remove job sources, and run imports.' },
   operations: { label: 'Operations', detail: 'Run job alerts, resolve errors, move stored files, send signup reminders, run the AI fairness check (uses AI calls).' },
+  announcement_drafts: { label: 'Draft announcements', detail: 'Write, edit and preview announcement emails, and send a test copy to you (the key’s owner). Can’t send to users.' },
+  announcements: { label: 'Send announcements', detail: 'Email announcements to users (everyone, job seekers or employers), plus everything Draft announcements can do.' },
 };
+// Drafting is allowed with either announcement permission.
+const DRAFTS = ['announcement_drafts', 'announcements'];
 
-// [method, path, scope]. scope null = any valid key.
+// [method, path, scope]. scope null = any valid key; a list = any of them.
 const RULES = [
   ['GET', /^\/api\/admin\/openapi\.json$/, null],
   ['GET', /^\/api\/admin\/(overview|system|reports|employers|incomplete-signups|job-sources|jobs|users|audit)$/, 'read'],
@@ -57,6 +61,14 @@ const RULES = [
   ['POST', /^\/api\/admin\/(alerts\/run|storage\/migrate|ai\/fairness)$/, 'operations'],
   ['POST', /^\/api\/admin\/errors\/[^/]+\/resolve$/, 'operations'],
   ['POST', /^\/api\/admin\/incomplete-signups\/[^/]+\/remind$/, 'operations'],
+  ['GET', /^\/api\/admin\/announcements$/, DRAFTS],
+  ['GET', /^\/api\/admin\/announcements\/[^/]+$/, DRAFTS],
+  ['POST', /^\/api\/admin\/announcements$/, DRAFTS],
+  ['POST', /^\/api\/admin\/announcements\/preview$/, DRAFTS],
+  ['PUT', /^\/api\/admin\/announcements\/[^/]+$/, DRAFTS],
+  ['DELETE', /^\/api\/admin\/announcements\/[^/]+$/, DRAFTS],
+  ['POST', /^\/api\/admin\/announcements\/[^/]+\/test$/, DRAFTS],
+  ['POST', /^\/api\/admin\/announcements\/[^/]+\/(send|process|retry|cancel)$/, 'announcements'],
 ];
 
 // Fields hidden without the personal_data scope, wherever they appear.
@@ -164,7 +176,10 @@ function apiKeyMiddleware(req, res, next) {
   const scopes = JSON.parse(row.scopes || '[]');
   const rule = ruleFor(req.method, path);
   if (!rule) return deny(403, `${req.method} ${path} isn’t available to API keys. See /api/admin/openapi.json for what is.`, 'not_available');
-  if (rule[2] && !scopes.includes(rule[2])) return deny(403, `This key doesn’t have the "${rule[2]}" permission.`, 'missing_scope');
+  const need = rule[2] == null ? [] : [].concat(rule[2]);
+  if (need.length && !need.some((x) => scopes.includes(x))) {
+    return deny(403, `This key doesn’t have the "${need.join('" or "')}" permission.`, 'missing_scope');
+  }
   const limit = hit(`api-key:${row.id}`, RATE_PER_HOUR, 60 * 60 * 1000);
   if (!limit.ok) {
     res.setHeader('Retry-After', String(limit.retryAfter));

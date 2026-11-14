@@ -99,6 +99,14 @@
     {
       "path": "/api/cron/import-jobs?run=6",
       "schedule": "7 21 * * *"
+    },
+    {
+      "path": "/api/cron/announcements",
+      "schedule": "22 16 * * *"
+    },
+    {
+      "path": "/api/cron/announcements?run=2",
+      "schedule": "52 22 * * *"
     }
   ]
 }
