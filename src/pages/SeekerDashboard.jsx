@@ -166,6 +166,18 @@ export default function SeekerDashboard() {
       setStoriesSaving(false);
     }
   };
+  // Which field's wording the story prompts use (null: worked out from the profile).
+  const saveStoryFamily = async (family) => {
+    update("story_field_family", family);
+    const profileId = profiles[0]?.id;
+    if (!profileId) return;
+    try {
+      await base44.entities.SeekerProfile.update(profileId, { story_field_family: family });
+      queryClient.invalidateQueries({ queryKey: ["seekerProfile"] });
+    } catch (err) {
+      toast.error(err?.message || "Couldn't save that. Please try again.");
+    }
+  };
   // Answering a follow-up question opens a story form for that question.
   const [storyRequest, setStoryRequest] = useState(null);
   const answerQuestion = (question) => setStoryRequest({ question, nonce: Date.now() });
@@ -571,7 +583,7 @@ Return the top matches with specific reasoning.`,
           </Card>
 
           <Card className="p-4 sm:p-6" id="proof-stories">
-            <ProofStories stories={profile?.proof_stories || []} onSave={saveStories} saving={storiesSaving} request={storyRequest} />
+            <ProofStories stories={profile?.proof_stories || []} onSave={saveStories} saving={storiesSaving} request={storyRequest} profile={profile} graph={capabilityGraph} onFamilyChange={saveStoryFamily} />
           </Card>
         </TabsContent>
 

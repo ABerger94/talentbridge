@@ -84,8 +84,10 @@ function presentProfile(p, audience) {
     skills: Array.isArray(p.skills) ? p.skills.slice(0, 40) : [],
     career_goals: p.career_goals || '',
     open_to_opportunities: p.open_to_opportunities !== false,
+    story_field_family: p.story_field_family || null,
     capability_graph: graph && {
       rubric_version: graph.rubric_version || 1,
+      field_family: graph.field_family || null,
       capability_headline: graph.capability_headline || '',
       field_baseline: graph.field_baseline || '',
       core_execution_vectors: graph.core_execution_vectors.slice(0, 10).map((v) => ({

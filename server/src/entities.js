@@ -322,6 +322,13 @@ function present(entity, record, user, cache = new Map()) {
 // kept with the story so a rebuild knows what was asked.
 const STORY_IDS = ['investigation', 'risk', 'emergency', 'built', 'data', 'accountability', 'followup'];
 const MAX_STORIES = 8;
+// Which field's wording a seeker picked for their story prompts (or null to
+// let it be worked out from their profile).
+function storyFamily(v) {
+  const families = ['general', ...Object.keys(require('../../src/lib/capabilityRubric.json').field_families)];
+  return families.includes(v) ? v : null;
+}
+
 function normalizeStories(list) {
   if (!Array.isArray(list)) return [];
   const text = (v, n = 1200) => String(v || '').replace(/\s+\n/g, '\n').trim().slice(0, n);
@@ -410,6 +417,7 @@ function registerEntityRoutes(app) {
     // Sharing settings and the photo are set by profiles.js only.
     if (entity === 'SeekerProfile') { delete body.profile_sharing; delete body.photo_file; }
     if (entity === 'SeekerProfile' && 'proof_stories' in body) body.proof_stories = normalizeStories(body.proof_stories);
+    if (entity === 'SeekerProfile' && 'story_field_family' in body) body.story_field_family = storyFamily(body.story_field_family);
     if (entity === 'SeekerProfile' && 'professional_links' in body) {
       try {
         body.professional_links = require('./links').normalizeLinks(body.professional_links || []);
@@ -500,6 +508,7 @@ function registerEntityRoutes(app) {
     }
     if (entity === 'SeekerProfile') { delete changes.profile_sharing; delete changes.photo_file; }
     if (entity === 'SeekerProfile' && 'proof_stories' in changes) changes.proof_stories = normalizeStories(changes.proof_stories);
+    if (entity === 'SeekerProfile' && 'story_field_family' in changes) changes.story_field_family = storyFamily(changes.story_field_family);
     if (entity === 'SeekerProfile' && 'professional_links' in changes) {
       try {
         changes.professional_links = require('./links').normalizeLinks(changes.professional_links || []);

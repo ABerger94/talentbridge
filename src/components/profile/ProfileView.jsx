@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { MapPin, Briefcase, Building2, Sparkles, BookOpen, GraduationCap, Wrench, ArrowUpRight } from "lucide-react";
 import ProfessionalLinks from "@/components/seeker/ProfessionalLinks";
 import { LevelBadge, EvidenceBadge, RubricDialog } from "@/components/seeker/CapabilityGraphView";
-import { STORY_PROMPTS } from "@/lib/capabilityRubric";
+import { fieldFamilyFor, storyPromptsFor, thirdPerson } from "@/lib/capabilityRubric";
 import { parseWorkHistory } from "@/lib/workHistory";
 
 const WORK_TYPE = { remote: "Remote", hybrid: "Hybrid", onsite: "On-site", any: "Open to any" };
@@ -33,15 +33,12 @@ function Section({ icon: Icon, title, children, aside }) {
 }
 
 // The seeker's prompts say "you"; on their profile page it's "they".
-const THIRD_PERSON = {
-  investigation: "A failure they investigated",
-  risk: "A risk they caught early",
-  emergency: "An emergency they handled",
-  built: "A system they built or fixed",
-  data: "Data that changed an operation",
-  accountability: "Holding others accountable",
+// Prompt titles in the seeker's field's wording, about them ("…they worked through").
+const storyTitle = (s, prompts) => {
+  if (s.question) return `Asked: ${s.question}`;
+  const p = prompts.find((x) => x.id === s.prompt_id);
+  return p ? thirdPerson(p.title) : "Story";
 };
-const storyTitle = (s) => (s.question ? `Asked: ${s.question}` : THIRD_PERSON[s.prompt_id] || STORY_PROMPTS.find((p) => p.id === s.prompt_id)?.title || "Story");
 
 // Work history as a timeline: one entry per role, newest first. Consecutive
 // roles at the same company are grouped under it (showing progression).
@@ -96,6 +93,7 @@ function WorkHistory({ value }) {
 // A seeker's profile page, as employers (and public-link visitors) see it.
 export default function ProfileView({ profile, actions }) {
   const graph = profile.capability_graph;
+  const prompts = storyPromptsFor(fieldFamilyFor(profile, graph));
   const caps = graph?.core_execution_vectors || [];
   const rubric = graph && Number(graph.rubric_version || 1) >= 2;
   const apart = rubric ? caps.filter((c) => c.differentiator) : [];
@@ -163,7 +161,7 @@ export default function ProfileView({ profile, actions }) {
           <div className="space-y-3">
             {profile.proof_stories.map((s, i) => (
               <div key={i} className="rounded-lg bg-secondary/50 p-3 sm:p-4 space-y-1.5">
-                <p className="font-semibold text-sm">{storyTitle(s)}</p>
+                <p className="font-semibold text-sm">{storyTitle(s, prompts)}</p>
                 {s.situation && <p className="text-sm"><span className="text-muted-foreground">Situation: </span>{s.situation}</p>}
                 {s.action && <p className="text-sm"><span className="text-muted-foreground">What they did: </span>{s.action}</p>}
                 {s.result && <p className="text-sm"><span className="text-muted-foreground">Result: </span>{s.result}</p>}
