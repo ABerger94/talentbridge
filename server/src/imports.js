@@ -37,6 +37,34 @@ const KINDS = {
 // Jobs kept per source (newest, local first). Admins can change it per source.
 const MAX_PER_SOURCE = 100;
 
+// Hospitality and food service (servers, bartenders, cooks, baristas, hotel
+// staff). Searches keep only these job titles, since a search for
+// "restaurant" or "hospitality" also returns sales and office roles.
+const HOSPITALITY_TITLES = ['server', 'waiter', 'waitress', 'bartender', 'barback', 'barista', 'busser', 'host', 'hostess', 'food runner',
+  'cook', 'chef', 'sous chef', 'dishwasher', 'steward', 'kitchen', 'dietary aide', 'catering', 'banquet', 'housekeeper', 'housekeeping',
+  'room attendant', 'front desk', 'concierge', 'guest service', 'valet', 'baker', 'pastry', 'food service', 'cafe', 'coffee', 'restaurant',
+  'front of house', 'front-of-house', 'back of house', 'crew member', 'hospitality team member', 'restaurant team member'];
+const NOT_HOSPITALITY = ['administrator', 'engineer', 'developer', 'emcee', 'game night', 'karaoke', 'trivia', 'bingo', 'sales associate', 'analyst', 'recruiter'];
+const hospitalitySearch = (extra) => JSON.stringify({ ...extra, titles: HOSPITALITY_TITLES, exclude_titles: NOT_HOSPITALITY });
+const HOSPITALITY_SOURCES = [
+  ['workday', 'heihotels.wd12.myworkdayjobs.com/external_career_site', 'HEI Hotels & Resorts', MAX_PER_SOURCE],
+  ['workday', 'benchmark.wd1.myworkdayjobs.com/PGH_Careers', 'Pyramid Global Hospitality', MAX_PER_SOURCE],
+  ['workday', 'guestservices.wd5.myworkdayjobs.com/GSI', 'Guest Services, Inc.', MAX_PER_SOURCE],
+  ['workday', 'dinebrands.wd503.myworkdayjobs.com/RestaurantCareerSite', 'Dine Brands (Applebee’s, IHOP)', MAX_PER_SOURCE],
+  ['workday', 'pfchangs.wd501.myworkdayjobs.com/PF-Changs-External-Careers', 'P.F. Chang’s', MAX_PER_SOURCE],
+  ['workday', 'daveandbusters.wd1.myworkdayjobs.com/Main_Event_Careers', 'Dave & Buster’s', MAX_PER_SOURCE],
+  ['workday', 'seminolehardrock.wd503.myworkdayjobs.com/seminolehardrockcareers', 'Hard Rock', MAX_PER_SOURCE],
+  ['workday', 'arcis.wd12.myworkdayjobs.com/extNa', 'Arcis Golf', MAX_PER_SOURCE],
+  ['smartrecruiters', 'Eataly', 'Eataly', MAX_PER_SOURCE],
+  ['greenhouse', 'blankstreet', 'Blank Street', MAX_PER_SOURCE],
+  ['workable_search', hospitalitySearch({ location: 'Maryland', keywords: ['restaurant', 'hospitality', 'cook', 'bartender', 'barista', 'server'] }), 'Workable: hospitality, Maryland', MAX_PER_SOURCE],
+  ['workable_search', hospitalitySearch({ location: 'Washington, DC', keywords: ['restaurant', 'hospitality', 'cook', 'bartender', 'barista'] }), 'Workable: hospitality, Washington, DC', MAX_PER_SOURCE],
+  ['workable_search', hospitalitySearch({ location: 'Virginia', keywords: ['restaurant', 'hospitality', 'cook', 'bartender', 'barista', 'server'] }), 'Workable: hospitality, Virginia', MAX_PER_SOURCE],
+  ['adzuna', hospitalitySearch({ where: 'Maryland', what_or: 'server bartender barista cook chef restaurant hospitality hotel' }), 'Adzuna: hospitality, Maryland', MAX_PER_SOURCE],
+  ['adzuna', hospitalitySearch({ where: 'Washington, DC', what_or: 'server bartender barista cook chef restaurant hospitality hotel' }), 'Adzuna: hospitality, Washington, DC', MAX_PER_SOURCE],
+  ['jooble', hospitalitySearch({ location: 'Maryland', keywords: 'restaurant' }), 'Jooble: hospitality, Maryland', MAX_PER_SOURCE],
+];
+
 const DEFAULT_SOURCES = [
   ['greenhouse', 'onemedical', 'One Medical', MAX_PER_SOURCE], ['greenhouse', 'oscar', 'Oscar Health', MAX_PER_SOURCE],
   ['lever', 'lyrahealth', 'Lyra Health', MAX_PER_SOURCE], ['lever', 'ro', 'Ro', MAX_PER_SOURCE], ['greenhouse', 'talkspace', 'Talkspace', MAX_PER_SOURCE],
@@ -126,6 +154,7 @@ const DEFAULT_SOURCES = [
   ['workable_search', JSON.stringify({ location: 'Maryland' }), 'Workable: Maryland', MAX_PER_SOURCE],
   ['workable_search', JSON.stringify({ location: 'Washington, DC' }), 'Workable: Washington, DC', MAX_PER_SOURCE],
   ['workable_search', JSON.stringify({ location: 'Virginia' }), 'Workable: Virginia', MAX_PER_SOURCE],
+  ...HOSPITALITY_SOURCES,
 ];
 
 db.exec(`
@@ -309,6 +338,15 @@ async function mapLimit(items, n, fn) {
 
 function parseQuery(token) {
   try { return JSON.parse(token || '{}') || {}; } catch { return {}; }
+}
+
+// { titles: [...], exclude_titles: [...] } on a search source: keep a job only
+// if its title has one of the words (plurals count) and none of the excluded.
+const wordsRe = (list) => new RegExp(`\\b(?:${list.map((w) => String(w).trim().toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).filter(Boolean).join('|')})s?\\b`, 'i');
+function titleFilter(q) {
+  const keep = Array.isArray(q.titles) && q.titles.length ? wordsRe(q.titles) : null;
+  const drop = Array.isArray(q.exclude_titles) && q.exclude_titles.length ? wordsRe(q.exclude_titles) : null;
+  return (j) => (!keep || keep.test(j.title)) && !(drop && drop.test(j.title));
 }
 
 // --- Workday --------------------------------------------------------------------
@@ -533,19 +571,23 @@ const FETCHERS = {
   // Workable: mostly smaller companies the big boards miss. 20 per page.
   async workable_search(src) {
     const q = parseQuery(src.token);
-    const params = new URLSearchParams();
-    if (q.location) params.set('location', q.location);
-    if (q.keywords) params.set('query', q.keywords);
-    const rows = [];
-    let pageToken = '';
-    for (let i = 0; i < 15; i += 1) {
-      if (pageToken) params.set('pageToken', pageToken);
-      const page = await getJSON(`https://jobs.workable.com/api/v1/jobs?${params}`);
-      rows.push(...(page.jobs || []));
-      pageToken = page.nextPageToken;
-      if (!pageToken || !(page.jobs || []).length) break;
+    // keywords: one search, or a list of searches merged (e.g. cook, barista).
+    const searches = Array.isArray(q.keywords) ? q.keywords.slice(0, 10) : [q.keywords || ''];
+    const byId = new Map();
+    for (const kw of searches) {
+      const params = new URLSearchParams();
+      if (q.location) params.set('location', q.location);
+      if (kw) params.set('query', kw);
+      let pageToken = '';
+      for (let i = 0; i < (searches.length > 1 ? 6 : 15); i += 1) {
+        if (pageToken) params.set('pageToken', pageToken);
+        const page = await getJSON(`https://jobs.workable.com/api/v1/jobs?${params}`);
+        for (const j of page.jobs || []) if (j.id && !byId.has(j.id)) byId.set(j.id, j);
+        pageToken = page.nextPageToken;
+        if (!pageToken || !(page.jobs || []).length) break;
+      }
     }
-    return rows
+    return [...byId.values()]
       .filter((j) => j.id && j.title && j.state !== 'closed' && /united states/i.test(j.location?.countryName || (j.locations || []).join(' ')))
       .map((j) => {
         const html = [j.description, j.requirementsSection && `<h3>Requirements</h3>${j.requirementsSection}`, j.benefitsSection && `<h3>Benefits</h3>${j.benefitsSection}`].filter(Boolean).join('');
@@ -668,6 +710,7 @@ const FETCHERS = {
     });
     if (q.where) params.set('where', q.where);
     if (q.what) params.set('what', q.what);
+    if (q.what_or) params.set('what_or', q.what_or);
     const pages = Math.max(1, Math.min(3, Math.ceil(src.max_jobs / 50)));
     const results = [];
     for (let p = 1; p <= pages; p += 1) {
@@ -792,6 +835,8 @@ async function syncSource(src) {
   const now = new Date().toISOString();
   let fetched = await FETCHERS[src.kind](src);
   fetched = fetched.filter((j) => j.title && j.external_id && j.external_url);
+  // Search sources can keep only some job titles (e.g. hospitality roles).
+  if (!kind.company) fetched = fetched.filter(titleFilter(parseQuery(src.token)));
   // Local roles first (TB_JOB_REGION, default Maryland / DC / Virginia), then
   // newest, capped per source.
   const local = (j) => (REGION.test(j.location || '') ? 1 : 0);
@@ -905,7 +950,12 @@ async function addSource(body) {
     if (!/^[a-z0-9_-]{2,80}$/.test(token)) throw fail(400, 'Enter the company’s board name (the part after the domain in its jobs URL)');
   } else if (kind !== 'remotive') {
     const q = {};
-    for (const k of ['location', 'keyword', 'where', 'what', 'keywords']) if (body[k]) q[k] = String(body[k]).trim().slice(0, 100);
+    for (const k of ['location', 'keyword', 'where', 'what', 'what_or', 'keywords']) if (body[k]) q[k] = String(body[k]).trim().slice(0, 100);
+    // Comma-separated lists from the form.
+    for (const k of ['titles', 'exclude_titles']) {
+      const list = (Array.isArray(body[k]) ? body[k] : String(body[k] || '').split(',')).map((w) => String(w).trim().slice(0, 40)).filter(Boolean).slice(0, 60);
+      if (list.length) q[k] = list;
+    }
     token = JSON.stringify(q);
   }
   if (db.prepare('SELECT 1 FROM job_sources WHERE kind = ? AND token = ?').get(kind, token)) throw fail(409, 'That source is already on the list');
@@ -1018,4 +1068,4 @@ function registerImportRoutes(app) {
   }));
 }
 
-module.exports = { parseWorkday, workdayPosted, registerImportRoutes, runImports, syncSource, listSources, addSource, htmlToMarkdown, looksUS, salaryOf, levelOf, KINDS, FETCHERS, DEFAULT_SOURCES };
+module.exports = { titleFilter, HOSPITALITY_TITLES, NOT_HOSPITALITY, parseWorkday, workdayPosted, registerImportRoutes, runImports, syncSource, listSources, addSource, htmlToMarkdown, looksUS, salaryOf, levelOf, KINDS, FETCHERS, DEFAULT_SOURCES };

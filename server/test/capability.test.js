@@ -26,7 +26,8 @@ const CASES = [
   [{ headline: 'Real Estate Broker' }, 'business'],
   [{ headline: 'Licensed Realtor | Managing Broker' }, 'business'],
   [{ headline: 'Mortgage Loan Officer' }, 'business'],
-  [{ headline: 'Barista', work_history: 'Changed my job title to shift lead' }, null],
+  [{ headline: 'Tattoo Artist', work_history: 'Changed my job title to shift lead' }, null],
+  [{ headline: 'Server', skills: ['Guest recovery', 'POS'] }, 'hospitality'],
   [{}, null],
 ];
 
@@ -97,7 +98,7 @@ test('detection stays fast on long profiles and odd input', () => {
 test('every field’s prompt to the AI is complete and in that field’s words', () => {
   const samples = {
     healthcare: 'Psychiatric Nurse Practitioner', quality_operations: 'Food Safety Manager', technology: 'Site Reliability Engineer',
-    skilled_trades: 'Journeyman Electrician', business: 'Real Estate Broker', education: 'Special Education Teacher', general: 'Line Cook',
+    skilled_trades: 'Journeyman Electrician', business: 'Real Estate Broker', education: 'Special Education Teacher', hospitality: 'Bartender', general: 'Tattoo Artist',
   };
   const ids = RUBRIC.story_prompts.map((p) => p.id);
   for (const [family, headline] of Object.entries(samples)) {

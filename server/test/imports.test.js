@@ -79,6 +79,17 @@ globalThis.fetch = async (url, init) => {
       { title: 'Berlin Tech', shortcode: 'AB2', employment_type: 'Full-time', url: 'https://apply.workable.com/j/AB2', locations: [{ countryCode: 'DE', city: 'Berlin' }], description: '<p>x</p>' },
     ] }));
   }
+  if (u.includes('jobs.workable.com/api/v1/jobs') && new URL(u).searchParams.get('query')) {
+    // Keyword searches (hospitality): each word returns some real roles and some noise.
+    const kw = new URL(u).searchParams.get('query');
+    const job = (id, title) => ({ id, title, state: 'published', description: '<p>Shifts.</p>', employmentType: 'Part-time', url: `https://jobs.workable.com/view/${id}`, location: { city: 'Baltimore', subregion: 'Maryland', countryName: 'United States' }, created: '2026-11-12T00:00:00Z', company: { title: 'Harbor Grill' }, workplace: 'on_site' });
+    const by = {
+      cook: [job('h1', 'Line Cook')],
+      server: [job('h2', 'Servers (Full-Time)'), job('h3', 'SharePoint Server Administrator'), job('h4', 'Music Bingo, Trivia and Karaoke Host')],
+      restaurant: [job('h1', 'Line Cook'), job('h5', 'Xfinity Sales Associate'), job('h6', 'Front-of-House Team Member')],
+    };
+    return new Response(JSON.stringify({ jobs: by[kw] || [] }));
+  }
   if (u.includes('jobs.workable.com/api/v1/jobs')) {
     const token = new URL(u).searchParams.get('pageToken');
     const job = (id, city, sub) => ({ id, title: `Coordinator ${id}`, state: 'published', description: '<p>Coordinate.</p>', requirementsSection: '<p>HACCP</p>', employmentType: 'Full-time', url: `https://jobs.workable.com/view/${id}`, location: { city, subregion: sub, countryName: 'United States' }, created: '2026-11-12T00:00:00Z', company: { title: 'Local Co' }, workplace: 'on_site' });
@@ -251,6 +262,33 @@ test('workable board keeps US roles; workable search pages and skips duplicates'
   for (const s2 of [board, md, va]) db.prepare('DELETE FROM job_sources WHERE id = ?').run(s2.id);
 });
 
+test('hospitality searches: several keywords, only hospitality job titles', async () => {
+  const { titleFilter, HOSPITALITY_TITLES, NOT_HOSPITALITY, DEFAULT_SOURCES } = require('../src/imports.js');
+  const keep = titleFilter({ titles: HOSPITALITY_TITLES, exclude_titles: NOT_HOSPITALITY });
+  const ok = ['Server', 'Servers Needed', 'Bartender/Server', 'Line Cook', 'Sous Chef', 'Barista', 'Front-of-House Team Member', 'Host/Hostess', 'Banquet Captain', 'Room Attendant', 'Dishwasher', 'Front Desk Agent'];
+  const no = ['SharePoint Server Administrator', 'Music Bingo, Trivia and Karaoke Host', 'Xfinity Sales Associate', 'Data Engineer', 'Registered Nurse', 'Cookie Policy Analyst'];
+  for (const t of ok) assert.ok(keep({ title: t }), `keeps ${t}`);
+  for (const t of no) assert.ok(!keep({ title: t }), `drops ${t}`);
+  assert.ok(titleFilter({})({ title: 'Anything' }), 'no filter keeps everything');
+
+  const src = source('workable_search', JSON.stringify({ location: 'Maryland', keywords: ['cook', 'server', 'restaurant'], titles: HOSPITALITY_TITLES, exclude_titles: NOT_HOSPITALITY }), 'Workable: hospitality, Maryland', 100);
+  const r = await syncSource(src);
+  const titles = store.filter('Job', { source_id: src.id }).map((j) => j.title).sort();
+  assert.deepEqual(titles, ['Front-of-House Team Member', 'Line Cook', 'Servers (Full-Time)'], 'merged, de-duplicated, noise dropped');
+  assert.equal(r.found, 3);
+  for (const j of store.filter('Job', { source_id: src.id })) store.remove('Job', j.id);
+  db.prepare('DELETE FROM job_sources WHERE id = ?').run(src.id);
+
+  // The defaults include the hospitality sources, each well-formed.
+  const hosp = DEFAULT_SOURCES.filter(([, , name]) => /hospitality|Hotels|Chang|Applebee|Buster|Eataly|Blank Street|Hard Rock|Arcis|Guest Services/i.test(name));
+  assert.ok(hosp.length >= 16, `${hosp.length} hospitality sources`);
+  for (const [kind, token] of hosp.filter(([k]) => ['workable_search', 'adzuna', 'jooble'].includes(k))) {
+    const q = JSON.parse(token);
+    assert.ok(q.titles.includes('server') && q.exclude_titles.includes('administrator'), kind);
+  }
+  assert.equal(new Set(DEFAULT_SOURCES.map(([k, t]) => `${k}:${t}`)).size, DEFAULT_SOURCES.length, 'no duplicate defaults');
+});
+
 test('keyed sources wait for their keys and report it', async () => {
   const src = source('usajobs', '{"location":"Maryland"}', 'USAJOBS: Maryland');
   await assert.rejects(() => syncSource(src), /USAJOBS_API_KEY/);
@@ -361,6 +399,10 @@ test('admins manage sources; others cannot', async () => {
   assert.equal(wk.data.preview, 1);
   const wkBad = await call('adm', 'POST', '/api/admin/job-sources', { kind: 'workable', token: 'nosuchco' });
   assert.equal(wkBad.status, 400);
+  const filtered = await call('adm', 'POST', '/api/admin/job-sources', { kind: 'workable_search', location: 'Annapolis, MD', keywords: 'cook', titles: 'cook, chef, , dishwasher', exclude_titles: 'engineer' });
+  assert.equal(filtered.status, 200, filtered.text);
+  assert.deepEqual(JSON.parse(filtered.data.token), { location: 'Annapolis, MD', keywords: 'cook', titles: ['cook', 'chef', 'dishwasher'], exclude_titles: ['engineer'] });
+  db.prepare('DELETE FROM job_sources WHERE id = ?').run(filtered.data.id);
   const ws = await call('adm', 'POST', '/api/admin/job-sources', { kind: 'workable_search', location: 'Baltimore, MD' });
   assert.equal(ws.status, 200, ws.text);
   const off = await call('adm', 'PUT', '/api/admin/job-sources/greenhouse-tasty', { enabled: false });

@@ -92,7 +92,7 @@ ${family ? `This candidate's field looks like: ${FAMILIES[family].label}. Check 
 Write everything (capability names, the baseline, follow-up questions) in the terms a hiring manager in this candidate's own field would use. The examples below come from different fields to show the pattern; don't borrow their subject matter.
 
 HOW TO NAME CAPABILITIES
-- Name 5 to 8 specific competencies, e.g. "Root cause investigation" for a quality professional, "Differential diagnosis" or "Crisis risk assessment" for a clinician, "Incident response" for a software engineer, "Curriculum design" for a teacher, "Account expansion" for a salesperson. Never use broad umbrella categories such as "Patient Care", "Food Safety Management", "Software Development" or "Leadership".
+- Name 5 to 8 specific competencies, e.g. "Root cause investigation" for a quality professional, "Differential diagnosis" or "Crisis risk assessment" for a clinician, "Incident response" for a software engineer, "Curriculum design" for a teacher, "Account expansion" for a salesperson, "Guest recovery" or "High-volume section management" for a server. Never use broad umbrella categories such as "Patient Care", "Food Safety Management", "Software Development" or "Leadership".
 - Distinguish running existing work (level 2) from building, evaluating and improving it (levels 3 to 4).
 
 WHAT SETS THEM APART

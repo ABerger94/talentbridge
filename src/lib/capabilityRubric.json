@@ -359,7 +359,12 @@
         "it manager",
         "it director",
         "it technician",
-        "it administrator"
+        "it administrator",
+        "server administrator",
+        "sql server",
+        "windows server",
+        "server infrastructure",
+        "linux"
       ],
       "privacy_note": "Leave out anything confidential, like customer data, credentials or private code.",
       "prompts": [
@@ -466,6 +471,111 @@
           "id": "accountability",
           "title": "Leading a crew",
           "hint": "Training an apprentice, running a crew, or getting a contractor or customer to follow through."
+        }
+      ]
+    },
+    "hospitality": {
+      "label": "Hospitality & food service",
+      "keywords": [
+        "server",
+        "waiter",
+        "waitress",
+        "waitstaff",
+        "bartender",
+        "bartending",
+        "barback",
+        "barista",
+        "busser",
+        "food runner",
+        "dishwasher",
+        "line cook",
+        "prep cook",
+        "short order cook",
+        "cook",
+        "chef",
+        "sous chef",
+        "executive chef",
+        "pastry",
+        "baker",
+        "restaurant",
+        "restaurants",
+        "food service",
+        "foodservice",
+        "food and beverage",
+        "f&b",
+        "banquet*",
+        "catering",
+        "caterer",
+        "hospitality",
+        "hotel",
+        "motel",
+        "resort",
+        "front desk agent",
+        "guest services",
+        "guest experience",
+        "concierge",
+        "housekeeper",
+        "housekeeping",
+        "room attendant",
+        "bellhop",
+        "bell staff",
+        "valet",
+        "front of house",
+        "back of house",
+        "fine dining",
+        "casual dining",
+        "quick service",
+        "qsr",
+        "fast food",
+        "crew member",
+        "hostess",
+        "restaurant host",
+        "sommelier",
+        "dining room",
+        "room service",
+        "servsafe",
+        "cafe",
+        "coffee shop",
+        "bakery",
+        "pizza",
+        "kitchen manager",
+        "kitchen staff",
+        "kitchen lead",
+        "kitchen supervisor",
+        "casino",
+        "food truck"
+      ],
+      "privacy_note": "Leave out guests’ names and anything else that could identify them.",
+      "prompts": [
+        {
+          "id": "investigation",
+          "title": "A recurring problem you fixed",
+          "hint": "Orders coming out wrong, long ticket times, the same complaint over and over: how you found the cause and what you changed."
+        },
+        {
+          "id": "risk",
+          "title": "An allergy or safety risk you caught",
+          "hint": "An allergy, food safety, alcohol-service or safety issue you spotted before anyone got hurt, and what you did."
+        },
+        {
+          "id": "emergency",
+          "title": "A tough shift or guest you turned around",
+          "hint": "A slammed rush, a no-show, broken equipment or an upset guest: what you did under pressure and how the night ended."
+        },
+        {
+          "id": "built",
+          "title": "Something you improved on your shift",
+          "hint": "A side-work system, station setup, checklist or service step you came up with, and what it fixed."
+        },
+        {
+          "id": "data",
+          "title": "Numbers you moved",
+          "hint": "Check averages, sales, ticket times, table turns, waste or reviews that changed because of what you did, with the before and after."
+        },
+        {
+          "id": "accountability",
+          "title": "Keeping the team together",
+          "hint": "Training a new hire, covering for the team, or getting the kitchen and the floor on the same page."
         }
       ]
     },
