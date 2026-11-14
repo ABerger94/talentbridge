@@ -74,6 +74,7 @@ registerSignupRoutes(app);
 registerSystemRoutes(app);
 require('./adminapi').registerAdminApiRoutes(app);
 require('./profiles').registerProfileRoutes(app);
+require('./announcements').registerAnnouncementRoutes(app);
 registerAccountRoutes(app);
 registerAlertRoutes(app);
 registerJobStatsRoutes(app);

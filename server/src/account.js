@@ -124,6 +124,8 @@ async function deleteAccount(user, { password, confirm }) {
   // Messages, conversation state, reports, files, emails, codes.
   counts.messages = db.prepare('DELETE FROM messages WHERE sender_id = ?').run(uid).changes;
   db.prepare('DELETE FROM conversation_state WHERE user_id = ?').run(uid);
+  // Their copies of announcement emails (who got what).
+  db.prepare('DELETE FROM announcement_recipients WHERE user_id = ?').run(uid);
   // Profile pages this person viewed as an employer.
   db.prepare('DELETE FROM profile_views WHERE viewer_id = ?').run(uid);
   db.prepare('DELETE FROM message_reports WHERE reporter_id = ?').run(uid);

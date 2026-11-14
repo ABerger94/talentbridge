@@ -10,6 +10,16 @@ const idParam = (name, description) => ({ name, in: 'path', required: true, sche
 const query = (name, description, schema = { type: 'string' }) => ({ name, in: 'query', required: false, schema, description });
 const body = (properties, required = []) => ({ required: true, content: { 'application/json': { schema: { type: 'object', properties, required } } } });
 
+const DRAFTS = ['announcement_drafts', 'announcements'];
+const ANNOUNCEMENT_BODY = body({
+  subject: str('Email subject (3-150 characters); also the heading'),
+  body: str('The message, plain text. Blank lines separate paragraphs; web addresses become links. A greeting ("Hi Alex,") is added automatically.'),
+  audience: str('Who gets it', { enum: ['all', 'job_seeker', 'employer'] }),
+  verified_only: { type: 'boolean', description: 'Only verified email addresses (default true)' },
+  button_label: str('Optional button text, e.g. "Read the updated terms"'),
+  button_url: str('Button link: https://… or a TalentBridge page like /terms'),
+}, ['subject', 'body', 'audience']);
+
 // [method, path, scope, summary, description, extras]
 const OPERATIONS = [
   ['get', '/api/admin/openapi.json', null, 'This API description', 'The list of everything an API key can do, with the permission each action needs.'],
@@ -67,6 +77,20 @@ const OPERATIONS = [
   ['post', '/api/admin/alerts/run', 'operations', 'Send job alert emails now', 'Runs the job alert digest that normally runs daily.'],
   ['post', '/api/admin/errors/{signature}/resolve', 'operations', 'Mark a server error resolved', 'Use the signature from /api/admin/system errors.', { parameters: [idParam('signature', 'Error signature')] }],
   ['post', '/api/admin/storage/migrate', 'operations', 'Move stored files to the bucket', 'Moves up to 20 database-stored uploads into the configured storage bucket per call.'],
+  ['get', '/api/admin/announcements', DRAFTS, 'List announcements', 'Announcement emails (drafts and sent, newest first) with progress, how many people each audience reaches right now, and whether email is set up.'],
+  ['post', '/api/admin/announcements/preview', DRAFTS, 'Preview an announcement', 'Renders the email exactly as recipients get it (subject, HTML and plain text) and says how many people it would reach. Saves nothing.',
+    { requestBody: ANNOUNCEMENT_BODY }],
+  ['post', '/api/admin/announcements', DRAFTS, 'Create a draft', 'Saves an announcement as a draft. Nothing is sent. Announcements are service updates (terms or privacy changes, important feature changes, outages), not marketing.',
+    { requestBody: ANNOUNCEMENT_BODY }],
+  ['get', '/api/admin/announcements/{id}', DRAFTS, 'Get an announcement', 'One announcement with its rendered preview, progress, and (once sent) failed addresses.', { parameters: [idParam('id', 'Announcement id')] }],
+  ['put', '/api/admin/announcements/{id}', DRAFTS, 'Edit a draft', 'Changes any fields of a draft. Sent announcements can’t be edited.', { parameters: [idParam('id', 'Announcement id')], requestBody: ANNOUNCEMENT_BODY }],
+  ['delete', '/api/admin/announcements/{id}', DRAFTS, 'Delete a draft', 'Deletes a draft. Sent announcements stay for the record.', { parameters: [idParam('id', 'Announcement id')] }],
+  ['post', '/api/admin/announcements/{id}/test', DRAFTS, 'Send a test copy', 'Emails a test copy, marked [Test], only to the admin who owns this key (or the signed-in admin). Use it before sending.', { parameters: [idParam('id', 'Announcement id')] }],
+  ['post', '/api/admin/announcements/{id}/send', 'announcements', 'Send to users', 'Sends a draft to its audience. confirm_count must equal the number of people it reaches right now (from preview or the draft’s recipients_now); otherwise nothing is sent and the response (409) gives the current count. Sending runs in batches: this call sends the first one and returns progress; call process to continue, or leave it and a daily job finishes it. If the email provider’s limit is reached, sending pauses and resumes later.',
+    { parameters: [idParam('id', 'Announcement id')], requestBody: body({ confirm_count: { type: 'integer', description: 'The exact number of recipients you expect' } }, ['confirm_count']) }],
+  ['post', '/api/admin/announcements/{id}/process', 'announcements', 'Continue sending', 'Sends the next batch (resuming a paused announcement) and returns progress.', { parameters: [idParam('id', 'Announcement id')] }],
+  ['post', '/api/admin/announcements/{id}/retry', 'announcements', 'Retry failed addresses', 'Queues the addresses that failed and sends again.', { parameters: [idParam('id', 'Announcement id')] }],
+  ['post', '/api/admin/announcements/{id}/cancel', 'announcements', 'Cancel sending', 'Stops an announcement that’s still sending; anyone not yet emailed won’t be.', { parameters: [idParam('id', 'Announcement id')] }],
   ['post', '/api/admin/ai/fairness', 'operations', 'Run the AI fairness check', 'Scores identical made-up candidates that differ only by an identity hint, on match scores and Capability Graph depth levels. Uses 10 AI calls and takes up to a minute.',
     { requestBody: { required: false, content: { 'application/json': { schema: { type: 'object', properties: { job_id: str('Role to test against (default: newest active role)') } } } } } }],
 ];
@@ -78,7 +102,7 @@ function spec() {
     paths[path] = paths[path] || {};
     paths[path][method] = {
       summary,
-      description: `${description}${scope ? `\n\nNeeds the "${scope}" permission.` : ''}`,
+      description: `${description}${scope ? `\n\nNeeds the "${[].concat(scope).join('" or "')}" permission.` : ''}`,
       'x-required-scope': scope,
       ...extra,
       responses: {

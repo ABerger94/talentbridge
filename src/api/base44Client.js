@@ -308,6 +308,28 @@ const admin = {
   async revokeApiKey(id) {
     return (await request(`/api/admin/api-keys/${id}/revoke`, { method: 'POST' })).data;
   },
+  // Service announcements emailed to users; see server/src/announcements.js.
+  async announcements() {
+    return (await request('/api/admin/announcements')).data;
+  },
+  async announcement(id) {
+    return (await request(`/api/admin/announcements/${encodeURIComponent(id)}`)).data;
+  },
+  async previewAnnouncement(body) {
+    return (await request('/api/admin/announcements/preview', { method: 'POST', body })).data;
+  },
+  async createAnnouncement(body) {
+    return (await request('/api/admin/announcements', { method: 'POST', body })).data;
+  },
+  async updateAnnouncement(id, body) {
+    return (await request(`/api/admin/announcements/${encodeURIComponent(id)}`, { method: 'PUT', body })).data;
+  },
+  async deleteAnnouncement(id) {
+    return (await request(`/api/admin/announcements/${encodeURIComponent(id)}`, { method: 'DELETE' })).data;
+  },
+  async announcementAction(id, action, body) {
+    return (await request(`/api/admin/announcements/${encodeURIComponent(id)}/${action}`, { method: 'POST', body })).data;
+  },
   async employers(status = 'pending') {
     return (await request(`/api/admin/employers?status=${encodeURIComponent(status)}`)).data;
   },

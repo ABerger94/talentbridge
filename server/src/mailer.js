@@ -155,7 +155,10 @@ function esc(s) {
 }
 
 // Paragraphs are plain strings (escaped here); an optional button links into the app.
-function layout({ heading, paragraphs, button }) {
+// linkify turns web addresses in paragraphs into links; footer replaces the
+// default "why you got this" line.
+const LINK = /\bhttps?:\/\/[^\s<>"']+[^\s<>"'.,;:!?)\]]/g;
+function layout({ heading, paragraphs, button, linkify = false, footer }) {
   const text = [heading, '', ...paragraphs.flatMap((p) => [p, '']), button ? `${button.label}: ${button.url}` : '', '', '— TalentBridge']
     .join('\n')
     .replace(/\n{3,}/g, '\n\n')
@@ -165,10 +168,14 @@ function layout({ heading, paragraphs, button }) {
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#ffffff;border-radius:12px;padding:28px">
 <tr><td style="font-size:18px;font-weight:700;color:#5b2bd9;padding-bottom:16px">TalentBridge</td></tr>
 <tr><td style="font-size:20px;font-weight:700;padding-bottom:12px">${esc(heading)}</td></tr>
-${paragraphs.map((p) => `<tr><td style="font-size:15px;line-height:1.55;padding-bottom:12px">${esc(p).replace(/\n/g, '<br>')}</td></tr>`).join('')}
+${paragraphs.map((p) => {
+    let body = esc(p);
+    if (linkify) body = body.replace(LINK, (u) => `<a href="${u}" style="color:#5b2bd9">${u}</a>`);
+    return `<tr><td style="font-size:15px;line-height:1.55;padding-bottom:12px">${body.replace(/\n/g, '<br>')}</td></tr>`;
+  }).join('')}
 ${button ? `<tr><td style="padding:8px 0 4px"><a href="${esc(button.url)}" style="display:inline-block;background:#5b2bd9;color:#ffffff;text-decoration:none;font-weight:600;padding:11px 20px;border-radius:8px">${esc(button.label)}</a></td></tr>` : ''}
 </table>
-<p style="font-size:12px;color:#8a8796;margin:16px 0 0">You received this email because of activity on your TalentBridge account.</p>
+<p style="font-size:12px;color:#8a8796;margin:16px 0 0">${esc(footer || 'You received this email because of activity on your TalentBridge account.')}</p>
 </td></tr></table></body></html>`;
   return { text, html };
 }
