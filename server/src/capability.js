@@ -29,7 +29,10 @@ function detectFieldFamily(profile) {
   for (const [id, fam] of Object.entries(FAMILIES)) {
     let score = 0;
     for (const kw of fam.keywords || []) {
-      const re = new RegExp(`(?<![a-z0-9])${escapeRe(kw.toLowerCase())}(?![a-z0-9])`);
+      // 'pediatric*' matches pediatric, pediatrics, pediatrician.
+      const prefix = kw.endsWith('*');
+      const word = escapeRe(kw.toLowerCase().replace(/\*$/, ''));
+      const re = new RegExp(`(?<![a-z0-9])${word}${prefix ? '' : '(?![a-z0-9])'}`);
       for (const [text, w] of sources) if (re.test(text)) score += w;
     }
     if (score > bestScore) { best = id; bestScore = score; }

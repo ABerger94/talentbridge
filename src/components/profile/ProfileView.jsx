@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { MapPin, Briefcase, Building2, Sparkles, BookOpen, GraduationCap, Wrench, ArrowUpRight } from "lucide-react";
@@ -39,6 +39,32 @@ const storyTitle = (s, prompts) => {
   const p = prompts.find((x) => x.id === s.prompt_id);
   return p ? thirdPerson(p.title) : "Story";
 };
+
+// One proof story. Long ones start as a short preview so a full profile
+// stays easy to scan on a phone.
+const PREVIEW_CHARS = 320;
+function Story({ story, title }) {
+  const [open, setOpen] = useState(false);
+  const parts = [["Situation", story.situation], ["What they did", story.action], ["Result", story.result]].filter(([, t]) => t);
+  const long = parts.reduce((n, [, t]) => n + t.length, 0) > PREVIEW_CHARS;
+  return (
+    <div className="rounded-lg bg-secondary/50 p-3 sm:p-4 space-y-1.5">
+      <p className="font-semibold text-sm">{title}</p>
+      <div className={long && !open ? "line-clamp-5" : "space-y-1.5"}>
+        {parts.map(([label, text]) => (
+          <p key={label} className={`text-sm break-words ${long && !open ? "inline" : ""}`}>
+            <span className="text-muted-foreground">{label}: </span>{text}{long && !open ? " " : ""}
+          </p>
+        ))}
+      </div>
+      {long && (
+        <button type="button" className="text-xs font-medium text-primary hover:underline" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
+          {open ? "Show less" : "Read more"}
+        </button>
+      )}
+    </div>
+  );
+}
 
 // Work history as a timeline: one entry per role, newest first. Consecutive
 // roles at the same company are grouped under it (showing progression).
@@ -159,14 +185,7 @@ export default function ProfileView({ profile, actions }) {
       {profile.proof_stories?.length > 0 && (
         <Section icon={BookOpen} title="Proof of their work">
           <div className="space-y-3">
-            {profile.proof_stories.map((s, i) => (
-              <div key={i} className="rounded-lg bg-secondary/50 p-3 sm:p-4 space-y-1.5">
-                <p className="font-semibold text-sm">{storyTitle(s, prompts)}</p>
-                {s.situation && <p className="text-sm"><span className="text-muted-foreground">Situation: </span>{s.situation}</p>}
-                {s.action && <p className="text-sm"><span className="text-muted-foreground">What they did: </span>{s.action}</p>}
-                {s.result && <p className="text-sm"><span className="text-muted-foreground">Result: </span>{s.result}</p>}
-              </div>
-            ))}
+            {profile.proof_stories.map((s, i) => <Story key={i} story={s} title={storyTitle(s, prompts)} />)}
           </div>
         </Section>
       )}
