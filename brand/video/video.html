@@ -1,0 +1,261 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&display=block" rel="stylesheet">
+<style>
+@font-face{font-family:Inter;src:url(../../server/assets/fonts/Inter-Regular.otf);font-weight:400}
+@font-face{font-family:Inter;src:url(../../server/assets/fonts/Inter-SemiBold.otf);font-weight:600}
+@font-face{font-family:Inter;src:url(../../server/assets/fonts/Inter-Bold.otf);font-weight:700 800}
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--purple:#5B2BE0;--ink:#15172A;--muted:#5B5E72;--line:#E6E0F5;--teal:#0B7A66;--teal-soft:#E3F6F1;--mint:#5EEAD4;--lilac:#C9BCFA}
+body{width:1920px;height:1080px;overflow:hidden;font-family:Inter,sans-serif;color:#fff;background:#160C3D}
+#bg{position:absolute;inset:0;background:linear-gradient(120deg,#160C3D 0%,#26136A 50%,#3A1C9C 100%)}
+#glow{position:absolute;inset:-20%;background:radial-gradient(ellipse 45% 50% at 50% 50%,rgba(139,92,246,.45),transparent 70%)}
+canvas{position:absolute;inset:0}
+.scene{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;opacity:0}
+.disp{font-family:"Space Grotesk",Inter;font-weight:700;letter-spacing:-.035em;line-height:1.02}
+.h1{font-size:112px}.h2{font-size:84px}.sub{font-size:34px;color:#D8D0F7;font-weight:500;margin-top:22px}
+.grad{background:linear-gradient(90deg,#B9A3FF,#5EEAD4);-webkit-background-clip:text;color:transparent}
+[data-in]{will-change:transform,opacity}
+.card{background:#fff;color:var(--ink);border-radius:32px;box-shadow:0 40px 100px rgba(8,4,30,.5)}
+.chip{display:inline-flex;align-items:center;gap:12px;font-size:28px;font-weight:600;background:rgba(255,255,255,.1);border:1.5px solid rgba(255,255,255,.22);border-radius:999px;padding:14px 26px}
+.chip i{font-style:normal;width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:rgba(94,234,212,.2);color:var(--mint);font-size:18px;font-weight:800}
+/* S1 */
+.strike{position:relative;color:#A99FD6}
+.strike .bar{position:absolute;left:0;top:54%;height:12px;border-radius:6px;background:#FF6B81;width:0}
+/* S2 */
+.logo{width:180px;height:180px;border-radius:48px;background:var(--purple);display:grid;place-items:center;box-shadow:0 30px 80px rgba(91,43,224,.6),inset 0 0 0 2px rgba(255,255,255,.2)}
+.logo img{width:100px}
+/* S3 staircase */
+.stairs{display:flex;align-items:flex-end;gap:26px;height:520px;margin-top:50px}
+.step{width:250px;display:flex;flex-direction:column;justify-content:flex-end;height:100%}
+.col{border-radius:24px 24px 10px 10px;background:linear-gradient(180deg,#7C55EA,#4A22C4);box-shadow:0 20px 50px rgba(8,4,30,.35);position:relative;overflow:hidden;height:0}
+.col .n{position:absolute;top:18px;left:24px;font-family:"Space Grotesk";font-size:64px;font-weight:700}
+.step .nm{font-size:34px;font-weight:700;margin-top:18px}
+.step .ds{font-size:26px;color:var(--lilac);margin-top:8px;line-height:1.3;height:70px}
+/* S4 */
+.ev{display:flex;align-items:center;gap:36px;width:1360px;padding:30px 40px;margin-top:22px}
+.ev .tag{width:300px;font-size:36px;font-weight:800;border-radius:16px;padding:10px 20px;text-align:center}
+.t1{background:#F0F0F4;color:#6E7186}.t2{background:#F1EBFD;color:#6B4FD0}.t3{background:var(--teal-soft);color:var(--teal)}
+.segs{flex:1;display:flex;gap:14px}
+.seg{flex:1;height:30px;border-radius:15px;background:#EEE9F8;position:relative;overflow:hidden}
+.seg.lock{background:repeating-linear-gradient(45deg,#EEE9F8 0 10px,#F8F5FD 10px 20px)}
+.seg b{position:absolute;inset:0;width:0;background:var(--purple);border-radius:15px}
+.ev .max{width:200px;text-align:right;font-size:34px;font-weight:700;color:#8A8DA0}.ev .max b{color:var(--ink);font-size:46px}
+/* S5 */
+.sk{display:flex;justify-content:space-between;align-items:center;gap:40px;width:1200px;padding:34px 44px;font-size:44px;font-weight:700}
+.meter{display:flex;gap:10px;align-items:center}.meter > span{width:56px;height:20px;border-radius:10px;background:#EEE9F8;position:relative;overflow:hidden}
+.meter > span b{position:absolute;inset:0;width:0;background:var(--purple)}
+.lvl{font-size:38px;color:var(--purple);font-weight:800;margin-left:26px;width:260px;text-align:right;white-space:nowrap}
+.sk > span:first-child{white-space:nowrap}
+.q{width:1200px;margin-top:28px;border-radius:28px;background:#FDF1DC;color:#5A3A00;padding:28px 40px;font-size:34px;line-height:1.35}
+.q small{display:block;font-size:22px;font-weight:800;letter-spacing:.14em;color:#9A5B00;margin-bottom:8px}
+.story{width:1200px;margin-top:22px;border-radius:28px;background:rgba(255,255,255,.1);border:2px dashed rgba(201,188,250,.6);padding:26px 40px;font-size:32px;line-height:1.4;color:#EDE8FF}
+.apart{margin-top:26px;font-size:36px;font-weight:800;color:var(--mint)}
+/* S6 */
+.grid{display:grid;grid-template-columns:repeat(3,520px);gap:28px;margin-top:54px}
+.fc{padding:30px 34px;border-radius:28px}
+.fc .f{font-size:24px;font-weight:800;letter-spacing:.14em;color:var(--purple)}
+.fc .p{font-size:34px;font-weight:700;margin-top:12px;line-height:1.2}
+.fc .h{font-size:26px;color:var(--muted);margin-top:10px}
+/* S7 */
+.s7{flex-direction:row;gap:90px}
+.bul{display:flex;flex-direction:column;gap:30px;width:700px}
+.bul div{display:flex;gap:22px;align-items:center;font-size:36px;font-weight:600}
+.bul div i{font-style:normal;flex:none;width:52px;height:52px;border-radius:16px;background:rgba(94,234,212,.18);color:var(--mint);display:grid;place-items:center;font-size:26px;font-weight:800}
+.prof{width:760px;overflow:hidden;position:relative}
+.prof .ban{height:150px;background:linear-gradient(120deg,#1B1046,#5B2BE0)}
+.prof .av{position:absolute;left:44px;top:80px;width:150px;height:150px;border-radius:50%;border:8px solid #fff;background:linear-gradient(135deg,#C4B5FD,#5EEAD4);display:grid;place-items:center;font-size:56px;font-weight:800;color:#2A1673}
+.prof .body{padding:96px 44px 36px}
+.prof .nm{font-size:44px;font-weight:800}.prof .hl{font-size:26px;color:var(--muted);margin-top:4px}
+.prow{display:flex;justify-content:space-between;align-items:center;font-size:28px;font-weight:600;padding:16px 0;border-top:1.5px solid #F0EDF7}
+.prow .l{color:var(--purple);font-weight:800;font-size:22px}
+.tl{display:flex;gap:16px;align-items:center;margin-top:14px;font-size:26px}.tl i{width:14px;height:14px;border-radius:50%;background:var(--purple);flex:none}
+.tl span{color:var(--muted)}
+.share{margin-top:22px;display:flex;align-items:center;gap:14px;font-size:22px;font-weight:700;color:#4320B0;background:#F1EBFD;border-radius:14px;padding:14px 18px}
+.toast{position:absolute;right:-30px;bottom:150px;background:#fff;color:var(--ink);font-size:26px;font-weight:700;border-radius:20px;padding:20px 26px;box-shadow:0 24px 60px rgba(8,4,30,.45);display:flex;gap:14px;align-items:center}
+.toast i{font-style:normal;width:40px;height:40px;border-radius:12px;background:var(--teal-soft);color:var(--teal);display:grid;place-items:center}
+/* S8 */
+.big{font-family:"Space Grotesk";font-size:150px;font-weight:700;letter-spacing:-.04em;line-height:1}
+.srcs{display:flex;gap:20px;margin-top:40px}
+.src{font-size:34px;font-weight:700;background:#fff;color:#2A1673;border-radius:18px;padding:18px 30px;box-shadow:0 16px 40px rgba(8,4,30,.35)}
+.never{margin-top:56px;font-size:46px;font-weight:800}
+/* S9 */
+.btn{margin-top:54px;background:#fff;color:#2A1673;font-weight:800;font-size:44px;border-radius:24px;padding:30px 46px;display:flex;align-items:center;gap:18px;box-shadow:0 24px 60px rgba(0,0,0,.35)}
+.url{margin-top:34px;font-size:36px;font-weight:600;color:var(--lilac)}
+.brand{display:flex;align-items:center;gap:22px;font-family:"Space Grotesk";font-weight:700;font-size:60px}
+.brand .logo{width:96px;height:96px;border-radius:26px}.brand .logo img{width:54px}
+</style></head><body>
+<div id="bg"></div><div id="glow"></div><canvas id="net" width="1920" height="1080"></canvas>
+
+<!-- S1: hook -->
+<div class="scene" data-start="0" data-end="4.8">
+  <div class="disp h1" data-in="0.15">Your résumé gets</div>
+  <div class="disp h1" data-in="0.45">filtered by <span class="strike">keywords.<span class="bar" data-fill="100" data-fin="1.5" data-fdur="0.45"></span></span></div>
+  <div class="disp h1 grad" data-in="2.5" data-anim="pop" style="margin-top:40px">We built the opposite.</div>
+</div>
+
+<!-- S2: brand -->
+<div class="scene" data-start="4.8" data-end="9.6">
+  <div class="logo" data-in="0.05" data-anim="pop"><img src="../talentbridge-mark-white.png" alt=""></div>
+  <div class="disp h1" data-in="0.4" style="margin-top:44px">TalentBridge</div>
+  <div class="sub" data-in="0.75">AI that advocates for people</div>
+  <div style="display:flex;gap:18px;margin-top:60px">
+    <div class="chip" data-in="1.6" data-anim="pop" data-cue="tick"><i>1–5</i>Skill rubric</div>
+    <div class="chip" data-in="1.85" data-anim="pop" data-cue="tick"><i>✓</i>Proof stories</div>
+    <div class="chip" data-in="2.1" data-anim="pop" data-cue="tick"><i>✓</i>Profile pages</div>
+    <div class="chip" data-in="2.35" data-anim="pop" data-cue="tick"><i>✓</i>Every field</div>
+  </div>
+  <div class="sub" data-in="2.9" style="font-size:28px;color:var(--mint);font-weight:700;letter-spacing:.2em">WHAT’S NEW</div>
+</div>
+
+<!-- S3: 1–5 scale -->
+<div class="scene" data-start="9.6" data-end="16.8">
+  <div class="disp h2" data-in="0.1">Every skill rated <span class="grad">1–5.</span></div>
+  <div class="sub" data-in="0.45">A published scale. No black box.</div>
+  <div class="stairs">
+    <div class="step" data-in="1.0" data-cue="tick"><div class="col" data-grow="34" data-gin="1.0"><span class="n">1</span></div><div class="nm">Executes</div><div class="ds">Follows the established way</div></div>
+    <div class="step" data-in="1.45" data-cue="tick"><div class="col" data-grow="50" data-gin="1.45"><span class="n">2</span></div><div class="nm">Maintains</div><div class="ds">Owns and runs existing work</div></div>
+    <div class="step" data-in="1.9" data-cue="tick"><div class="col" data-grow="66" data-gin="1.9"><span class="n">3</span></div><div class="nm">Builds</div><div class="ds">Creates new systems</div></div>
+    <div class="step" data-in="2.35" data-cue="tick"><div class="col" data-grow="82" data-gin="2.35"><span class="n">4</span></div><div class="nm">Improves</div><div class="ds">Measurably makes it better</div></div>
+    <div class="step" data-in="2.8" data-cue="tick"><div class="col" data-grow="100" data-gin="2.8"><span class="n">5</span></div><div class="nm">Leads</div><div class="ds">Sets direction when it matters</div></div>
+  </div>
+</div>
+
+<!-- S4: evidence caps -->
+<div class="scene" data-start="16.8" data-end="22.8">
+  <div class="disp h2" data-in="0.1" style="margin-bottom:30px">Proof sets the <span class="grad">ceiling.</span></div>
+  <div class="card ev" data-in="0.7" data-anim="left"><span class="tag t1">Inferred</span><div class="segs"><span class="seg"><b data-fill="100" data-fin="1.0"></b></span><span class="seg"><b data-fill="100" data-fin="1.15"></b></span><span class="seg lock"></span><span class="seg lock"></span><span class="seg lock"></span></div><span class="max">max <b>2</b></span></div>
+  <div class="card ev" data-in="1.4" data-anim="left"><span class="tag t2">Described</span><div class="segs"><span class="seg"><b data-fill="100" data-fin="1.7"></b></span><span class="seg"><b data-fill="100" data-fin="1.85"></b></span><span class="seg"><b data-fill="100" data-fin="2.0"></b></span><span class="seg lock"></span><span class="seg lock"></span></div><span class="max">max <b>3</b></span></div>
+  <div class="card ev" data-in="2.1" data-anim="left"><span class="tag t3">Demonstrated</span><div class="segs"><span class="seg"><b data-fill="100" data-fin="2.4"></b></span><span class="seg"><b data-fill="100" data-fin="2.55"></b></span><span class="seg"><b data-fill="100" data-fin="2.7"></b></span><span class="seg"><b data-fill="100" data-fin="2.85"></b></span><span class="seg"><b data-fill="100" data-fin="3.0"></b></span></div><span class="max">up to <b>5</b></span></div>
+  <div class="disp" data-in="3.6" data-anim="pop" style="font-size:56px;margin-top:54px">You can’t buzzword your way to a 5.</div>
+</div>
+
+<!-- S5: story raises the rating -->
+<div class="scene" data-start="22.8" data-end="30.0">
+  <div class="disp h2" data-in="0.1" style="margin-bottom:40px">Your story raises <span class="grad">the rating.</span></div>
+  <div class="card sk" data-in="0.5"><span>Root-cause analysis</span><span style="display:flex;align-items:center"><span class="meter"><span><b data-fill="100" data-fin="0.6" data-fdur="0.01"></b></span><span><b data-fill="100" data-fin="0.6" data-fdur="0.01"></b></span><span><b data-fill="100" data-fin="0.6" data-fdur="0.01"></b></span><span><b data-fill="100" data-fin="4.0" data-fdur="0.35"></b></span><span></span></span><span class="lvl"><span data-show-until="4.2">3 · Builds</span><span data-show-from="4.2" style="color:var(--teal)">4 · Improves</span></span></span></div>
+  <div class="q" data-in="1.1"><small>FOLLOW-UP QUESTION</small><span data-type="Tell us about a failure you investigated. How did you find the cause?" data-tin="1.3" data-tdur="1.5"></span></div>
+  <div class="story" data-in="3.0" data-anim="up">“Repeat defects traced to one supplier step. I rebuilt the incoming check, and rework dropped by a third.”</div>
+  <div class="apart" data-in="4.8" data-anim="pop">★ Marked as what sets you apart</div>
+  <span data-cue="chime" data-cue-at="4.2"></span>
+</div>
+
+<!-- S6: every field -->
+<div class="scene" data-start="30.0" data-end="36.0">
+  <div class="disp h2" data-in="0.1">Questions written for <span class="grad">your field.</span></div>
+  <div class="grid">
+    <div class="card fc" data-in="0.8" data-anim="pop" data-cue="tick"><div class="f">HEALTHCARE</div><div class="p">A complex case you worked through</div><div class="h">No patient details, ever.</div></div>
+    <div class="card fc" data-in="1.15" data-anim="pop" data-cue="tick"><div class="f">TECHNOLOGY</div><div class="p">A hard bug or outage you tracked down</div><div class="h">Root cause, and the fix that stuck.</div></div>
+    <div class="card fc" data-in="1.5" data-anim="pop" data-cue="tick"><div class="f">SKILLED TRADES</div><div class="p">A safety hazard you caught</div><div class="h">Before anyone got hurt.</div></div>
+    <div class="card fc" data-in="1.85" data-anim="pop" data-cue="tick"><div class="f">REAL ESTATE &amp; SALES</div><div class="p">A crisis you handled</div><div class="h">A deal or closing going wrong.</div></div>
+    <div class="card fc" data-in="2.2" data-anim="pop" data-cue="tick"><div class="f">EDUCATION</div><div class="p">A student or class you figured out</div><div class="h">What was really in the way.</div></div>
+    <div class="card fc" data-in="2.55" data-anim="pop" data-cue="tick"><div class="f">QUALITY &amp; OPERATIONS</div><div class="p">A failure you investigated</div><div class="h">And how you stopped it recurring.</div></div>
+  </div>
+</div>
+
+<!-- S7: profile pages -->
+<div class="scene s7" data-start="36.0" data-end="42.0">
+  <div>
+    <div class="disp h2" data-in="0.1" style="margin-bottom:46px">Your own<br><span class="grad">profile page.</span></div>
+    <div class="bul">
+      <div data-in="0.9" data-anim="left"><i>✓</i>Your photo and Capability Graph</div>
+      <div data-in="1.3" data-anim="left"><i>✓</i>Experience as a clean timeline</div>
+      <div data-in="1.7" data-anim="left"><i>✓</i>Proof stories employers can read</div>
+      <div data-in="2.1" data-anim="left"><i>✓</i>A public link to share anywhere</div>
+    </div>
+  </div>
+  <div class="card prof" data-in="0.4" data-anim="right">
+    <div class="ban"></div><div class="av">NP</div>
+    <div class="body">
+      <div class="nm">Nia Park</div><div class="hl">Psychiatric Nurse Practitioner</div>
+      <div style="margin-top:20px">
+        <div class="prow"><span>Crisis risk assessment</span><span class="l">4 · IMPROVES</span></div>
+        <div class="prow"><span>Collaborative care design</span><span class="l">3 · BUILDS</span></div>
+      </div>
+      <div class="tl"><i></i><b>PMHNP</b><span>· Riverside Health · 2021–now</span></div>
+      <div class="tl"><i style="background:#B9A3FF"></i><b>Psychiatric RN</b><span>· Mercy Hospital · 2015–2021</span></div>
+      <div class="share" data-in="2.6" data-anim="pop">🔗 talentbridge-jobboard.vercel.app/p/nia-park</div>
+    </div>
+  </div>
+  <div class="toast" data-in="3.4" data-anim="pop" data-cue="tick" style="right:150px;bottom:120px"><i>👁</i>3 employers viewed your profile this week</div>
+</div>
+
+<!-- S8: roles + matching -->
+<div class="scene" data-start="42.0" data-end="46.8">
+  <div class="big" data-in="0.1">Thousands</div>
+  <div class="sub" data-in="0.4" style="font-size:44px;margin-top:10px">of live roles, matched on capability</div>
+  <div class="srcs">
+    <div class="src" data-in="1.0" data-anim="pop" data-cue="tick">Workday</div>
+    <div class="src" data-in="1.25" data-anim="pop" data-cue="tick">SmartRecruiters</div>
+    <div class="src" data-in="1.5" data-anim="pop" data-cue="tick">Workable</div>
+    <div class="src" data-in="1.75" data-anim="pop" data-cue="tick">Local employers</div>
+  </div>
+  <div class="never" data-in="2.6" data-anim="pop">No auto-rejections. <span class="grad">Ever.</span></div>
+</div>
+
+<!-- S9: CTA -->
+<div class="scene" data-start="46.8" data-end="99">
+  <div class="brand" data-in="0.1" data-anim="pop"><div class="logo"><img src="../talentbridge-mark-white.png" alt=""></div>TalentBridge</div>
+  <div class="disp h1" data-in="0.5" style="margin-top:50px">Get seen for what</div>
+  <div class="disp h1 grad" data-in="0.75">you can do.</div>
+  <div class="btn" data-in="1.4" data-anim="pop">Build your free Capability Graph <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#2A1673" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg></div>
+  <div class="url" data-in="1.9">talentbridge-jobboard.vercel.app</div>
+</div>
+
+<script>
+const clamp = (x) => Math.max(0, Math.min(1, x));
+const ease = (x) => 1 - Math.pow(1 - clamp(x), 3);
+const back = (x) => { x = clamp(x); const c = 1.6; return 1 + (c + 1) * Math.pow(x - 1, 3) + c * Math.pow(x - 1, 2); };
+const scenes = [...document.querySelectorAll('.scene')];
+const FADE = 0.45;
+// Background: a slowly drifting capability network.
+const ctx = document.getElementById('net').getContext('2d');
+const pts = Array.from({ length: 34 }, (_, i) => ({ x: (i * 397) % 1920, y: (i * 613) % 1080, ax: 30 + (i * 7) % 40, ay: 20 + (i * 11) % 30, s: 0.15 + (i % 7) * 0.03, p: i * 1.7 }));
+function drawNet(t) {
+  ctx.clearRect(0, 0, 1920, 1080);
+  const P = pts.map((q) => [q.x + Math.sin(t * q.s + q.p) * q.ax, q.y + Math.cos(t * q.s * 0.8 + q.p) * q.ay]);
+  ctx.lineWidth = 1.5;
+  for (let i = 0; i < P.length; i++) for (let j = i + 1; j < P.length; j++) {
+    const d = Math.hypot(P[i][0] - P[j][0], P[i][1] - P[j][1]);
+    if (d < 260) { ctx.strokeStyle = `rgba(167,139,250,${0.16 * (1 - d / 260)})`; ctx.beginPath(); ctx.moveTo(...P[i]); ctx.lineTo(...P[j]); ctx.stroke(); }
+  }
+  for (const [x, y] of P) { ctx.fillStyle = 'rgba(185,163,255,.35)'; ctx.beginPath(); ctx.arc(x, y, 3.2, 0, 7); ctx.fill(); }
+}
+window.TOTAL = 54.8;
+window.render = (t) => {
+  drawNet(t);
+  document.getElementById('glow').style.transform = `translate(${Math.sin(t * 0.2) * 120}px, ${Math.cos(t * 0.15) * 60}px)`;
+  for (const sc of scenes) {
+    const s = +sc.dataset.start, e = +sc.dataset.end, L = t - s;
+    let o = s === 0 ? 1 : ease(L / FADE);
+    if (t > e - FADE) o *= clamp((e - t) / FADE);
+    if (t < s || t > e) o = 0;
+    sc.style.opacity = o;
+    sc.style.transform = `scale(${1 + (t > e - FADE ? (1 - clamp((e - t) / FADE)) * 0.04 : 0)})`;
+    if (!o) continue;
+    for (const el of sc.querySelectorAll('[data-in]')) {
+      const d = +(el.dataset.dur || 0.6), x = (L - +el.dataset.in) / d, a = el.dataset.anim || 'up';
+      const p = ease(x);
+      el.style.opacity = clamp(x * 1.6);
+      if (a === 'up') el.style.transform = `translateY(${(1 - p) * 40}px)`;
+      if (a === 'left') el.style.transform = `translateX(${(1 - p) * -80}px)`;
+      if (a === 'right') el.style.transform = `translateX(${(1 - p) * 120}px)`;
+      if (a === 'pop') el.style.transform = `scale(${0.7 + 0.3 * back(x)})`;
+    }
+    for (const el of sc.querySelectorAll('[data-fill]')) el.style.width = `${+el.dataset.fill * ease((L - +el.dataset.fin) / +(el.dataset.fdur || 0.35))}%`;
+    for (const el of sc.querySelectorAll('[data-grow]')) el.style.height = `${+el.dataset.grow * ease((L - +el.dataset.gin) / 0.6)}%`;
+    for (const el of sc.querySelectorAll('[data-type]')) { const s2 = el.dataset.type; el.textContent = s2.slice(0, Math.round(s2.length * clamp((L - +el.dataset.tin) / +el.dataset.tdur))); }
+    for (const el of sc.querySelectorAll('[data-show-from]')) el.style.display = L >= +el.dataset.showFrom ? '' : 'none';
+    for (const el of sc.querySelectorAll('[data-show-until]')) el.style.display = L < +el.dataset.showUntil ? '' : 'none';
+  }
+};
+// Sound cues, in seconds from the start, for the music script.
+window.cues = () => {
+  const out = { scene_changes: scenes.slice(1).map((s) => +s.dataset.start), ticks: [], chimes: [] };
+  for (const sc of scenes) for (const el of sc.querySelectorAll('[data-cue]')) {
+    const at = +sc.dataset.start + +(el.dataset.cueAt ?? el.dataset.in);
+    (el.dataset.cue === 'chime' ? out.chimes : out.ticks).push(Math.round(at * 1000) / 1000);
+  }
+  return out;
+};
+render(0);
+</script></body></html>
