@@ -12,9 +12,10 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Camera, Copy, Check, Eye, Loader2, Link2, RefreshCw, Trash2 } from "lucide-react";
+import { Camera, Copy, Check, Crop, Eye, Loader2, Link2, RefreshCw, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Avatar } from "@/components/profile/ProfileView";
+import PhotoCropDialog from "@/components/profile/PhotoCropDialog";
 
 const SECTIONS = [
   ["proof_stories", "Proof stories", "You can also hide single stories on the Graph tab."],
@@ -23,44 +24,31 @@ const SECTIONS = [
   ["links", "Links", "LinkedIn, GitHub, portfolio"],
 ];
 
-// Crops the chosen image to a centered square and shrinks it to 512px, so
-// uploads are small and every photo looks the same.
-async function squarePhoto(file) {
-  if (!/^image\/(jpeg|png|webp)$/.test(file.type)) throw new Error("Choose a JPG, PNG or WebP image.");
-  if (file.size > 20 * 1024 * 1024) throw new Error("That image is over 20 MB. Choose a smaller one.");
-  const url = URL.createObjectURL(file);
-  try {
-    const img = await new Promise((resolve, reject) => {
-      const i = new Image();
-      i.onload = () => resolve(i);
-      i.onerror = () => reject(new Error("That image couldn’t be read."));
-      i.src = url;
-    });
-    const side = Math.min(img.naturalWidth, img.naturalHeight);
-    const canvas = document.createElement("canvas");
-    canvas.width = 512;
-    canvas.height = 512;
-    canvas.getContext("2d").drawImage(img, (img.naturalWidth - side) / 2, (img.naturalHeight - side) / 2, side, side, 0, 0, 512, 512);
-    return canvas.toDataURL("image/jpeg", 0.86);
-  } finally {
-    URL.revokeObjectURL(url);
-  }
-}
-
 // On the seeker dashboard: photo, profile page preview, who viewed it,
 // what employers see, and the public share link.
 export default function ProfileSharingCard() {
   const queryClient = useQueryClient();
   const fileRef = useRef(null);
   const [copied, setCopied] = useState(false);
+  const [cropSrc, setCropSrc] = useState(null); // photo being adjusted
   const { data: me, isLoading, error } = useQuery({ queryKey: ["myProfilePage"], queryFn: () => base44.profiles.me(), retry: false });
   const refresh = (next) => {
     if (next) queryClient.setQueryData(["myProfilePage"], (old) => ({ ...(old || {}), ...next }));
     queryClient.invalidateQueries({ queryKey: ["myProfilePage"] });
   };
+  const closeCrop = () => {
+    if (cropSrc?.startsWith("blob:")) URL.revokeObjectURL(cropSrc);
+    setCropSrc(null);
+  };
+  // A chosen file opens the crop window first; nothing uploads until Save.
+  const pickFile = (file) => {
+    if (!/^image\/(jpeg|png|webp)$/.test(file.type)) return toast.error("Choose a JPG, PNG or WebP image.");
+    if (file.size > 20 * 1024 * 1024) return toast.error("That image is over 20 MB. Choose a smaller one.");
+    setCropSrc(URL.createObjectURL(file));
+  };
   const photo = useMutation({
-    mutationFn: async (file) => base44.profiles.setPhoto(await squarePhoto(file)),
-    onSuccess: (p) => { refresh(p); toast.success("Photo updated."); },
+    mutationFn: (dataUrl) => base44.profiles.setPhoto(dataUrl),
+    onSuccess: (p) => { refresh(p); closeCrop(); toast.success("Photo updated."); },
     onError: (e) => toast.error(e?.message || "Couldn’t upload the photo."),
   });
   const removePhoto = useMutation({
@@ -94,6 +82,7 @@ export default function ProfileSharingCard() {
 
   return (
     <Card className="p-4 sm:p-6 space-y-5" id="profile-page">
+      <PhotoCropDialog src={cropSrc} open={!!cropSrc} onOpenChange={(o) => { if (!o) closeCrop(); }} onSave={(dataUrl) => photo.mutate(dataUrl)} saving={photo.isPending} />
       <div className="flex flex-col sm:flex-row sm:items-center gap-4">
         <div className="relative w-fit">
           <Avatar name={me.full_name} src={me.photo_url} size="h-20 w-20 text-2xl" />
@@ -104,10 +93,15 @@ export default function ProfileSharingCard() {
           <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">Your Capability Graph, proof stories and experience on one page for employers. Add a photo so they recognize you.</p>
           <div className="flex flex-wrap gap-2 mt-2.5">
             <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" aria-label="Upload a profile photo"
-              onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f) photo.mutate(f); }} />
+              onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f) pickFile(f); }} />
             <Button type="button" size="sm" variant="outline" className="gap-1.5" onClick={() => fileRef.current?.click()} disabled={photo.isPending}>
               <Camera className="w-4 h-4" /> {me.photo_url ? "Change photo" : "Add photo"}
             </Button>
+            {me.photo_url && (
+              <Button type="button" size="sm" variant="outline" className="gap-1.5" onClick={() => setCropSrc(me.photo_url)} disabled={photo.isPending}>
+                <Crop className="w-4 h-4" /> Adjust
+              </Button>
+            )}
             {me.photo_url && (
               <Button type="button" size="sm" variant="ghost" className="gap-1.5 text-muted-foreground" onClick={() => removePhoto.mutate()} disabled={removePhoto.isPending}>
                 <Trash2 className="w-4 h-4" /> Remove

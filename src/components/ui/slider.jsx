@@ -3,7 +3,9 @@ import * as SliderPrimitive from "@radix-ui/react-slider"
 
 import { cn } from "@/lib/utils"
 
-const Slider = React.forwardRef(({ className, ...props }, ref) => (
+// aria-label / aria-valuetext go on the thumb, the element screen readers
+// announce as the slider.
+const Slider = React.forwardRef(({ className, "aria-label": ariaLabel, "aria-valuetext": ariaValueText, ...props }, ref) => (
   <SliderPrimitive.Root
     ref={ref}
     className={cn("relative flex w-full touch-none select-none items-center", className)}
@@ -13,6 +15,8 @@ const Slider = React.forwardRef(({ className, ...props }, ref) => (
       <SliderPrimitive.Range className="absolute h-full bg-primary" />
     </SliderPrimitive.Track>
     <SliderPrimitive.Thumb
+      aria-label={ariaLabel}
+      aria-valuetext={ariaValueText}
       className="block h-4 w-4 rounded-full border border-primary/50 bg-background shadow transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50" />
   </SliderPrimitive.Root>
 ))
