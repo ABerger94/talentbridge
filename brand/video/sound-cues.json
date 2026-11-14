@@ -1,0 +1,103 @@
+{
+  "video": {
+    "file": "talentbridge-whats-new.mp4",
+    "duration_s": 54.8,
+    "fps": 30,
+    "width": 1920,
+    "height": 1080,
+    "audio": "none"
+  },
+  "scenes": [
+    {
+      "scene": 1,
+      "start": 0,
+      "end": 4.8,
+      "on_screen_text": "Your résumé gets / filtered by keywords. / We built the opposite."
+    },
+    {
+      "scene": 2,
+      "start": 4.8,
+      "end": 9.6,
+      "on_screen_text": "TalentBridge / AI that advocates for people / 1–5 / Skill rubric / ✓ / Proof stories / ✓ / Profile pages / ✓ / Every field / WHAT’S NEW"
+    },
+    {
+      "scene": 3,
+      "start": 9.6,
+      "end": 16.8,
+      "on_screen_text": "Every skill rated 1–5. / A published scale. No black box. / 1 / Executes / Follows the established way / 2 / Maintains / Owns and runs existing work / 3 / Builds / Creates new systems / 4 / Improves / Measurably makes it better / 5 / Leads / Sets direction when it matters"
+    },
+    {
+      "scene": 4,
+      "start": 16.8,
+      "end": 22.8,
+      "on_screen_text": "Proof sets the ceiling. / Inferred / max 2 / Described / max 3 / Demonstrated / up to 5 / You can’t buzzword your way to a 5."
+    },
+    {
+      "scene": 5,
+      "start": 22.8,
+      "end": 30,
+      "on_screen_text": "Your story raises the rating. / Root-cause analysis / 4 · Improves / FOLLOW-UP QUESTION / Tell us about a failure you investigated. How did you find the cause? / “Repeat defects traced to one supplier step. I rebuilt the incoming check, and rework dropped by a third.” / ★ Marked as what sets you apart"
+    },
+    {
+      "scene": 6,
+      "start": 30,
+      "end": 36,
+      "on_screen_text": "Questions written for your field. / HEALTHCARE / A complex case you worked through / No patient details, ever. / TECHNOLOGY / A hard bug or outage you tracked down / Root cause, and the fix that stuck. / SKILLED TRADES / A safety hazard you caught / Before anyone got hurt. / REAL ESTATE & SALES / A crisis you handled / A deal or closing going wrong. / EDUCATION / A student or class you figured out / What was really in the way. / QUALITY & OPERATIONS / A failure you investigated / And how you stopped it recurring."
+    },
+    {
+      "scene": 7,
+      "start": 36,
+      "end": 42,
+      "on_screen_text": "Your own / profile page. / ✓ / Your photo and Capability Graph / ✓ / Experience as a clean timeline / ✓ / Proof stories employers can read / ✓ / A public link to share anywhere / NP / Nia Park / Psychiatric Nurse Practitioner / Crisis risk assessment / 4 · IMPROVES / Collaborative care design / 3 · BUILDS / PMHNP / · Riverside Health · 2021–now / Psychiatric RN / · Mercy Hospital · 2015–2021 / 🔗 talentbridge-jobboard.vercel.app/p/nia-park / 👁 / 3 employers viewed your profile this week"
+    },
+    {
+      "scene": 8,
+      "start": 42,
+      "end": 46.8,
+      "on_screen_text": "Thousands / of live roles, matched on capability / Workday / SmartRecruiters / Workable / Local employers / No auto-rejections. Ever."
+    },
+    {
+      "scene": 9,
+      "start": 46.8,
+      "end": 54.8,
+      "on_screen_text": "TalentBridge / Get seen for what / you can do. / Build your free Capability Graph / talentbridge-jobboard.vercel.app"
+    }
+  ],
+  "sfx": {
+    "scene_transition_s": [
+      4.8,
+      9.6,
+      16.8,
+      22.8,
+      30,
+      36,
+      42,
+      46.8
+    ],
+    "pop_in_s": [
+      6.4,
+      6.65,
+      6.9,
+      7.15,
+      10.6,
+      11.05,
+      11.5,
+      11.95,
+      12.4,
+      30.8,
+      31.15,
+      31.5,
+      31.85,
+      32.2,
+      32.55,
+      39.4,
+      43,
+      43.25,
+      43.5,
+      43.75
+    ],
+    "level_up_s": [
+      27
+    ]
+  }
+}
