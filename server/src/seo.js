@@ -191,8 +191,36 @@ ${pages.map((p) => `  <url><loc>${esc(p.loc)}</loc>${p.lastmod ? `<lastmod>${p.l
   res.type('application/xml').send(xml);
 }
 
+// Public profile links (/p/<slug>): a real title, description and photo for
+// link previews (LinkedIn, Slack, iMessage), but never indexed.
+async function profilePage(req, res, next) {
+  try {
+    const html = await template(req);
+    const { profileBySlug, presentProfile } = require('./profiles');
+    const p = profileBySlug(req.params.slug);
+    res.setHeader('X-Robots-Tag', 'noindex, nofollow');
+    if (!p) {
+      res.status(404).setHeader('Cache-Control', 'public, max-age=0, s-maxage=60');
+      return res.type('html').send(render(html, '<meta name="robots" content="noindex, nofollow" />'));
+    }
+    const view = presentProfile(p, 'public');
+    const url = appUrl(`/p/${encodeURIComponent(req.params.slug)}`);
+    const title = `${view.full_name}${view.headline ? ` · ${view.headline}` : ''} | TalentBridge`;
+    const description = oneLine(view.capability_graph?.capability_headline || view.bio || `${view.full_name}’s Capability Graph on TalentBridge.`, 155);
+    const image = view.photo_url ? appUrl(view.photo_url) : appUrl('/og-image.png');
+    const head = headFor({ title, description, url, image, ld: null }).replace('content="website"', 'content="profile"')
+      + '\n    <meta name="robots" content="noindex, nofollow" />';
+    res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=120');
+    res.type('html').send(render(html, head));
+  } catch (e) {
+    require('./monitor').captureServerError(e, req);
+    next();
+  }
+}
+
 function registerSeoRoutes(app) {
   app.get('/jobs/:id', jobPage);
+  app.get('/p/:slug', profilePage);
   app.get('/sitemap.xml', sitemap);
 }
 

@@ -24,6 +24,8 @@ import Messages from './pages/Messages';
 import CompanyProfile from './pages/CompanyProfile';
 import Admin from './pages/Admin';
 import Settings from './pages/Settings';
+import SeekerProfilePage from './pages/SeekerProfilePage';
+import PublicProfilePage from './pages/PublicProfilePage';
 
 // Wraps protected routes — redirects to login if not authenticated, optionally checks role
 const ProtectedRoute = ({ children, allowedRoles }) => {
@@ -79,6 +81,7 @@ const AuthenticatedApp = () => {
         <Route path="/jobs/:id" element={<JobDetail />} />
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/terms" element={<Terms />} />
+        <Route path="/p/:slug" element={<PublicProfilePage />} />
 
         {/* Protected routes — login + role required */}
         <Route path="/post-job" element={<ProtectedRoute allowedRoles={['employer', 'admin']}><PostJob /></ProtectedRoute>} />
@@ -86,6 +89,7 @@ const AuthenticatedApp = () => {
         <Route path="/employer" element={<ProtectedRoute allowedRoles={['employer', 'admin']}><EmployerDashboard /></ProtectedRoute>} />
         <Route path="/messages" element={<ProtectedRoute allowedRoles={['employer', 'job_seeker', 'admin']}><Messages /></ProtectedRoute>} />
         <Route path="/company" element={<ProtectedRoute allowedRoles={['employer', 'admin']}><CompanyProfile /></ProtectedRoute>} />
+        <Route path="/seekers/:id" element={<ProtectedRoute allowedRoles={['employer', 'job_seeker', 'admin']}><SeekerProfilePage /></ProtectedRoute>} />
         <Route path="/settings" element={<ProtectedRoute allowedRoles={['employer', 'job_seeker', 'admin']}><Settings /></ProtectedRoute>} />
         <Route path="/admin" element={<ProtectedRoute allowedRoles={['admin']}><Admin /></ProtectedRoute>} />
       </Route>

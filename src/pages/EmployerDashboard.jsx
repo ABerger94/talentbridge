@@ -425,7 +425,10 @@ export default function EmployerDashboard() {
                 <Card key={seeker.id} className="p-5 space-y-3">
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-sm">{seeker.full_name}</h3>
+                      <h3 className="font-semibold text-sm flex flex-wrap items-baseline gap-x-2">
+                        <Link to={`/seekers/${seeker.id}`} className="hover:text-primary hover:underline">{seeker.full_name}</Link>
+                        <Link to={`/seekers/${seeker.id}`} className="text-xs font-medium text-primary hover:underline">View profile</Link>
+                      </h3>
                       {seeker.headline && <p className="text-sm text-foreground/80 mt-0.5">{seeker.headline}</p>}
                       {seeker.bio && <p className="text-xs text-muted-foreground mt-1">{seeker.bio.substring(0, 140)}{seeker.bio.length > 140 ? "…" : ""}</p>}
                       <div className="flex flex-wrap gap-1.5 mt-2">

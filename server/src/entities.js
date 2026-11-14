@@ -329,7 +329,13 @@ function normalizeStories(list) {
     .map((x) => {
       const prompt_id = STORY_IDS.includes(x?.prompt_id) ? x.prompt_id : 'built';
       const question = prompt_id === 'followup' ? text(x?.question, 300) : '';
-      return { prompt_id: prompt_id === 'followup' && !question ? 'built' : prompt_id, ...(question ? { question } : {}), situation: text(x?.situation), action: text(x?.action), result: text(x?.result) };
+      return {
+        prompt_id: prompt_id === 'followup' && !question ? 'built' : prompt_id,
+        ...(question ? { question } : {}),
+        situation: text(x?.situation), action: text(x?.action), result: text(x?.result),
+        // Hidden from the profile page (still used for the seeker's own graph).
+        ...(x?.private ? { private: true } : {}),
+      };
     })
     .filter((x) => x.action || x.result);
 }
@@ -401,6 +407,8 @@ function registerEntityRoutes(app) {
       // New profiles take the account's name (e.g. from Google) unless given one.
       body.full_name = String(body.full_name || '').trim().slice(0, 120) || userFullName(req.user.id);
     }
+    // Sharing settings and the photo are set by profiles.js only.
+    if (entity === 'SeekerProfile') { delete body.profile_sharing; delete body.photo_file; }
     if (entity === 'SeekerProfile' && 'proof_stories' in body) body.proof_stories = normalizeStories(body.proof_stories);
     if (entity === 'SeekerProfile' && 'professional_links' in body) {
       try {
@@ -490,6 +498,7 @@ function registerEntityRoutes(app) {
       changes.full_name = String(changes.full_name || '').trim().slice(0, 120);
       if (!changes.full_name) return res.status(400).json({ error: 'Your full name is required' });
     }
+    if (entity === 'SeekerProfile') { delete changes.profile_sharing; delete changes.photo_file; }
     if (entity === 'SeekerProfile' && 'proof_stories' in changes) changes.proof_stories = normalizeStories(changes.proof_stories);
     if (entity === 'SeekerProfile' && 'professional_links' in changes) {
       try {

@@ -25,6 +25,10 @@
     },
     {
       "destination": "/api",
+      "source": "/p/:slug"
+    },
+    {
+      "destination": "/api",
       "source": "/sitemap.xml"
     },
     {

@@ -9,5 +9,5 @@ export const LEGAL = {
   governingState: "Maryland",
   minimumAge: 18,
   // Bump whenever either document changes materially.
-  effectiveDate: "November 12, 2026",
+  effectiveDate: "November 14, 2026",
 };

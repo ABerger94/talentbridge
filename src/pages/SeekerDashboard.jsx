@@ -23,6 +23,7 @@ import { normalizePercent } from "@/lib/scales";
 import { normalizeGraph } from "@/lib/capabilityRubric";
 import CapabilityGraphView from "@/components/seeker/CapabilityGraphView";
 import ProofStories from "@/components/seeker/ProofStories";
+import ProfileSharingCard from "@/components/profile/ProfileSharingCard";
 import ResumeUploader from "@/components/resume/ResumeUploader";
 import ResumeCritique from "@/components/resume/ResumeCritique";
 import ApplicationCard from "@/components/seeker/ApplicationCard";
@@ -371,6 +372,7 @@ Return the top matches with specific reasoning.`,
 
         {/* Profile Tab */}
         <TabsContent value="profile" className="space-y-6">
+          <ProfileSharingCard />
 
 
           {/* Visibility to employers */}
