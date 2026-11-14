@@ -67,6 +67,10 @@ npm run dev
 The repo includes Vercel SPA rewrites plus static route fallbacks for direct links
 like `/jobs`, `/post-job`, `/dashboard`, `/employer`, and `/onboarding`.
 
+## Admin API (for AI agents)
+
+Admins can create API keys (Admin → API keys) so an AI agent or script can manage the site, with only the permissions each key is given. See [docs/ADMIN_API.md](docs/ADMIN_API.md). The full description of what a key can do is served at `/api/admin/openapi.json`.
+
 ## Project structure
 
 ```

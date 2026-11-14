@@ -132,6 +132,9 @@ function revokeSessions(userId) {
 }
 
 function authRequired(req, res, next) {
+  // Already signed in by an admin API key (apikeys.js checked it and its
+  // permissions before any route ran).
+  if (req.apiKey) return next();
   const header = req.headers.authorization || '';
   const token = header.startsWith('Bearer ') ? header.slice(7) : null;
   if (!token) return res.status(401).json({ error: 'Authentication required' });
