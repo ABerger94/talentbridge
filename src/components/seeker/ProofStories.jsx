@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Trash2, Check, Loader2, Pencil } from "lucide-react";
+import { Plus, Trash2, Check, Loader2, Pencil, Eye, EyeOff } from "lucide-react";
 import { STORY_PROMPTS } from "@/lib/capabilityRubric";
 
 export const MAX_STORIES = 8;
@@ -91,6 +91,12 @@ export default function ProofStories({ stories = [], onSave, saving, request }) 
             {s.result && <p className="text-xs text-muted-foreground mt-1 line-clamp-1">Result: {s.result}</p>}
           </div>
           <div className="flex shrink-0">
+            <Button type="button" variant="ghost" size="icon" className={`h-8 w-8 ${s.private ? "text-amber-700" : "text-muted-foreground"}`}
+              aria-label={s.private ? "Show this story on your profile page" : "Hide this story from your profile page"}
+              title={s.private ? "Hidden from your profile page (still used for your graph)" : "Shown on your profile page"}
+              onClick={() => onSave(stories.map((x, j) => (j === i ? { ...x, private: !x.private } : x)))} disabled={saving}>
+              {s.private ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+            </Button>
             <Button type="button" variant="ghost" size="icon" className="h-8 w-8" aria-label="Edit story" onClick={() => edit(i)}><Pencil className="w-3.5 h-3.5" /></Button>
             <Button type="button" variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" aria-label="Delete story" onClick={() => remove(i)} disabled={saving}><Trash2 className="w-3.5 h-3.5" /></Button>
           </div>

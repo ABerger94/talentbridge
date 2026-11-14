@@ -73,6 +73,7 @@ registerEmployerRoutes(app);
 registerSignupRoutes(app);
 registerSystemRoutes(app);
 require('./adminapi').registerAdminApiRoutes(app);
+require('./profiles').registerProfileRoutes(app);
 registerAccountRoutes(app);
 registerAlertRoutes(app);
 registerJobStatsRoutes(app);

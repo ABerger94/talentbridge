@@ -355,4 +355,27 @@ const admin = {
   },
 };
 
-export const base44 = { auth, account, alerts, jobs, entities, functions, integrations, messages, employer, admin };
+// Seeker profile pages (server/src/profiles.js).
+const profiles = {
+  async me() {
+    return (await request('/api/profiles/me')).data;
+  },
+  async get(id) {
+    return (await request(`/api/profiles/${encodeURIComponent(id)}`)).data;
+  },
+  // Public share link: works signed out.
+  async getPublic(slug) {
+    return (await request(`/api/public/profiles/${encodeURIComponent(slug)}`)).data;
+  },
+  async updateSharing(body) {
+    return (await request('/api/profiles/me/sharing', { method: 'PUT', body })).data;
+  },
+  async setPhoto(dataUrl) {
+    return (await request('/api/profiles/me/photo', { method: 'POST', body: { data_url: dataUrl } })).data;
+  },
+  async removePhoto() {
+    return (await request('/api/profiles/me/photo', { method: 'POST', body: { remove: true } })).data;
+  },
+};
+
+export const base44 = { auth, account, alerts, jobs, entities, functions, integrations, messages, employer, admin, profiles };

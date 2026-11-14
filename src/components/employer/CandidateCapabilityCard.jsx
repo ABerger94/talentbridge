@@ -131,7 +131,11 @@ export default function CandidateCapabilityCard({ application, job, onStatusChan
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h4 className="font-semibold text-sm">{application.applicant_name || "Anonymous"}</h4>
+              <h4 className="font-semibold text-sm">
+                {application.seeker_profile_id ? (
+                  <Link to={`/seekers/${application.seeker_profile_id}`} className="hover:text-primary hover:underline" title="View full profile">{application.applicant_name || "Anonymous"}</Link>
+                ) : (application.applicant_name || "Anonymous")}
+              </h4>
               {assessment?.match_score && (
                 <Badge className="bg-primary/10 text-primary border-primary/20 text-xs gap-1">
                   <Zap className="w-2.5 h-2.5" /> {assessment.match_score}% capability match

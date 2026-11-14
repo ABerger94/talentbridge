@@ -122,6 +122,10 @@ const INLINE_TYPES = {
   '.txt': 'text/plain; charset=utf-8',
   '.doc': 'application/msword',
   '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  // Profile photos (profiles.js checks they really are images).
+  '.jpg': 'image/jpeg',
+  '.png': 'image/png',
+  '.webp': 'image/webp',
 };
 
 function nameFromUrl(fileUrl) {
@@ -300,4 +304,4 @@ async function migrateToBucket(batch = 20) {
   return { moved, remaining };
 }
 
-module.exports = { deleteFile, migrateToBucket, MAX_UPLOAD_MB, registerFileRoutes, readUploadText, canAccessFile, canAttachFile, signFileUrl, canonicalFileUrl };
+module.exports = { loadFile, deleteFile, migrateToBucket, MAX_UPLOAD_MB, registerFileRoutes, readUploadText, canAccessFile, canAttachFile, signFileUrl, canonicalFileUrl };
