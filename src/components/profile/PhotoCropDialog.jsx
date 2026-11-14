@@ -10,11 +10,35 @@ const MAX_ZOOM = 4;
 
 const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
 
+// The average color around a photo's edges (usually its backdrop), used to
+// fill the square when the photo is zoomed out to fit.
+function edgeColor(el) {
+  try {
+    const c = document.createElement("canvas");
+    c.width = 24;
+    c.height = 24;
+    const ctx = c.getContext("2d");
+    ctx.drawImage(el, 0, 0, 24, 24);
+    const d = ctx.getImageData(0, 0, 24, 24).data;
+    let r = 0; let g = 0; let b = 0; let n = 0;
+    for (let y = 0; y < 24; y++) {
+      for (let x = 0; x < 24; x++) {
+        if (x > 1 && x < 22 && y > 1 && y < 22) continue; // edges only
+        const i = (y * 24 + x) * 4;
+        r += d[i]; g += d[i + 1]; b += d[i + 2]; n += 1;
+      }
+    }
+    return `rgb(${Math.round(r / n)}, ${Math.round(g / n)}, ${Math.round(b / n)})`;
+  } catch {
+    return "#ffffff";
+  }
+}
+
 // Crop a photo to a square: drag to position, zoom with the slider, mouse
 // wheel, pinch, or keyboard. The round guide matches how the photo shows on
 // the profile. onSave receives a 512x512 JPEG data URL.
 export default function PhotoCropDialog({ src, open, onOpenChange, onSave, saving }) {
-  const [img, setImg] = useState(null); // { el, w, h }
+  const [img, setImg] = useState(null); // { el, w, h, fill }
   const [zoom, setZoom] = useState(1);
   const [pos, setPos] = useState({ x: 0, y: 0 }); // image top-left inside the crop area
   const [error, setError] = useState("");
@@ -22,14 +46,28 @@ export default function PhotoCropDialog({ src, open, onOpenChange, onSave, savin
   const pointers = useRef(new Map());
   const pinch = useRef(null);
 
+  // Zoom 1 = the photo just covers the square. Below 1 the whole photo fits
+  // (zoomed out), with the leftover space filled in its background color.
   const baseScale = img ? VIEW / Math.min(img.w, img.h) : 1;
+  const minZoom = img ? Math.min(img.w, img.h) / Math.max(img.w, img.h) : 1;
   const scale = baseScale * zoom;
 
-  // Keep the image covering the whole crop area.
-  const clampPos = useCallback((p, s) => (img ? {
-    x: clamp(p.x, VIEW - img.w * s, 0),
-    y: clamp(p.y, VIEW - img.h * s, 0),
-  } : p), [img]);
+  // Along each side: if the photo is bigger than the square, it must cover it
+  // (no gaps); if smaller (zoomed out), it stays centered.
+  const clampPos = useCallback((p, s) => {
+    if (!img) return p;
+    const axis = (v, size) => (size >= VIEW ? clamp(v, VIEW - size, 0) : (VIEW - size) / 2);
+    return { x: axis(p.x, img.w * s), y: axis(p.y, img.h * s) };
+  }, [img]);
+
+  // Where a photo starts: centered, except tall (portrait) photos start near
+  // the top, where the face almost always is, so heads aren't cut off.
+  const startPos = (w, h) => {
+    const s = VIEW / Math.min(w, h);
+    const x = (VIEW - w * s) / 2;
+    const y = h > w * 1.1 ? -Math.min(h * s - VIEW, h * s * 0.05) : (VIEW - h * s) / 2;
+    return { x, y };
+  };
 
   useEffect(() => {
     if (!open || !src) return undefined;
@@ -39,10 +77,9 @@ export default function PhotoCropDialog({ src, open, onOpenChange, onSave, savin
     el.onload = () => {
       const w = el.naturalWidth;
       const h = el.naturalHeight;
-      const s = VIEW / Math.min(w, h);
-      setImg({ el, w, h });
+      setImg({ el, w, h, fill: edgeColor(el) });
       setZoom(1);
-      setPos({ x: (VIEW - w * s) / 2, y: (VIEW - h * s) / 2 });
+      setPos(startPos(w, h));
     };
     el.onerror = () => setError("That image couldn’t be read. Try a JPG or PNG.");
     el.src = src;
@@ -60,7 +97,7 @@ export default function PhotoCropDialog({ src, open, onOpenChange, onSave, savin
   // point of the photo under the same spot.
   const zoomTo = useCallback((next, cx = VIEW / 2, cy = VIEW / 2) => {
     if (!img) return;
-    const z = clamp(next, 1, MAX_ZOOM);
+    const z = clamp(next, minZoom, MAX_ZOOM);
     const prevS = baseScale * zoomRef.current;
     const nextS = baseScale * z;
     const p = posRef.current;
@@ -71,7 +108,7 @@ export default function PhotoCropDialog({ src, open, onOpenChange, onSave, savin
     posRef.current = np;
     setZoom(z);
     setPos(np);
-  }, [img, baseScale, clampPos]);
+  }, [img, baseScale, minZoom, clampPos]);
 
   // Mouse wheel zoom (a non-passive listener, so the page doesn't scroll).
   useEffect(() => {
@@ -123,7 +160,7 @@ export default function PhotoCropDialog({ src, open, onOpenChange, onSave, savin
   const reset = () => {
     if (!img) return;
     setZoom(1);
-    setPos({ x: (VIEW - img.w * baseScale) / 2, y: (VIEW - img.h * baseScale) / 2 });
+    setPos(startPos(img.w, img.h));
   };
 
   const save = () => {
@@ -133,8 +170,12 @@ export default function PhotoCropDialog({ src, open, onOpenChange, onSave, savin
     canvas.height = OUT;
     const ctx = canvas.getContext("2d");
     ctx.imageSmoothingQuality = "high";
-    // The part of the original image inside the crop area.
-    ctx.drawImage(img.el, -pos.x / scale, -pos.y / scale, VIEW / scale, VIEW / scale, 0, 0, OUT, OUT);
+    // Exactly what's in the crop area: the backdrop color (visible only when
+    // zoomed out), then the photo at its on-screen position and size.
+    const k = OUT / VIEW;
+    ctx.fillStyle = img.fill;
+    ctx.fillRect(0, 0, OUT, OUT);
+    ctx.drawImage(img.el, pos.x * k, pos.y * k, img.w * scale * k, img.h * scale * k);
     onSave(canvas.toDataURL("image/jpeg", 0.88));
   };
 
@@ -143,7 +184,7 @@ export default function PhotoCropDialog({ src, open, onOpenChange, onSave, savin
       <DialogContent className="max-w-sm">
         <DialogHeader>
           <DialogTitle>Adjust your photo</DialogTitle>
-          <DialogDescription>Drag to position it, and zoom so your face fills the circle.</DialogDescription>
+          <DialogDescription>Drag the photo to position it, and zoom in or out so your head and shoulders fit the circle.</DialogDescription>
         </DialogHeader>
         <div className="flex flex-col items-center gap-4">
           <div
@@ -157,7 +198,7 @@ export default function PhotoCropDialog({ src, open, onOpenChange, onSave, savin
             onPointerCancel={onPointerUp}
             onKeyDown={onKeyDown}
             className="relative overflow-hidden rounded-xl bg-secondary cursor-grab active:cursor-grabbing select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary touch-none"
-            style={{ width: VIEW, height: VIEW }}
+            style={{ width: VIEW, height: VIEW, backgroundColor: img?.fill }}
             data-testid="crop-area"
           >
             {img ? (
@@ -179,7 +220,7 @@ export default function PhotoCropDialog({ src, open, onOpenChange, onSave, savin
           </div>
           <div className="flex items-center gap-3 w-full max-w-[280px]">
             <button type="button" className="text-muted-foreground hover:text-foreground" aria-label="Zoom out" onClick={() => zoomTo(zoom - 0.2)} disabled={!img}><ZoomOut className="w-4 h-4" /></button>
-            <Slider aria-label="Zoom" aria-valuetext={`${Math.round(zoom * 100)}%`} min={1} max={MAX_ZOOM} step={0.01} value={[zoom]} onValueChange={([z]) => zoomTo(z)} disabled={!img} className="flex-1" />
+            <Slider aria-label="Zoom" aria-valuetext={`${Math.round(zoom * 100)}%`} min={minZoom} max={MAX_ZOOM} step={0.01} value={[zoom]} onValueChange={([z]) => zoomTo(z)} disabled={!img} className="flex-1" />
             <button type="button" className="text-muted-foreground hover:text-foreground" aria-label="Zoom in" onClick={() => zoomTo(zoom + 0.2)} disabled={!img}><ZoomIn className="w-4 h-4" /></button>
           </div>
         </div>
