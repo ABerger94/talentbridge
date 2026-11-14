@@ -48,6 +48,10 @@ app.use((req, res, next) => {
   next();
 });
 
+// Admin API keys (AI agents, scripts): checked before any route runs, and
+// only ever let through to the admin API. See apikeys.js.
+app.use(require('./apikeys').apiKeyMiddleware);
+
 app.get('/api/health', (req, res) => {
   res.json({
     ok: true,
@@ -68,6 +72,7 @@ registerMessageRoutes(app);
 registerEmployerRoutes(app);
 registerSignupRoutes(app);
 registerSystemRoutes(app);
+require('./adminapi').registerAdminApiRoutes(app);
 registerAccountRoutes(app);
 registerAlertRoutes(app);
 registerJobStatsRoutes(app);

@@ -298,6 +298,16 @@ const employer = {
 
 // Admin-only review endpoints.
 const admin = {
+  // Admin API keys (for AI agents and scripts); see server/src/apikeys.js.
+  async apiKeys() {
+    return (await request('/api/admin/api-keys')).data;
+  },
+  async createApiKey(body) {
+    return (await request('/api/admin/api-keys', { method: 'POST', body })).data;
+  },
+  async revokeApiKey(id) {
+    return (await request(`/api/admin/api-keys/${id}/revoke`, { method: 'POST' })).data;
+  },
   async employers(status = 'pending') {
     return (await request(`/api/admin/employers?status=${encodeURIComponent(status)}`)).data;
   },
