@@ -218,6 +218,24 @@ function registerProfileRoutes(app) {
     if (!p) throw fail(404, 'This profile link isn’t active.');
     return presentProfile(p, 'public');
   }));
+  // The link-preview image (1200x630) for a public profile link.
+  app.get('/api/public/profiles/:slug/card.png', async (req, res) => {
+    const p = profileBySlug(req.params.slug);
+    if (!p) return res.status(404).end();
+    try {
+      const { renderCard, cardData } = require('./sharecard');
+      const png = await renderCard(cardData({ ...presentProfile(p, 'public'), photo_file: p.photo_file }));
+      res.setHeader('Content-Type', 'image/png');
+      // The URL carries a version, so a changed profile gets a new one.
+      res.setHeader('Cache-Control', 'public, max-age=86400, s-maxage=86400');
+      res.setHeader('X-Content-Type-Options', 'nosniff');
+      res.send(png);
+    } catch (e) {
+      // Never leave a preview blank: fall back to the photo or the site image.
+      require('./monitor').captureServerError(e, req);
+      res.redirect(302, p.photo_file ? `/api/public/profiles/${encodeURIComponent(req.params.slug)}/photo` : '/og-image.png');
+    }
+  });
   app.get('/api/public/profiles/:slug/photo', async (req, res) => {
     const p = profileBySlug(req.params.slug);
     if (!p || !p.photo_file) return res.status(404).end();
