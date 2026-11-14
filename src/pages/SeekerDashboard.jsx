@@ -465,7 +465,7 @@ Return the top matches with specific reasoning.`,
             </div>
             <div className="space-y-2">
               <Label>Work History</Label>
-              <Textarea placeholder="Describe what you've built, shipped, or led. Be specific about outcomes and scale — this feeds your Capability Graph." value={profile.work_history || ""} onChange={(e) => update("work_history", e.target.value)} className="min-h-[100px]" />
+              <Textarea placeholder={"One role per line, newest first, e.g.\nQA Lab Manager at Cloverland Farms Dairy (Jan 2023 – Mar 2023)\nVendor QA Analyst at Ingredion (Aug 2019 – May 2022)\n- Optional detail lines under a role start with a dash"} value={profile.work_history || ""} onChange={(e) => update("work_history", e.target.value)} className="min-h-[100px]" />
             </div>
             <div className="space-y-2">
               <Label>Education</Label>

@@ -1,10 +1,11 @@
 import React from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { MapPin, Briefcase, Sparkles, BookOpen, GraduationCap, Wrench, ArrowUpRight } from "lucide-react";
+import { MapPin, Briefcase, Building2, Sparkles, BookOpen, GraduationCap, Wrench, ArrowUpRight } from "lucide-react";
 import ProfessionalLinks from "@/components/seeker/ProfessionalLinks";
 import { LevelBadge, EvidenceBadge, RubricDialog } from "@/components/seeker/CapabilityGraphView";
 import { STORY_PROMPTS } from "@/lib/capabilityRubric";
+import { parseWorkHistory } from "@/lib/workHistory";
 
 const WORK_TYPE = { remote: "Remote", hybrid: "Hybrid", onsite: "On-site", any: "Open to any" };
 const LEVEL = { entry: "Entry level", mid: "Mid level", senior: "Senior", lead: "Lead", executive: "Executive" };
@@ -42,21 +43,54 @@ const THIRD_PERSON = {
 };
 const storyTitle = (s) => (s.question ? `Asked: ${s.question}` : THIRD_PERSON[s.prompt_id] || STORY_PROMPTS.find((p) => p.id === s.prompt_id)?.title || "Story");
 
-// Work history is free text or a list of { title, company, description }.
+// Work history as a timeline: one entry per role, newest first. Consecutive
+// roles at the same company are grouped under it (showing progression).
 function WorkHistory({ value }) {
-  if (Array.isArray(value)) {
-    return (
-      <ul className="space-y-3">
-        {value.map((w, i) => (typeof w === "string" ? <li key={i} className="text-sm whitespace-pre-line">{w}</li> : (
-          <li key={i}>
-            <p className="font-medium text-sm">{[w.title || w.role, w.company].filter(Boolean).join(" · ")}</p>
-            {(w.description || w.summary) && <p className="text-sm text-muted-foreground whitespace-pre-line mt-0.5">{w.description || w.summary}</p>}
-          </li>
-        )))}
-      </ul>
-    );
+  const { roles, leftover } = parseWorkHistory(value);
+  if (!roles.length) return <p className="text-sm whitespace-pre-line leading-relaxed">{leftover}</p>;
+  const groups = [];
+  for (const r of roles) {
+    const last = groups[groups.length - 1];
+    if (last && r.company && last.company.toLowerCase() === r.company.toLowerCase()) last.roles.push(r);
+    else groups.push({ company: r.company, roles: [r] });
   }
-  return <p className="text-sm whitespace-pre-line leading-relaxed">{String(value)}</p>;
+  const Role = ({ r, showCompany }) => (
+    <div>
+      <p className="font-semibold text-sm leading-snug">{r.title}</p>
+      {showCompany && r.company && <p className="text-sm text-muted-foreground">{r.company}</p>}
+      {r.dates && <p className="text-xs text-muted-foreground mt-0.5">{r.dates}</p>}
+      {r.description && <p className="text-sm mt-1.5 whitespace-pre-line leading-relaxed">{r.description}</p>}
+    </div>
+  );
+  return (
+    <div className="space-y-4">
+      {leftover && <p className="text-sm whitespace-pre-line leading-relaxed">{leftover}</p>}
+      <ol className="space-y-5">
+        {groups.map((g, gi) => (
+          <li key={gi} className="flex gap-3">
+            <span className="mt-0.5 h-9 w-9 shrink-0 rounded-lg bg-primary/10 text-primary flex items-center justify-center" aria-hidden="true">
+              <Building2 className="w-4 h-4" />
+            </span>
+            <div className="min-w-0 flex-1">
+              {g.roles.length === 1 ? <Role r={g.roles[0]} showCompany /> : (
+                <>
+                  <p className="font-semibold text-sm">{g.company}</p>
+                  <ol className="mt-2 space-y-3 border-l-2 border-primary/20 pl-4">
+                    {g.roles.map((r, ri) => (
+                      <li key={ri} className="relative">
+                        <span className="absolute -left-[21px] top-1.5 h-2 w-2 rounded-full bg-primary/50" aria-hidden="true" />
+                        <Role r={r} />
+                      </li>
+                    ))}
+                  </ol>
+                </>
+              )}
+            </div>
+          </li>
+        ))}
+      </ol>
+    </div>
+  );
 }
 
 // A seeker's profile page, as employers (and public-link visitors) see it.
