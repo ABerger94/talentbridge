@@ -47,8 +47,15 @@ const sections = [
     body: (
       <ul>
         <li>Your profile, resume, and applications must be truthful and your own.</li>
-        <li>Employers on {LEGAL.siteName} can view your profile; employers you apply to can also see your resume and
-          application (see the <Link to="/privacy">Privacy Policy</Link>).</li>
+        <li>Employers on {LEGAL.siteName} can view your profile and profile page; employers you apply to can also see
+          your resume and application (see the <Link to="/privacy">Privacy Policy</Link>).</li>
+        <li>Your profile photo must be a photo of you, and appropriate for a professional setting. Don’t use someone
+          else’s photo, a logo, or anything you don’t have the right to share.</li>
+        <li>Proof stories you show on your profile page must not reveal confidential information belonging to a current
+          or former employer, or anyone else’s personal information. Hide a story, or leave details out, if you’re not
+          sure.</li>
+        <li>Your public share link is optional. If you turn it on, anyone with the link can see your profile page, and
+          you’re responsible for where you share it. You can turn it off or replace it at any time.</li>
         <li>{LEGAL.siteName} doesn’t guarantee interviews, offers, or employment. Offers and employment terms are
           between you and the employer.</li>
       </ul>
@@ -72,6 +79,8 @@ const sections = [
             information, veteran status, or any other protected characteristic.</li>
           <li>You won’t charge candidates any fee to apply, interview, or be hired.</li>
           <li>You’ll use applications, private notes, and role statistics only for hiring for your roles.</li>
+          <li>You understand that when you open a candidate’s profile page, the candidate can see your company name and
+            when you viewed it.</li>
           <li>You’ll use candidate information only to evaluate and communicate with candidates for your roles, keep it
             confidential, and not sell it, publish it, or use it for marketing.</li>
           <li>You won’t rely on {LEGAL.siteName}’s AI scores or summaries as the sole basis for any hiring decision, and
@@ -121,9 +130,10 @@ const sections = [
     title: "Your content",
     body: (
       <p>
-        You keep ownership of what you submit (profiles, resumes, postings, messages). You give us a non-exclusive,
-        worldwide, royalty-free license to host, store, copy, process (including with AI providers), and display that
-        content only as needed to operate and improve {LEGAL.siteName} and as described in the Privacy Policy. The
+        You keep ownership of what you submit (profiles, photos, proof stories, resumes, postings, messages). You give
+        us a non-exclusive, worldwide, royalty-free license to host, store, copy, process (including with AI providers),
+        and display that content only as needed to operate and improve {LEGAL.siteName} and as described in the Privacy
+        Policy, including on your public share link if you turn it on. The
         license ends when you delete the content or your account, except for copies we must keep by law or that other
         users already received (for example, an application you sent an employer).
       </p>

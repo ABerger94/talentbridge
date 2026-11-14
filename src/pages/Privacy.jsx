@@ -28,8 +28,10 @@ const sections = [
           role (job seeker or employer), and, if you sign in with Google, your Google account’s name and ID.</p>
         <p><strong>Job seeker profiles.</strong> What you choose to add: your name, headline, bio, skills, experience,
           work history, education, career goals, values, preferred location and work type, salary expectations,
-          industries of interest, portfolio and GitHub links, and your resume file. We also store AI-generated content
-          about your profile, such as a capability graph, portfolio analysis, and resume critique.</p>
+          industries of interest, portfolio and GitHub links, your resume file, the proof stories you write about your
+          work, and, if you add one, a profile photo. We also store AI-generated content about your profile, such as a
+          capability graph, portfolio analysis, and resume critique, and your profile page settings (which sections you
+          show, which stories you hide, and whether your public share link is on).</p>
         <p><strong>Applications and hiring activity.</strong> Cover letters, application status, interview times and
           your responses, offer details and your responses, invitations, and AI capability assessments an employer runs
           on your application.</p>
@@ -45,6 +47,8 @@ const sections = [
           address to limit abuse (for example, too many sign-in attempts). When something breaks, we record the error
           message, the page it happened on, and your account ID if you're signed in, so we can fix it. We count visits
           to job postings for the employer as anonymous daily counts (a one-way hash, not your IP address or account).
+          When an approved employer opens a job seeker’s profile page, we record which employer and when, so we can show
+          the job seeker who viewed their profile.
           We keep a log of security-relevant account actions (such as password changes) and administrator actions.</p>
         <p>We do not use advertising or analytics trackers, and we do not use cookies for tracking. Your browser’s
           local storage keeps your sign-in token so you stay signed in.</p>
@@ -76,18 +80,34 @@ const sections = [
         <p><strong>If you’re a job seeker:</strong></p>
         <ul>
           <li><strong>Approved employers on {LEGAL.siteName}</strong> (we review each employer before they can see
-            candidates) can browse job seeker profiles (your name, headline, bio,
-            skills, experience, and other profile details) and see AI match scores for their roles.</li>
+            candidates) can browse job seeker profiles and see AI match scores for their roles, while your profile is
+            visible to employers. They can also open your <strong>profile page</strong>: your name, photo, headline,
+            location, Capability Graph, skills, and the proof stories, work experience, education, and links you
+            haven’t hidden. Your profile page never shows your email address, phone number, or resume. Employers you’ve
+            applied to can open it even if you hide your profile from other employers.</li>
+          <li><strong>Who viewed your profile.</strong> We show you which employers (by company name) opened your profile
+            page and when.</li>
+          <li><strong>Your public share link</strong> is off unless you turn it on. When it’s on, anyone with the link can
+            see the same profile page employers see, including your name and photo, without signing in. Sites where you
+            share the link (such as LinkedIn) may show a preview with your name, headline, and photo, and may keep a
+            copy of that preview. We ask search engines not to index public profile pages, but anyone you share the link
+            with can pass it on. You can turn the link off or replace it with a new one at any time; the old link stops
+            working right away.</li>
           <li><strong>Your resume file</strong> is private. Only you, employers whose roles you apply to, and site
             administrators can open it.</li>
           <li><strong>When you apply</strong>, that employer sees your application, cover letter, resume, and
             responses, and can run AI assessments on it.</li>
         </ul>
         <p><strong>If you’re an employer:</strong> open job postings are public, including to visitors who aren’t
-          signed in. Candidates see your company name and role details on invitations, interviews, and offers.</p>
+          signed in. Candidates see your company name and role details on invitations, interviews, and offers. When you
+          open a job seeker’s profile page, they can see your company name and when you viewed it.</p>
         <p><strong>Messages</strong> can be read only by the candidate and employer on that application, and by site
           administrators when needed to investigate a report or abuse.</p>
-        <p><strong>Site administrators</strong> can access all data to operate and support the service.</p>
+        <p><strong>Site administrators</strong> can access all data to operate and support the service. Administrators
+          may also give automated tools, including AI agents run by third-party providers, limited access to help operate
+          the site (for example, reviewing employers, monitoring imports, or checking site health). Each tool gets only
+          the permissions it needs, names, email addresses, and phone numbers are hidden from it unless it’s specifically
+          allowed to see them, and everything it changes is logged.</p>
         <p>We do not sell your personal information, and we do not share it for advertising.</p>
       </>
     ),
@@ -159,6 +179,9 @@ const sections = [
         <li>Messages: for as long as both related accounts exist; deleted with your account on request (the other
           person’s copies of their own messages may remain).</li>
         <li>Email notification records: for as long as the related account exists.</li>
+        <li>Profile page views: for as long as both the job seeker’s and the employer’s accounts exist (we show job
+          seekers the last 30 days). Deleting either account deletes them.</li>
+        <li>Profile photos: until you remove or replace the photo, or delete your account.</li>
         <li>Server logs: according to our hosting provider’s retention settings.</li>
       </ul>
     ),
@@ -175,6 +198,9 @@ const sections = [
           <li>delete your account and personal information (this happens right away);</li>
           <li>turn job alert emails on or off, and sign out of other devices.</li>
         </ul>
+        <p>On your dashboard you can preview your profile page as employers see it, hide sections (proof stories, work
+          experience, education, links) or single stories from it, add or remove your photo, hide your profile from
+          employers, and turn your public share link on or off or replace it.</p>
         <p>You can also email {mail} to make any of these requests, or to correct information you can’t edit
           yourself.</p>
         <p>We’ll respond within 30 days and may need to confirm your identity first. Depending on where you live (for

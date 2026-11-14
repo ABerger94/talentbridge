@@ -57,6 +57,12 @@ function exportData(user) {
     invitations,
     messages,
     files,
+    // Employers who opened your profile page, and profile pages you opened.
+    profile_views_of_you: profileIds.length
+      ? db.prepare(`SELECT viewer_id, viewed_at FROM profile_views WHERE profile_id IN (${profileIds.map(() => '?').join(',')}) ORDER BY viewed_at DESC`).all(...profileIds)
+        .map((v) => ({ employer: require('./employers').publicCompany(v.viewer_id)?.name || 'An employer', viewed_at: v.viewed_at }))
+      : [],
+    profiles_you_viewed: db.prepare('SELECT profile_id, viewed_at FROM profile_views WHERE viewer_id = ? ORDER BY viewed_at DESC').all(user.id),
     emails_sent_to_you: db.prepare('SELECT kind, status, created_date FROM notifications WHERE recipient = ? ORDER BY created_date DESC').all(pub.email),
   };
 }
@@ -78,6 +84,7 @@ async function deleteAccount(user, { password, confirm }) {
   for (const p of store.filter('SeekerProfile', { created_by_id: uid })) {
     for (const inv of store.filter('Invitation', { seeker_profile_id: p.id })) store.remove('Invitation', inv.id);
     db.prepare('DELETE FROM match_scores WHERE seeker_id = ?').run(p.id);
+    db.prepare('DELETE FROM profile_views WHERE profile_id = ?').run(p.id);
     store.remove('SeekerProfile', p.id);
     counts.profiles += 1;
   }
@@ -117,6 +124,8 @@ async function deleteAccount(user, { password, confirm }) {
   // Messages, conversation state, reports, files, emails, codes.
   counts.messages = db.prepare('DELETE FROM messages WHERE sender_id = ?').run(uid).changes;
   db.prepare('DELETE FROM conversation_state WHERE user_id = ?').run(uid);
+  // Profile pages this person viewed as an employer.
+  db.prepare('DELETE FROM profile_views WHERE viewer_id = ?').run(uid);
   db.prepare('DELETE FROM message_reports WHERE reporter_id = ?').run(uid);
   const { deleteFile } = require('./files');
   for (const f of db.prepare('SELECT name FROM files WHERE created_by_id = ?').all(uid)) {

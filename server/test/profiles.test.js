@@ -172,3 +172,19 @@ test('profile photos: images only, shown to the same people as the page', async 
   assert.equal(store.get('SeekerProfile', profile.id).photo_file, null);
   assert.equal(db.prepare('SELECT COUNT(*) AS n FROM files WHERE name = ?').get(name).n, 0);
 });
+
+test('profile views are in the data export and are deleted with either account', async () => {
+  addUser('emp2', 'employer', { employer_status: 'approved', company: { name: 'Second Co' } });
+  await call('emp2', 'GET', `/api/profiles/${profile.id}`);
+  const exp = await fetch(`${base}/api/account/export`, { headers: { authorization: `Bearer ${tokenFor('seek')}` } });
+  const data = JSON.parse(await exp.text());
+  assert.ok(data.profile_views_of_you.some((v) => v.employer === 'Second Co'));
+  const count = (sql, ...a) => db.prepare(sql).get(...a).n;
+  // Deleting the employer removes the views they made.
+  assert.equal((await call('emp2', 'POST', '/api/account/delete', { confirm: 'emp2@example.test' })).status, 200);
+  assert.equal(count('SELECT COUNT(*) AS n FROM profile_views WHERE viewer_id = ?', 'emp2'), 0);
+  // Deleting the seeker removes views of their profile.
+  assert.ok(count('SELECT COUNT(*) AS n FROM profile_views WHERE profile_id = ?', profile.id) > 0);
+  assert.equal((await call('seek', 'POST', '/api/account/delete', { confirm: 'seek@example.test' })).status, 200);
+  assert.equal(count('SELECT COUNT(*) AS n FROM profile_views WHERE profile_id = ?', profile.id), 0);
+});
