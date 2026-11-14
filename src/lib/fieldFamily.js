@@ -5,7 +5,8 @@
 
 const escape = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
-// Keyword hits in the headline count triple; skills, work history and
+// Ties go to the field listed first in the rubric (the occupation, e.g.
+// healthcare, before a subject area like quality). Keyword hits in the headline count triple; skills, work history and
 // education once each. Below 2 points there isn't enough to go on.
 export function detectFieldFamily(profile, families) {
   const p = profile || {};
@@ -21,7 +22,10 @@ export function detectFieldFamily(profile, families) {
   for (const [id, fam] of Object.entries(families || {})) {
     let score = 0;
     for (const kw of fam.keywords || []) {
-      const re = new RegExp(`(?<![a-z0-9])${escape(kw.toLowerCase())}(?![a-z0-9])`);
+      // "pediatric*" matches pediatric, pediatrics, pediatrician.
+      const prefix = kw.endsWith("*");
+      const word = escape(kw.toLowerCase().replace(/\*$/, ""));
+      const re = new RegExp(`(?<![a-z0-9])${word}${prefix ? "" : "(?![a-z0-9])"}`);
       for (const [text, w] of sources) if (re.test(text)) score += w;
     }
     if (score > bestScore) { best = id; bestScore = score; }

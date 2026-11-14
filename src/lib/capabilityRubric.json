@@ -85,71 +85,6 @@
   },
   "differentiator_min_level": 3,
   "field_families": {
-    "quality_operations": {
-      "label": "Quality, food safety & operations",
-      "keywords": [
-        "quality",
-        "quality assurance",
-        "quality control",
-        "qa",
-        "qc",
-        "food safety",
-        "haccp",
-        "sqf",
-        "brcgs",
-        "gmp",
-        "fsma",
-        "sanitation",
-        "iso",
-        "audit",
-        "auditor",
-        "compliance",
-        "regulatory",
-        "manufacturing",
-        "plant",
-        "production",
-        "supply chain",
-        "warehouse",
-        "logistics",
-        "operations",
-        "lean",
-        "six sigma",
-        "capa",
-        "inspection"
-      ],
-      "prompts": [
-        {
-          "id": "investigation",
-          "title": "A failure you investigated",
-          "hint": "A defect, incident, complaint or outage: how you found the root cause and what you changed so it didn’t recur."
-        },
-        {
-          "id": "risk",
-          "title": "A risk you caught early",
-          "hint": "A hazard or weakness you identified before it became a problem, and how you assessed and controlled it."
-        },
-        {
-          "id": "emergency",
-          "title": "An emergency you handled",
-          "hint": "A recall, crisis, outage or urgent escalation: your role, the decisions you made, and how it ended."
-        },
-        {
-          "id": "built",
-          "title": "A system you built or fixed",
-          "hint": "A program, process or tool you designed or rebuilt, and how you proved it worked."
-        },
-        {
-          "id": "data",
-          "title": "Data that changed an operation",
-          "hint": "Analysis or trending you did that led to a real operational change, with the before and after."
-        },
-        {
-          "id": "accountability",
-          "title": "Holding others accountable",
-          "hint": "Getting a team, supplier or leadership to own a problem and deliver results."
-        }
-      ]
-    },
     "healthcare": {
       "label": "Healthcare",
       "keywords": [
@@ -167,9 +102,6 @@
         "physician",
         "doctor",
         "md",
-        "psychiatrist",
-        "psychiatry",
-        "psychiatric",
         "psychologist",
         "therapist",
         "therapy",
@@ -200,7 +132,56 @@
         "mental health",
         "icu",
         "emergency department",
-        "primary care"
+        "primary care",
+        "pediatric*",
+        "surgeon",
+        "surgical",
+        "surgery",
+        "anesthesi*",
+        "crna",
+        "speech-language",
+        "slp",
+        "radiologic",
+        "sonographer",
+        "phlebotom*",
+        "home health",
+        "caregiver",
+        "caregiving",
+        "veterinar*",
+        "vet tech",
+        "optometr*",
+        "chiropract*",
+        "dietitian",
+        "nutritionist",
+        "healthcare",
+        "health care",
+        "infection prevention*",
+        "midwife",
+        "doula",
+        "medical assistant",
+        "psychiatr*",
+        "nursing home",
+        "assisted living",
+        "hospice",
+        "patient care",
+        "cardiolog*",
+        "oncolog*",
+        "neurolog*",
+        "dermatolog*",
+        "gastroenterolog*",
+        "nephrolog*",
+        "endocrinolog*",
+        "urolog*",
+        "obstetric*",
+        "gynecolog*",
+        "ob/gyn",
+        "orthopedic*",
+        "audiolog*",
+        "med-surg",
+        "medical-surgical",
+        "telemetry",
+        "emergency room",
+        "er tech"
       ],
       "privacy_note": "Don’t include patient names, dates or anything else that could identify a patient.",
       "prompts": [
@@ -233,6 +214,83 @@
           "id": "accountability",
           "title": "Coordinating the care team",
           "hint": "Getting clinicians, families, payers or outside agencies aligned on a patient’s care, and what came of it."
+        }
+      ]
+    },
+    "education": {
+      "label": "Education",
+      "keywords": [
+        "teacher",
+        "teaching",
+        "educator",
+        "professor",
+        "instructor",
+        "lecturer",
+        "tutor",
+        "tutoring",
+        "principal",
+        "school",
+        "curriculum",
+        "classroom",
+        "student",
+        "students",
+        "special education",
+        "paraprofessional",
+        "early childhood",
+        "preschool",
+        "coach",
+        "academic advisor",
+        "librarian",
+        "instructional design*",
+        "training and development",
+        "learning and development",
+        "teaching assistant",
+        "admissions",
+        "admissions counselor",
+        "training specialist",
+        "training coordinator",
+        "corporate trainer",
+        "technical trainer",
+        "elementary",
+        "secondary education",
+        "taught",
+        "lesson plan*",
+        "grade teacher",
+        "academic dean",
+        "dean of students",
+        "dean of"
+      ],
+      "privacy_note": "Don’t include students’ names or anything else that could identify them.",
+      "prompts": [
+        {
+          "id": "investigation",
+          "title": "A student or class you figured out",
+          "hint": "A learner or group who was struggling: how you found what was really in the way, and what changed."
+        },
+        {
+          "id": "risk",
+          "title": "A concern you caught early",
+          "hint": "A student at risk, a safety issue or a learning gap you noticed before it became a bigger problem, and what you did."
+        },
+        {
+          "id": "emergency",
+          "title": "A difficult situation you handled",
+          "hint": "A crisis, conflict or urgent situation: your role, your decisions, and how it ended."
+        },
+        {
+          "id": "built",
+          "title": "Something you designed",
+          "hint": "A curriculum, unit, program or classroom system you created or rebuilt, and how you knew it worked."
+        },
+        {
+          "id": "data",
+          "title": "Results that changed your teaching",
+          "hint": "Assessment or outcome data that changed what you or your school did, with the before and after."
+        },
+        {
+          "id": "accountability",
+          "title": "Bringing people together",
+          "hint": "Getting colleagues, families or administrators aligned behind a student or a change."
         }
       ]
     },
@@ -275,7 +333,33 @@
         "sysadmin",
         "product manager",
         "ux",
-        "ui designer"
+        "ui designer",
+        "systems administrator",
+        "database",
+        "dba",
+        "data analyst",
+        "analytics engineer",
+        "solutions architect",
+        "cloud architect",
+        "software architect",
+        "salesforce",
+        "crm administrator",
+        "sdet",
+        "automation engineer",
+        "test automation",
+        "qa automation",
+        "software qa",
+        "ios",
+        "android",
+        "mobile developer",
+        "web designer",
+        "it specialist",
+        "information technology",
+        "network engineer",
+        "it manager",
+        "it director",
+        "it technician",
+        "it administrator"
       ],
       "privacy_note": "Leave out anything confidential, like customer data, credentials or private code.",
       "prompts": [
@@ -333,7 +417,6 @@
         "construction",
         "contractor",
         "installer",
-        "technician",
         "cdl",
         "truck driver",
         "forklift",
@@ -342,7 +425,16 @@
         "mason",
         "painter",
         "heavy equipment",
-        "diesel"
+        "diesel",
+        "automotive",
+        "auto technician",
+        "lineman",
+        "line worker",
+        "elevator",
+        "solar installer",
+        "facilities maintenance",
+        "handyman",
+        "equipment operator"
       ],
       "prompts": [
         {
@@ -427,7 +519,25 @@
         "leasing",
         "escrow",
         "title officer",
-        "title company"
+        "title company",
+        "social media",
+        "cpa",
+        "controller",
+        "receptionist",
+        "front desk",
+        "call center",
+        "contact center",
+        "claims",
+        "adjuster",
+        "teller",
+        "credit analyst",
+        "collections",
+        "sales associate",
+        "retail sales",
+        "accounts payable",
+        "accounts receivable",
+        "billing",
+        "customer support"
       ],
       "prompts": [
         {
@@ -463,62 +573,93 @@
       ],
       "privacy_note": "Leave out client names, property addresses and anything else confidential."
     },
-    "education": {
-      "label": "Education",
+    "quality_operations": {
+      "label": "Quality, food safety & operations",
       "keywords": [
-        "teacher",
-        "teaching",
-        "educator",
-        "professor",
-        "instructor",
-        "lecturer",
-        "tutor",
-        "tutoring",
-        "principal",
-        "school",
-        "curriculum",
-        "classroom",
-        "student",
-        "students",
-        "special education",
-        "paraprofessional",
-        "early childhood",
-        "preschool",
-        "coach",
-        "academic advisor",
-        "librarian"
+        "quality",
+        "quality assurance",
+        "quality control",
+        "qa",
+        "qc",
+        "food safety",
+        "haccp",
+        "sqf",
+        "brcgs",
+        "gmp",
+        "fsma",
+        "sanitation",
+        "iso",
+        "audit",
+        "auditor",
+        "compliance",
+        "regulatory",
+        "manufacturing",
+        "plant",
+        "production",
+        "supply chain",
+        "warehouse",
+        "logistics",
+        "operations",
+        "lean",
+        "six sigma",
+        "capa",
+        "inspection",
+        "process engineer",
+        "continuous improvement",
+        "kaizen",
+        "assembler",
+        "assembly line",
+        "machine operator",
+        "packaging",
+        "inventory",
+        "production line",
+        "line lead",
+        "microbiology",
+        "food science",
+        "food production",
+        "food manufacturing",
+        "laboratory",
+        "ehs",
+        "osha",
+        "safety coordinator",
+        "safety manager",
+        "environmental health and safety",
+        "shipping and receiving",
+        "distribution center",
+        "food scien*",
+        "shipping",
+        "receiving clerk"
       ],
-      "privacy_note": "Don’t include students’ names or anything else that could identify them.",
       "prompts": [
         {
           "id": "investigation",
-          "title": "A student or class you figured out",
-          "hint": "A learner or group who was struggling: how you found what was really in the way, and what changed."
+          "title": "A failure you investigated",
+          "hint": "A defect, incident, complaint or outage: how you found the root cause and what you changed so it didn’t recur."
         },
         {
           "id": "risk",
-          "title": "A concern you caught early",
-          "hint": "A student at risk, a safety issue or a learning gap you noticed before it became a bigger problem, and what you did."
+          "title": "A risk you caught early",
+          "hint": "A hazard or weakness you identified before it became a problem, and how you assessed and controlled it."
         },
         {
           "id": "emergency",
-          "title": "A difficult situation you handled",
-          "hint": "A crisis, conflict or urgent situation: your role, your decisions, and how it ended."
+          "title": "An emergency you handled",
+          "hint": "A recall, crisis, outage or urgent escalation: your role, the decisions you made, and how it ended."
         },
         {
           "id": "built",
-          "title": "Something you designed",
-          "hint": "A curriculum, unit, program or classroom system you created or rebuilt, and how you knew it worked."
+          "title": "A system you built or fixed",
+          "hint": "A program, process or tool you designed or rebuilt, and how you proved it worked."
         },
         {
           "id": "data",
-          "title": "Results that changed your teaching",
-          "hint": "Assessment or outcome data that changed what you or your school did, with the before and after."
+          "title": "Data that changed an operation",
+          "hint": "Analysis or trending you did that led to a real operational change, with the before and after."
         },
         {
           "id": "accountability",
-          "title": "Bringing people together",
-          "hint": "Getting colleagues, families or administrators aligned behind a student or a change."
+          "title": "Holding others accountable",
+          "hint": "Getting a team, supplier or leadership to own a problem and deliver results."
         }
       ]
     }
