@@ -6,6 +6,8 @@ import { normalizePercent } from "@/lib/scales";
 // The definitions live in capabilityRubric.json, which the server reads too
 // (server/src/capability.js builds graphs and enforces the rules).
 import RUBRIC from "./capabilityRubric.json";
+import { detectFieldFamily } from "./fieldFamily";
+export { thirdPerson } from "./fieldFamily";
 
 export const RUBRIC_VERSION = RUBRIC.version;
 // Depth: what the person has shown they can do with a capability, not how
@@ -13,8 +15,23 @@ export const RUBRIC_VERSION = RUBRIC.version;
 export const LEVELS = RUBRIC.levels;
 // How strong the evidence behind a rating is.
 export const EVIDENCE = RUBRIC.evidence;
-// Guided prompts for the evidence resumes leave out.
+// Guided prompts for the evidence resumes leave out. The general set suits any
+// field; each field family words the same six prompts (same ids, so saved
+// stories keep their meaning) in its own terms.
 export const STORY_PROMPTS = RUBRIC.story_prompts;
+export const FIELD_FAMILIES = RUBRIC.field_families;
+
+// The seeker's own choice, then what the graph found, then a guess from the
+// profile. null means the general prompts.
+export function fieldFamilyFor(profile, graph) {
+  const pick = [profile?.story_field_family, graph?.field_family, profile?.capability_graph?.field_family]
+    .find((f) => f === "general" || FIELD_FAMILIES[f]);
+  if (pick) return pick === "general" ? null : pick;
+  return detectFieldFamily(profile, FIELD_FAMILIES);
+}
+
+export const storyPromptsFor = (family) => FIELD_FAMILIES[family]?.prompts || STORY_PROMPTS;
+export const privacyNoteFor = (family) => FIELD_FAMILIES[family]?.privacy_note || null;
 
 export const levelInfo = (n) => LEVELS.find((l) => l.level === Number(n)) || null;
 

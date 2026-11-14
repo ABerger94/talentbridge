@@ -5,13 +5,13 @@
       "level": 1,
       "name": "Executes",
       "short": "Carries out established procedures",
-      "detail": "Performs the work as designed by others: runs the checks, follows the procedure, completes the audit."
+      "detail": "Does the work as designed by others: follows the established procedures, protocols or standards of the field, reliably."
     },
     {
       "level": 2,
       "name": "Maintains",
-      "short": "Owns and runs an existing program",
-      "detail": "Keeps an existing program or process running and compliant, trains others in it, handles routine issues."
+      "short": "Owns and runs existing work well",
+      "detail": "Keeps an existing program, process or caseload running well and up to standard, trains others in it, and handles routine issues."
     },
     {
       "level": 3,
@@ -49,33 +49,33 @@
   "story_prompts": [
     {
       "id": "investigation",
-      "title": "A failure you investigated",
-      "hint": "A defect, incident, complaint or outage: how you found the root cause and what you changed so it didn't recur."
+      "title": "A problem you got to the bottom of",
+      "hint": "Something that went wrong, or kept going wrong: how you found the real cause and what you changed so it didn’t happen again."
     },
     {
       "id": "risk",
       "title": "A risk you caught early",
-      "hint": "A hazard or weakness you identified before it became a problem, and how you assessed and controlled it."
+      "hint": "Something you noticed before it became a problem, and what you did about it."
     },
     {
       "id": "emergency",
-      "title": "An emergency you handled",
-      "hint": "A recall, crisis, outage or urgent escalation: your role, the decisions you made, and how it ended."
+      "title": "A crisis you handled",
+      "hint": "An urgent situation where things were going wrong fast: your role, the decisions you made, and how it ended."
     },
     {
       "id": "built",
-      "title": "A system you built or fixed",
-      "hint": "A program, process or tool you designed or rebuilt, and how you proved it worked."
+      "title": "Something you built or fixed",
+      "hint": "A process, program, tool or way of working you created or rebuilt, and how you knew it worked."
     },
     {
       "id": "data",
-      "title": "Data that changed an operation",
-      "hint": "Analysis or trending you did that led to a real operational change, with the before and after."
+      "title": "Numbers that changed a decision",
+      "hint": "Results or data you tracked that led to a real change, with the before and after."
     },
     {
       "id": "accountability",
-      "title": "Holding others accountable",
-      "hint": "Getting a team, supplier or leadership to own a problem and deliver results."
+      "title": "Getting others on board",
+      "hint": "Getting a team, customer, partner or leadership to own a problem and follow through."
     }
   ],
   "evidence_caps": {
@@ -83,5 +83,444 @@
     "described": 3,
     "demonstrated": 5
   },
-  "differentiator_min_level": 3
+  "differentiator_min_level": 3,
+  "field_families": {
+    "quality_operations": {
+      "label": "Quality, food safety & operations",
+      "keywords": [
+        "quality",
+        "quality assurance",
+        "quality control",
+        "qa",
+        "qc",
+        "food safety",
+        "haccp",
+        "sqf",
+        "brcgs",
+        "gmp",
+        "fsma",
+        "sanitation",
+        "iso",
+        "audit",
+        "auditor",
+        "compliance",
+        "regulatory",
+        "manufacturing",
+        "plant",
+        "production",
+        "supply chain",
+        "warehouse",
+        "logistics",
+        "operations",
+        "lean",
+        "six sigma",
+        "capa",
+        "inspection"
+      ],
+      "prompts": [
+        {
+          "id": "investigation",
+          "title": "A failure you investigated",
+          "hint": "A defect, incident, complaint or outage: how you found the root cause and what you changed so it didn’t recur."
+        },
+        {
+          "id": "risk",
+          "title": "A risk you caught early",
+          "hint": "A hazard or weakness you identified before it became a problem, and how you assessed and controlled it."
+        },
+        {
+          "id": "emergency",
+          "title": "An emergency you handled",
+          "hint": "A recall, crisis, outage or urgent escalation: your role, the decisions you made, and how it ended."
+        },
+        {
+          "id": "built",
+          "title": "A system you built or fixed",
+          "hint": "A program, process or tool you designed or rebuilt, and how you proved it worked."
+        },
+        {
+          "id": "data",
+          "title": "Data that changed an operation",
+          "hint": "Analysis or trending you did that led to a real operational change, with the before and after."
+        },
+        {
+          "id": "accountability",
+          "title": "Holding others accountable",
+          "hint": "Getting a team, supplier or leadership to own a problem and deliver results."
+        }
+      ]
+    },
+    "healthcare": {
+      "label": "Healthcare",
+      "keywords": [
+        "nurse",
+        "nursing",
+        "rn",
+        "lpn",
+        "cna",
+        "np",
+        "fnp",
+        "pmhnp",
+        "aprn",
+        "dnp",
+        "nurse practitioner",
+        "physician",
+        "doctor",
+        "md",
+        "psychiatrist",
+        "psychiatry",
+        "psychiatric",
+        "psychologist",
+        "therapist",
+        "therapy",
+        "counselor",
+        "counseling",
+        "lcsw",
+        "social worker",
+        "clinical",
+        "clinician",
+        "clinic",
+        "patient",
+        "patients",
+        "hospital",
+        "medical",
+        "medicine",
+        "pharmacist",
+        "pharmacy",
+        "physician assistant",
+        "pa-c",
+        "paramedic",
+        "emt",
+        "dental",
+        "dentist",
+        "hygienist",
+        "respiratory",
+        "radiology",
+        "behavioral health",
+        "mental health",
+        "icu",
+        "emergency department",
+        "primary care"
+      ],
+      "privacy_note": "Don’t include patient names, dates or anything else that could identify a patient.",
+      "prompts": [
+        {
+          "id": "investigation",
+          "title": "A complex case you worked through",
+          "hint": "A diagnosis, treatment or care problem that wasn’t straightforward: how you worked it out and what changed for the patient."
+        },
+        {
+          "id": "risk",
+          "title": "A risk you caught early",
+          "hint": "A safety concern you spotted before it caused harm, such as a deteriorating patient, a medication interaction, or suicide or fall risk, and what you did."
+        },
+        {
+          "id": "emergency",
+          "title": "A crisis you handled",
+          "hint": "A clinical emergency or crisis, such as a rapid response, an acute decompensation or a hold decision: your role, your decisions, and how it ended."
+        },
+        {
+          "id": "built",
+          "title": "A care process you improved",
+          "hint": "A protocol, workflow or program you created or changed, such as screening, intake, discharge or handoffs, and how you knew it worked."
+        },
+        {
+          "id": "data",
+          "title": "Outcomes that changed your practice",
+          "hint": "Outcome or quality data you tracked that changed how you or your team practice, with the before and after."
+        },
+        {
+          "id": "accountability",
+          "title": "Coordinating the care team",
+          "hint": "Getting clinicians, families, payers or outside agencies aligned on a patient’s care, and what came of it."
+        }
+      ]
+    },
+    "technology": {
+      "label": "Technology & software",
+      "keywords": [
+        "software",
+        "developer",
+        "programmer",
+        "software engineer",
+        "web developer",
+        "frontend",
+        "front-end",
+        "backend",
+        "back-end",
+        "full stack",
+        "full-stack",
+        "devops",
+        "sre",
+        "site reliability",
+        "cloud",
+        "aws",
+        "azure",
+        "kubernetes",
+        "javascript",
+        "typescript",
+        "python",
+        "java",
+        "react",
+        "node",
+        "sql",
+        "data scientist",
+        "data engineer",
+        "machine learning",
+        "cybersecurity",
+        "security analyst",
+        "it support",
+        "help desk",
+        "network administrator",
+        "sysadmin",
+        "product manager",
+        "ux",
+        "ui designer"
+      ],
+      "privacy_note": "Leave out anything confidential, like customer data, credentials or private code.",
+      "prompts": [
+        {
+          "id": "investigation",
+          "title": "A hard bug or outage you tracked down",
+          "hint": "How you found the root cause, and what you changed so it didn’t happen again."
+        },
+        {
+          "id": "risk",
+          "title": "A risk you caught early",
+          "hint": "A security, reliability or design problem you spotted before it shipped or broke, and how you handled it."
+        },
+        {
+          "id": "emergency",
+          "title": "An incident you handled",
+          "hint": "A production outage, breach or urgent escalation: your role, the calls you made, and how it ended."
+        },
+        {
+          "id": "built",
+          "title": "Something you built or rebuilt",
+          "hint": "A system, feature or tool you designed or rebuilt, and how you proved it worked: adoption, speed, reliability or cost."
+        },
+        {
+          "id": "data",
+          "title": "Data that changed a decision",
+          "hint": "Metrics, experiments or analysis that changed what the team built or how it ran, with the before and after."
+        },
+        {
+          "id": "accountability",
+          "title": "Getting teams aligned",
+          "hint": "Getting engineers, product, other teams or leadership to commit to a fix or a direction, and what came of it."
+        }
+      ]
+    },
+    "skilled_trades": {
+      "label": "Skilled trades & maintenance",
+      "keywords": [
+        "electrician",
+        "electrical",
+        "plumber",
+        "plumbing",
+        "hvac",
+        "welder",
+        "welding",
+        "carpenter",
+        "carpentry",
+        "mechanic",
+        "machinist",
+        "maintenance technician",
+        "maintenance",
+        "millwright",
+        "apprentice",
+        "journeyman",
+        "construction",
+        "contractor",
+        "installer",
+        "technician",
+        "cdl",
+        "truck driver",
+        "forklift",
+        "pipefitter",
+        "roofer",
+        "mason",
+        "painter",
+        "heavy equipment",
+        "diesel"
+      ],
+      "prompts": [
+        {
+          "id": "investigation",
+          "title": "A problem you diagnosed",
+          "hint": "Equipment, a system or a job that wasn’t working: how you found the real cause and fixed it for good."
+        },
+        {
+          "id": "risk",
+          "title": "A safety hazard you caught",
+          "hint": "Something unsafe you spotted before anyone got hurt or anything failed, and what you did about it."
+        },
+        {
+          "id": "emergency",
+          "title": "An emergency call you handled",
+          "hint": "A breakdown, leak, outage or urgent job: what you did under pressure and how it turned out."
+        },
+        {
+          "id": "built",
+          "title": "A job you’re proud of",
+          "hint": "An install, build or repair you planned and completed, especially a hard one, and how you knew it was done right."
+        },
+        {
+          "id": "data",
+          "title": "A better way you found",
+          "hint": "A change you made to how the work gets done that saved time, material or callbacks, with the before and after."
+        },
+        {
+          "id": "accountability",
+          "title": "Leading a crew",
+          "hint": "Training an apprentice, running a crew, or getting a contractor or customer to follow through."
+        }
+      ]
+    },
+    "business": {
+      "label": "Business, sales, real estate & office",
+      "keywords": [
+        "sales",
+        "account executive",
+        "account manager",
+        "business development",
+        "marketing",
+        "finance",
+        "financial",
+        "accountant",
+        "accounting",
+        "bookkeeper",
+        "bookkeeping",
+        "payroll",
+        "hr",
+        "human resources",
+        "recruiter",
+        "recruiting",
+        "talent acquisition",
+        "administrative",
+        "office manager",
+        "executive assistant",
+        "customer service",
+        "customer success",
+        "project manager",
+        "program manager",
+        "operations manager",
+        "business analyst",
+        "consultant",
+        "real estate",
+        "insurance",
+        "banking",
+        "procurement",
+        "buyer",
+        "realtor",
+        "broker",
+        "brokerage",
+        "real estate agent",
+        "listing agent",
+        "buyer's agent",
+        "mortgage",
+        "loan officer",
+        "lender",
+        "underwriter",
+        "property manager",
+        "property management",
+        "leasing",
+        "escrow",
+        "title officer",
+        "title company"
+      ],
+      "prompts": [
+        {
+          "id": "investigation",
+          "title": "A problem you got to the bottom of",
+          "hint": "A number that was off, a process that kept failing, or clients who kept walking away: how you found the cause and fixed it."
+        },
+        {
+          "id": "risk",
+          "title": "A risk you caught early",
+          "hint": "An error, compliance issue, unhappy client or deal at risk that you saw coming, and what you did."
+        },
+        {
+          "id": "emergency",
+          "title": "A crisis you handled",
+          "hint": "An urgent deadline, an upset key client, or a deal or closing going wrong: your role, your decisions, and how it ended."
+        },
+        {
+          "id": "built",
+          "title": "A process or program you built",
+          "hint": "A process, campaign, pipeline or system you created or rebuilt, and the results it got."
+        },
+        {
+          "id": "data",
+          "title": "Numbers that changed a decision",
+          "hint": "Market, sales or financial analysis you did that changed a price, a budget or a strategy, with the before and after."
+        },
+        {
+          "id": "accountability",
+          "title": "Getting others to deliver",
+          "hint": "Getting a team, agents, vendors, clients or the other side of a deal to own a problem and follow through."
+        }
+      ],
+      "privacy_note": "Leave out client names, property addresses and anything else confidential."
+    },
+    "education": {
+      "label": "Education",
+      "keywords": [
+        "teacher",
+        "teaching",
+        "educator",
+        "professor",
+        "instructor",
+        "lecturer",
+        "tutor",
+        "tutoring",
+        "principal",
+        "school",
+        "curriculum",
+        "classroom",
+        "student",
+        "students",
+        "special education",
+        "paraprofessional",
+        "early childhood",
+        "preschool",
+        "coach",
+        "academic advisor",
+        "librarian"
+      ],
+      "privacy_note": "Don’t include students’ names or anything else that could identify them.",
+      "prompts": [
+        {
+          "id": "investigation",
+          "title": "A student or class you figured out",
+          "hint": "A learner or group who was struggling: how you found what was really in the way, and what changed."
+        },
+        {
+          "id": "risk",
+          "title": "A concern you caught early",
+          "hint": "A student at risk, a safety issue or a learning gap you noticed before it became a bigger problem, and what you did."
+        },
+        {
+          "id": "emergency",
+          "title": "A difficult situation you handled",
+          "hint": "A crisis, conflict or urgent situation: your role, your decisions, and how it ended."
+        },
+        {
+          "id": "built",
+          "title": "Something you designed",
+          "hint": "A curriculum, unit, program or classroom system you created or rebuilt, and how you knew it worked."
+        },
+        {
+          "id": "data",
+          "title": "Results that changed your teaching",
+          "hint": "Assessment or outcome data that changed what you or your school did, with the before and after."
+        },
+        {
+          "id": "accountability",
+          "title": "Bringing people together",
+          "hint": "Getting colleagues, families or administrators aligned behind a student or a change."
+        }
+      ]
+    }
+  }
 }
