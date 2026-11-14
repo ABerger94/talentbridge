@@ -21,7 +21,7 @@ export default function ResumeUploader({ profile, onAutoSave }) {
       skills: { type: "array", items: { type: "string" } },
       experience_years: { type: "number" },
       experience_level: { type: "string", enum: ["entry", "mid", "senior", "lead", "executive"] },
-      work_history: { type: "string" },
+      work_history: { type: "string", description: "Every role, newest first, one per line, as: Title at Company (Start – End). Use Present for a current role. Put any detail on lines starting with \"- \" under its role." },
       education: { type: "string" },
       career_goals: { type: "string" },
       preferred_location: { type: "string" },
