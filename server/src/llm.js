@@ -427,6 +427,70 @@ async function invokeLLM({ prompt: rawPrompt, response_json_schema, temperature 
   throw err;
 }
 
+// Live key check for the admin System tab: one tiny request through every
+// configured provider x key x model, all at once, so a dead key, an expired
+// free tier or a retired model shows up by name. Keys are identified by their
+// position in the env var and their last four characters, never in full.
+const HEALTH_SCHEMA = { type: 'object', properties: { ok: { type: 'boolean' } }, required: ['ok'] };
+function classify(e) {
+  const m = String(e?.message || e);
+  if (e?.status === 429 || /429|quota/i.test(m)) return 'rate_limited';
+  if (e?.status === 401 || e?.status === 403) return 'key_rejected';
+  if (e?.status === 402) return 'no_credits';
+  if (e?.status === 404) return 'model_missing';
+  if (/timed out|timeout/i.test(m)) return 'timeout';
+  return 'error';
+}
+async function checkProviders({ timeoutMs = 20000 } = {}) {
+  const hint = (key) => (key && key.length > 8 ? `…${key.slice(-4)}` : '');
+  const checks = [];
+  for (const id of providerOrder()) {
+    if (id === 'gemini') {
+      const keys = geminiKeys();
+      for (const model of GEMINI_MODELS) keys.forEach((key, i) => checks.push({
+        provider: 'gemini', name: 'Gemini', key: i + 1, keys: keys.length, key_hint: hint(key), model,
+        ids: [`gemini:${key}:${model}`, `gemini:${key}`], run: (a, t) => callGemini(key, model, a, t),
+      }));
+    } else if (id === 'anthropic') {
+      const client = anthropic();
+      if (client) checks.push({
+        provider: 'anthropic', name: 'Anthropic', key: 1, keys: 1, key_hint: hint(process.env.ANTHROPIC_API_KEY), model: ANTHROPIC_MODEL,
+        ids: ['anthropic'], run: (a, t) => callClaude(client, a, t),
+      });
+    } else {
+      const p = OPENAI_COMPAT.find((x) => x.id === id);
+      if (!compatEnabled(p)) continue;
+      const keys = keysFrom(p.keyEnv);
+      for (const model of compatModels(p)) keys.forEach((key, i) => checks.push({
+        provider: p.id, name: p.name, key: i + 1, keys: keys.length, key_hint: hint(key), model,
+        ids: [`${p.id}:${key}:${model}`, `${p.id}:${key}`], run: (a, t) => callCompat(p, key, model, a, t),
+      }));
+    }
+  }
+  const args = { prompt: 'Health check. Reply with the JSON object {"ok": true}.', response_json_schema: HEALTH_SCHEMA, temperature: 0 };
+  const results = await Promise.all(checks.map(async ({ run, ids, ...c }) => {
+    const started = Date.now();
+    try {
+      await run(args, timeoutMs);
+      for (const id of ids) benchedUntil.delete(id); // it works: stop skipping it
+      return { ...c, ok: true, status: 'ok', ms: Date.now() - started };
+    } catch (e) {
+      const status = classify(e);
+      // Rate limited still means the key itself is valid.
+      return { ...c, ok: false, status, ms: Date.now() - started, error: String(e?.message || e).slice(0, 300) };
+    }
+  }));
+  const working = results.filter((r) => r.ok).length;
+  return {
+    checked_at: new Date().toISOString(),
+    total: results.length,
+    working,
+    rate_limited: results.filter((r) => r.status === 'rate_limited').length,
+    broken: results.filter((r) => !r.ok && r.status !== 'rate_limited').length,
+    results,
+  };
+}
+
 function registerLlmRoutes(app) {
   app.post('/api/integrations/llm', authRequired, require('./ratelimit').limits.ai, async (req, res) => {
     try {
@@ -459,4 +523,4 @@ function registerLlmRoutes(app) {
   });
 }
 
-module.exports = { registerLlmRoutes, invokeLLM, providerStatus, claudeSchema };
+module.exports = { registerLlmRoutes, invokeLLM, providerStatus, checkProviders, claudeSchema };

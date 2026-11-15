@@ -21,6 +21,7 @@ const ACTIONS = {
   "account.signed_out_others": "signed out other devices",
   "storage.migrated_batch": "moved files to the bucket",
   "ai.fairness_check": "ran an AI fairness check",
+  "ai.health_check": "tested the AI keys",
   "jobs.import_run": "ran the job import",
   "jobs.source_added": "added a job source",
   "jobs.source_removed": "removed a job source",
@@ -32,6 +33,66 @@ function Check({ ok, label, detail }) {
       {ok ? <CheckCircle2 className="w-4 h-4 text-emerald-600 mt-0.5 shrink-0" /> : <AlertTriangle className="w-4 h-4 text-amber-600 mt-0.5 shrink-0" />}
       <div><span className="font-medium">{label}</span>{detail ? <span className="text-muted-foreground"> · {detail}</span> : null}</div>
     </div>
+  );
+}
+
+const KEY_STATUS = {
+  ok: { label: "Working", tone: "text-emerald-700" },
+  rate_limited: { label: "Valid, but rate limited or out of free quota right now", tone: "text-amber-700" },
+  key_rejected: { label: "Key rejected: wrong, revoked or expired", tone: "text-red-700" },
+  no_credits: { label: "Out of credits", tone: "text-red-700" },
+  model_missing: { label: "Model not found: retired or misspelled", tone: "text-red-700" },
+  timeout: { label: "Timed out", tone: "text-amber-700" },
+  error: { label: "Failed", tone: "text-red-700" },
+};
+
+// Result of POST /api/admin/ai/health: one row per provider x key x model.
+function AiKeyHealth({ result, running, onRun }) {
+  return (
+    <Card className="p-5 space-y-3">
+      <div className="flex items-center justify-between gap-2 flex-wrap">
+        <h3 className="font-semibold">AI keys</h3>
+        <Button size="sm" variant="outline" onClick={onRun} disabled={running} className="gap-1.5">
+          {running && <Loader2 className="w-3.5 h-3.5 animate-spin" />} {result ? "Test again" : "Test AI keys"}
+        </Button>
+      </div>
+      <p className="text-xs text-muted-foreground">
+        Sends one tiny request through every AI provider, key and model at once, to show which keys actually work. Keys are shown by
+        their position in the environment variable and their last four characters. Takes up to 20 seconds.
+      </p>
+      {result && (
+        <div className="space-y-2">
+          <p className="text-sm">
+            <span className="font-medium">{result.working} of {result.total} working</span>
+            {result.rate_limited ? <span className="text-amber-700"> · {result.rate_limited} rate limited</span> : null}
+            {result.broken ? <span className="text-red-700"> · {result.broken} broken</span> : null}
+            <span className="text-muted-foreground"> · {ago(result.checked_at)}</span>
+          </p>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead><tr className="text-left text-muted-foreground"><th className="py-1 pr-2">Provider</th><th className="pr-2">Key</th><th className="pr-2">Model</th><th className="pr-2">Result</th><th className="text-right">Time</th></tr></thead>
+              <tbody>
+                {result.results.map((r, i) => {
+                  const st = KEY_STATUS[r.status] || KEY_STATUS.error;
+                  return (
+                    <tr key={i} className="border-t align-top">
+                      <td className="py-1 pr-2 whitespace-nowrap">{r.name}</td>
+                      <td className="pr-2 whitespace-nowrap tabular-nums">#{r.key}{r.key_hint ? ` ${r.key_hint}` : ""}</td>
+                      <td className="pr-2 break-all">{r.model}</td>
+                      <td className={`pr-2 ${st.tone}`}>
+                        {st.label}
+                        {r.error && <span className="block text-muted-foreground break-all">{r.error}</span>}
+                      </td>
+                      <td className="text-right tabular-nums whitespace-nowrap">{(r.ms / 1000).toFixed(1)}s</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </Card>
   );
 }
 
@@ -176,6 +237,11 @@ export default function SystemTab() {
     },
     onError: (e) => toast.error(e?.message || "Couldn't run job alerts."),
   });
+  const aiHealth = useMutation({
+    mutationFn: () => base44.admin.aiHealth(),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["adminSystem"] }),
+    onError: (e) => toast.error(e?.message || "Couldn't test the AI keys."),
+  });
   const fairness = useMutation({
     mutationFn: () => base44.admin.fairnessCheck(),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["adminSystem"] }),
@@ -214,6 +280,8 @@ export default function SystemTab() {
           </Button>
         )}
       </Card>
+
+      <AiKeyHealth result={aiHealth.data || data.ai_health} running={aiHealth.isPending} onRun={() => aiHealth.mutate()} />
 
       <Card className="p-5 space-y-3">
         <h3 className="font-semibold">Last 7 days</h3>
