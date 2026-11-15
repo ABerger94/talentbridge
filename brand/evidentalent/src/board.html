@@ -8,7 +8,9 @@
 :root{--ink:#15172A;--muted:#5B5E72;--purple:#5B2BE0;--mint:#5EEAD4;--teal:#0B7A66;--line:#E6E0F5;--soft:#F1EBFD}
 body{font-family:Inter,sans-serif;color:var(--ink);background:#ddd;padding:40px;display:flex;flex-direction:column;gap:40px;align-items:flex-start}
 .word{font-family:"Space Grotesk";font-weight:700;letter-spacing:-.035em;line-height:1;white-space:nowrap}
-.word .t{background:linear-gradient(120deg,#5B2BE0,#12A68C);-webkit-background-clip:text;color:transparent}
+/* The gradient is clipped to the span's box: pad it so the whole T shows, and pull the
+   neighbours back with matching negative margins so spacing is unchanged. */
+.word .t{display:inline-block;letter-spacing:0;padding:0 .06em;margin:0 -.075em 0 -.06em;background:linear-gradient(120deg,#5B2BE0,#12A68C);-webkit-background-clip:text;color:transparent}
 .dark .word{color:#fff}.dark .word .t{background:linear-gradient(120deg,#B9A3FF,#5EEAD4);-webkit-background-clip:text;color:transparent}
 .lock{display:inline-flex;align-items:center;gap:26px;padding:60px 72px;background:#FAF9F7}
 .lock.dark{background:linear-gradient(135deg,#140B38,#2A1673 60%,#3A1C9C)}
