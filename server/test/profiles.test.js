@@ -163,7 +163,8 @@ test('profile photos: images only, shown to the same people as the page', async 
   assert.match(pub.data.photo_url, /^\/api\/public\/profiles\/.+\/photo/);
   assert.equal((await fetch(base + pub.data.photo_url)).status, 200);
   const html = await (await fetch(`${base}/p/${on.data.sharing.public_slug}`)).text();
-  assert.match(html, /og:image" content="[^"]*\/api\/public\/profiles\/[^"]+\/card\.png/, 'the share card (with the photo) is the link preview image');
+  assert.match(html, /og:image" content="[^"]*\/p\/[^"]+\/card\.png/, 'the share card (with the photo) is the link preview image');
+  assert.equal((await fetch(`${base}/p/${on.data.sharing.public_slug}/photo`)).status, 200, 'the photo fallback is under /p/ too');
   await call('seek', 'PUT', '/api/profiles/me/sharing', { public_enabled: false });
   assert.equal((await fetch(base + pub.data.photo_url)).status, 404);
   // Removing it deletes the file.
@@ -178,7 +179,12 @@ test('public links get a 1200x630 share card that previews can show on the first
   const slug = on.data.sharing.public_slug;
   const html = await (await fetch(`${base}/p/${slug}`)).text();
   const img = html.match(/og:image" content="([^"]+)"/)[1];
-  assert.match(img, new RegExp(`/api/public/profiles/${slug}/card\\.png\\?v=[0-9a-f]{12}$`));
+  // Under /p/, not /api/: crawlers that honor robots.txt (X's) may fetch it.
+  assert.match(img, new RegExp(`/p/${slug}/card\\.png\\?v=[0-9a-f]{12}$`));
+  assert.match(html, new RegExp(`twitter:image" content="[^"]+/p/${slug}/card\\.png`));
+  const robots = (await (await fetch(`${base}/robots.txt`)).text()).split('\n').filter((l) => /^Disallow:/i.test(l)).map((l) => l.split(':')[1].trim());
+  assert.ok(robots.includes('/api/'), 'the API stays off-limits');
+  assert.ok(!robots.some((d) => d && new URL(img).pathname.startsWith(d)), 'the card image is not');
   assert.match(html, /og:image:width" content="1200"/);
   assert.match(html, /og:image:height" content="630"/);
   assert.match(html, /og:image:type" content="image\/png"/);
@@ -188,6 +194,8 @@ test('public links get a 1200x630 share card that previews can show on the first
   const png = Buffer.from(await res.arrayBuffer());
   assert.equal(png.readUInt32BE(16), 1200, 'width');
   assert.equal(png.readUInt32BE(20), 630, 'height');
+  assert.equal(res.headers.get('x-robots-tag'), 'noindex', 'for previews, not image search');
+  assert.equal((await fetch(`${base}/api/public/profiles/${slug}/card.png`)).status, 200, 'old preview links keep working');
   // Editing the profile changes the card's address, so previews refresh.
   await call('seek', 'PUT', `/api/entities/SeekerProfile/${profile.id}`, { headline: 'QA lead, now with a new headline' });
   const html2 = await (await fetch(`${base}/p/${slug}`)).text();
@@ -195,6 +203,7 @@ test('public links get a 1200x630 share card that previews can show on the first
   // Off: no card.
   await call('seek', 'PUT', '/api/profiles/me/sharing', { public_enabled: false });
   assert.equal((await fetch(`${base}/api/public/profiles/${slug}/card.png`)).status, 404);
+  assert.equal((await fetch(`${base}/p/${slug}/card.png`)).status, 404);
 });
 
 test('profile views are in the data export and are deleted with either account', async () => {

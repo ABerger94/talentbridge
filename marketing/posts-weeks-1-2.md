@@ -34,25 +34,20 @@ Copy, paste, adjust to your voice. Links come from the tracking table in `README
 
 **First comment:** `Try it here: [LinkedIn launch link]`
 
-### Week 1, Wednesday: before and after
-**Image:** `marketing/assets/post-before-after.png`
+### Week 1, Wednesday: what your experience adds up to
+**Image:** `marketing/assets/post-career-changer.png`
 
-> Here’s a line you’ll find on thousands of résumés:
+> “8 years teaching 5th grade.”
 >
-> “Responsible for quality checks and team training.”
+> Most hiring software reads that as one word: teacher. Then it files you under “education” and stops.
 >
-> Every hiring manager has read that sentence a thousand times. It says what the job was, not how good the person was at it.
+> But eight years in a classroom means you’ve designed curriculum, used data every week to change what you do, coached new teachers, and kept 25 families informed and on your side.
 >
-> Here’s the same experience on TalentBridge:
+> On TalentBridge, that experience becomes a Capability Graph: each skill rated 1–5, backed by a real story. Say your strongest skill is curriculum design, at level 4 · Improves, because you rebuilt your reading block and most of your class gained two reading levels by spring.
 >
-> Root-cause analysis: 4 · Improves
-> Proof: “Traced repeat defects to one supplier step, rebuilt the check, and cut rework by a third.”
+> And the graph shows where those skills lead: instructional designer, training specialist, program manager. That’s the part a résumé can’t do.
 >
-> Same person. One version gets skimmed. The other gets a conversation.
->
-> The difference is the question. TalentBridge doesn’t ask “what were you responsible for?” It asks “show me a time you did it, and what changed.”
->
-> If your résumé undersells you, build your Capability Graph. It’s free. Link in the comments.
+> If you’re changing careers, or your job title undersells you, build yours. It’s free. Link in the comments.
 
 ### Week 1, Friday: #ShowWhatYouCanDo
 **Image:** `marketing/assets/post-show-what-you-can-do.png`. Better still, a screenshot of your own profile page.
@@ -126,13 +121,13 @@ Copy, paste, adjust to your voice. Links come from the tracking table in `README
    > No auto-rejections. Ever.
    >
    > [X launch link]
-2. **With `post-before-after.png`:**
-   > Résumé: “Responsible for quality checks.”
-   > TalentBridge: Root-cause analysis, 4 · Improves, with the story to prove it.
+2. **With `post-career-changer.png`:**
+   > “8 years teaching 5th grade.”
    >
-   > Same person. One gets skimmed. One gets a conversation.
+   > Keyword software: teacher.
+   > TalentBridge: curriculum design (4 · Improves), data-driven teaching, coaching new teachers, and a path to instructional design.
    >
-   > [X launch link]
+   > Same person. Very different job search. [X launch link]
 3. **With the explainer image:**
    > You can’t buzzword your way to a 5.
    >
@@ -164,7 +159,7 @@ Copy, paste, adjust to your voice. Links come from the tracking table in `README
    > 5 Leads
    >
    > No black box. You see why you got your rating, and so do employers.
-8. **Career changers:**
+8. **Career changers** (with `post-career-changer.png`):
    > Career changers: your last job taught you more than its title says.
    >
    > A teacher runs 30 stakeholders before 9am. A server calms an angry guest every night.
@@ -184,7 +179,7 @@ Copy, paste, adjust to your voice. Links come from the tracking table in `README
 ## Facebook
 
 ### Your page or profile (week 1)
-**Image:** `post-before-after.png`
+**Image:** `post-career-changer.png`
 
 > I built something I’m proud of. TalentBridge is a free job site that shows employers what you can actually do, not just the keywords on your résumé. Every skill gets rated 1–5 and backed up with real stories from your work, and it never auto-rejects anyone. If you or someone you know is job hunting, I’d love for you to try it and tell me what you think: [Facebook link]
 

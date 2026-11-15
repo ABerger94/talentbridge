@@ -220,8 +220,11 @@ function registerProfileRoutes(app) {
     if (!p) throw fail(404, 'This profile link isn’t active.');
     return presentProfile(p, 'public');
   }));
-  // The link-preview image (1200x630) for a public profile link.
-  app.get('/api/public/profiles/:slug/card.png', async (req, res) => {
+  // The link-preview image (1200x630) for a public profile link. Served
+  // under /p/ (next to the page itself) because robots.txt keeps crawlers out
+  // of /api/, and X's crawler honors that for card images. The /api/ path
+  // stays for previews already posted with it.
+  const cardImage = async (req, res) => {
     const p = profileBySlug(req.params.slug);
     if (!p) return res.status(404).end();
     try {
@@ -231,14 +234,18 @@ function registerProfileRoutes(app) {
       // The URL carries a version, so a changed profile gets a new one.
       res.setHeader('Cache-Control', 'public, max-age=86400, s-maxage=86400');
       res.setHeader('X-Content-Type-Options', 'nosniff');
+      // For link previews, not image search.
+      res.setHeader('X-Robots-Tag', 'noindex');
       res.send(png);
     } catch (e) {
       // Never leave a preview blank: fall back to the photo or the site image.
       require('./monitor').captureServerError(e, req);
-      res.redirect(302, p.photo_file ? `/api/public/profiles/${encodeURIComponent(req.params.slug)}/photo` : '/og-image.png');
+      res.redirect(302, p.photo_file ? `/p/${encodeURIComponent(req.params.slug)}/photo` : '/og-image.png');
     }
-  });
-  app.get('/api/public/profiles/:slug/photo', async (req, res) => {
+  };
+  app.get('/p/:slug/card.png', cardImage);
+  app.get('/api/public/profiles/:slug/card.png', cardImage);
+  const photoImage = async (req, res) => {
     const p = profileBySlug(req.params.slug);
     if (!p || !p.photo_file) return res.status(404).end();
     const file = await require('./files').loadFile(p.photo_file).catch(() => null);
@@ -248,7 +255,9 @@ function registerProfileRoutes(app) {
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('X-Robots-Tag', 'noindex');
     res.send(file.buffer);
-  });
+  };
+  app.get('/p/:slug/photo', photoImage);
+  app.get('/api/public/profiles/:slug/photo', photoImage);
 }
 
 module.exports = { registerProfileRoutes, presentProfile, profileBySlug, sharingOf, SECTIONS };
