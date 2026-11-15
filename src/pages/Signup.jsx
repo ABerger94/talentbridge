@@ -189,7 +189,7 @@ export default function Signup() {
             <div className="mb-6">
               <h1 className="text-2xl font-bold">Create account</h1>
               <p className="text-sm text-muted-foreground mt-2">
-                Create a EvidenTalent account with your email and password.
+                Create an EvidenTalent account with your email and password.
               </p>
             </div>
 

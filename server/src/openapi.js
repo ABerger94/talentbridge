@@ -17,7 +17,7 @@ const ANNOUNCEMENT_BODY = body({
   audience: str('Who gets it', { enum: ['all', 'job_seeker', 'employer'] }),
   verified_only: { type: 'boolean', description: 'Only verified email addresses (default true)' },
   button_label: str('Optional button text, e.g. "Read the updated terms"'),
-  button_url: str('Button link: https://… or a EvidenTalent page like /terms'),
+  button_url: str('Button link: https://… or an EvidenTalent page like /terms'),
 }, ['subject', 'body', 'audience']);
 
 // [method, path, scope, summary, description, extras]
