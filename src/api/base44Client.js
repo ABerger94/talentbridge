@@ -351,6 +351,9 @@ const admin = {
   async resolveError(signature) {
     return (await request(`/api/admin/errors/${encodeURIComponent(signature)}/resolve`, { method: 'POST' })).data;
   },
+  async aiHealth() {
+    return (await request('/api/admin/ai/health', { method: 'POST' })).data;
+  },
   async fairnessCheck(jobId) {
     return (await request('/api/admin/ai/fairness', { method: 'POST', body: jobId ? { job_id: jobId } : {} })).data;
   },

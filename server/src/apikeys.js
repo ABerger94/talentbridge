@@ -41,7 +41,7 @@ const SCOPES = {
   employers: { label: 'Review employers', detail: 'Approve or reject employer accounts.' },
   jobs: { label: 'Moderate jobs', detail: 'Close or reopen job postings.' },
   job_sources: { label: 'Manage job sources', detail: 'Add, change and remove job sources, and run imports.' },
-  operations: { label: 'Operations', detail: 'Run job alerts, resolve errors, move stored files, send signup reminders, run the AI fairness check (uses AI calls).' },
+  operations: { label: 'Operations', detail: 'Run job alerts, resolve errors, move stored files, send signup reminders, run the AI fairness check and the AI key check (both use AI calls).' },
   announcement_drafts: { label: 'Draft announcements', detail: 'Write, edit and preview announcement emails, and send a test copy to you (the key’s owner). Can’t send to users.' },
   announcements: { label: 'Send announcements', detail: 'Email announcements to users (everyone, job seekers or employers), plus everything Draft announcements can do.' },
 };
@@ -58,7 +58,7 @@ const RULES = [
   ['POST', /^\/api\/admin\/job-sources\/run$/, 'job_sources'],
   ['PUT', /^\/api\/admin\/job-sources\/[^/]+$/, 'job_sources'],
   ['DELETE', /^\/api\/admin\/job-sources\/[^/]+$/, 'job_sources'],
-  ['POST', /^\/api\/admin\/(alerts\/run|storage\/migrate|ai\/fairness)$/, 'operations'],
+  ['POST', /^\/api\/admin\/(alerts\/run|storage\/migrate|ai\/fairness|ai\/health)$/, 'operations'],
   ['POST', /^\/api\/admin\/errors\/[^/]+\/resolve$/, 'operations'],
   ['POST', /^\/api\/admin\/incomplete-signups\/[^/]+\/remind$/, 'operations'],
   ['GET', /^\/api\/admin\/announcements$/, DRAFTS],

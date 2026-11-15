@@ -24,7 +24,7 @@ const ANNOUNCEMENT_BODY = body({
 const OPERATIONS = [
   ['get', '/api/admin/openapi.json', null, 'This API description', 'The list of everything an API key can do, with the permission each action needs.'],
   ['get', '/api/admin/overview', 'read', 'Site overview', 'Users by role and new signups, employer review counts, seeker profiles and Capability Graphs, active / pending / closed jobs, applications by status, job source health, and open errors. A good first call.'],
-  ['get', '/api/admin/system', 'read', 'System health and activity', 'Configuration health (AI, email, storage, database, cron), counts, emails sent in the last 7 days, recent server errors, the last 200 audit log entries, and the last AI fairness check with patterns across runs. Add ?resolved=1 to include resolved errors.',
+  ['get', '/api/admin/system', 'read', 'System health and activity', 'Configuration health (AI, email, storage, database, cron), counts, emails sent in the last 7 days, recent server errors, the last 200 audit log entries, the last AI fairness check with patterns across runs, and the last AI key check (ai_health). Add ?resolved=1 to include resolved errors.',
     { parameters: [query('resolved', 'Set to 1 to include resolved errors', { type: 'string', enum: ['1'] })] }],
   ['get', '/api/admin/employers', 'read', 'List employers', 'Employer accounts with company details, review status, trust signals and their roles.',
     { parameters: [query('status', 'Which employers (default pending)', { type: 'string', enum: ['pending', 'approved', 'rejected', 'all'] })] }],
@@ -91,6 +91,7 @@ const OPERATIONS = [
   ['post', '/api/admin/announcements/{id}/process', 'announcements', 'Continue sending', 'Sends the next batch (resuming a paused announcement) and returns progress.', { parameters: [idParam('id', 'Announcement id')] }],
   ['post', '/api/admin/announcements/{id}/retry', 'announcements', 'Retry failed addresses', 'Queues the addresses that failed and sends again.', { parameters: [idParam('id', 'Announcement id')] }],
   ['post', '/api/admin/announcements/{id}/cancel', 'announcements', 'Cancel sending', 'Stops an announcement that’s still sending; anyone not yet emailed won’t be.', { parameters: [idParam('id', 'Announcement id')] }],
+  ['post', '/api/admin/ai/health', 'operations', 'Test the AI provider keys', 'Sends one tiny request through every configured AI provider, key and model at once, and reports which work. Each result has provider, key (its position in the env var), key_hint (last four characters), model, ok, status (ok, rate_limited, key_rejected, no_credits, model_missing, timeout or error), ms and error. Rate limited means the key is valid but out of quota for now. Takes up to about 20 seconds.'],
   ['post', '/api/admin/ai/fairness', 'operations', 'Run the AI fairness check', 'Scores identical made-up candidates that differ only by an identity hint, on match scores and Capability Graph depth levels. Uses 10 AI calls and takes up to a minute.',
     { requestBody: { required: false, content: { 'application/json': { schema: { type: 'object', properties: { job_id: str('Role to test against (default: newest active role)') } } } } } }],
 ];

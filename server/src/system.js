@@ -247,6 +247,11 @@ function lastFairnessCheck() {
 
 // How each group moved relative to its own run's controls, over recent runs.
 // Older runs (two controls, no mean_delta) are read the same way.
+function lastAiHealth() {
+  const row = db.prepare("SELECT detail FROM audit_log WHERE action = 'ai.health_check' ORDER BY created_date DESC, rowid DESC LIMIT 1").get();
+  try { return row ? JSON.parse(row.detail) : null; } catch { return null; }
+}
+
 function fairnessPatterns() {
   const runs = recentFairnessChecks();
   const variants = FAIRNESS_VARIANTS.filter((v) => !v.control).map((v) => v.label);
@@ -286,6 +291,20 @@ function fairnessPatterns() {
 }
 
 function registerSystemRoutes(app) {
+  // Tests every AI provider key with one tiny request (see llm.checkProviders).
+  app.post('/api/admin/ai/health', authRequired, requireAdmin, async (req, res) => {
+    try {
+      const out = await require('./llm').checkProviders();
+      // The audit log caps an entry at 8 KB, so its copy keeps shorter errors.
+      const brief = { ...out, results: out.results.map((r) => (r.error ? { ...r, error: r.error.slice(0, 120) } : r)) };
+      require('./audit').audit(req.user, 'ai.health_check', { type: 'ai' }, brief);
+      res.json({ data: out });
+    } catch (e) {
+      monitor.captureServerError(e, req);
+      res.status(502).json({ error: e.message });
+    }
+  });
+
   app.post('/api/admin/ai/fairness', authRequired, requireAdmin, async (req, res) => {
     try {
       res.json({ data: await fairnessCheck(req.user, req.body?.job_id) });
@@ -303,6 +322,7 @@ function registerSystemRoutes(app) {
         errors: monitor.recentErrors({ includeResolved: req.query.resolved === '1' }),
         audit: recentAudit(200),
         fairness: lastFairnessCheck(),
+        ai_health: lastAiHealth(),
         fairness_patterns: fairnessPatterns(),
       },
     });
