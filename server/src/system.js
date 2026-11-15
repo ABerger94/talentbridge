@@ -296,7 +296,7 @@ function registerSystemRoutes(app) {
     try {
       const out = await require('./llm').checkProviders();
       // The audit log caps an entry at 8 KB, so its copy keeps shorter errors.
-      const brief = { ...out, results: out.results.map((r) => (r.error ? { ...r, error: r.error.slice(0, 120) } : r)) };
+      const brief = { ...out, results: out.results.map((r) => (r.error ? { ...r, error: r.error.slice(0, 200) } : r)) };
       require('./audit').audit(req.user, 'ai.health_check', { type: 'ai' }, brief);
       res.json({ data: out });
     } catch (e) {

@@ -198,6 +198,31 @@ function parseJson(text, label) {
   }
 }
 
+// Gemini's 429 body names the exact quota that ran out (per minute or per day,
+// free tier or paid, and its limit; "limit 0" means the model has no free tier
+// for that project) and when to retry. Quotas are per Google Cloud project,
+// so keys from the same project share them.
+function geminiQuota(raw) {
+  try {
+    const details = JSON.parse(raw)?.error?.details || [];
+    const v = details.flatMap((d) => d.violations || []);
+    const retry = details.find((d) => d.retryDelay)?.retryDelay;
+    if (!v.length && !retry) return '';
+    const quotas = v.map((x) => `${x.quotaId || x.quotaMetric}${x.quotaValue != null ? ` (limit ${x.quotaValue})` : ''}`);
+    return `quota exceeded: ${[...new Set(quotas)].join(', ') || 'unknown'}${retry ? ` · retry in ${retry}` : ''}`;
+  } catch {
+    return '';
+  }
+}
+
+// OpenAI-compatible providers report what's left in x-ratelimit-* headers;
+// they tell a per-minute limit apart from a monthly one.
+function rateHeaders(res) {
+  const parts = [];
+  for (const [k, v] of res.headers) if (/^x-ratelimit-/i.test(k)) parts.push(`${k.replace(/^x-ratelimit-/i, '')}=${v}`);
+  return parts.length ? ` · limits: ${parts.join(', ').slice(0, 300)}` : '';
+}
+
 async function callGemini(key, model, { prompt, response_json_schema, temperature }, timeoutMs) {
   const body = { contents: [{ parts: [{ text: prompt }] }], generationConfig: {} };
   if (typeof temperature === 'number') body.generationConfig.temperature = temperature;
@@ -217,8 +242,9 @@ async function callGemini(key, model, { prompt, response_json_schema, temperatur
     throw new AttemptError(`network/timeout: ${e.name === 'TimeoutError' ? 'timed out' : e.message}`);
   }
   if (!res.ok) {
-    const text = (await res.text()).slice(0, 200).replace(/\s+/g, ' ');
-    if (res.status === 429) throw new AttemptError(`rate limited/quota (429): ${text}`, { status: 429, benchMs: 60_000 });
+    const raw = await res.text();
+    const text = raw.slice(0, 200).replace(/\s+/g, ' ');
+    if (res.status === 429) throw new AttemptError(`rate limited/quota (429): ${geminiQuota(raw) || text}`, { status: 429, benchMs: 60_000 });
     if (res.status === 401 || res.status === 403) throw new AttemptError(`key rejected (${res.status}): ${text}`, { status: res.status, benchMs: 10 * 60_000, benchScope: 'key' });
     if (res.status === 404) throw new AttemptError(`model "${model}" not found (404)`, { status: 404, benchMs: 30 * 60_000 });
     // 400 is usually the request/schema itself; still try the next model/provider.
@@ -272,7 +298,7 @@ async function callCompat(p, key, model, { prompt, response_json_schema, tempera
     if (res.status === 400 && jsonMode === 'json_schema' && /response_format|json_schema|schema/i.test(text)) {
       return callCompat(p, key, model, { prompt, response_json_schema, temperature }, timeoutMs, 'json_object');
     }
-    if (res.status === 429) throw new AttemptError(`rate limited/quota (429): ${text}`, { status: 429, benchMs: 60_000 });
+    if (res.status === 429) throw new AttemptError(`rate limited/quota (429): ${text}${rateHeaders(res)}`, { status: 429, benchMs: 60_000 });
     if (res.status === 401 || res.status === 403) throw new AttemptError(`key rejected (${res.status}): ${text}`, { status: res.status, benchMs: 10 * 60_000, benchScope: 'key' });
     if (res.status === 402) throw new AttemptError(`out of credits (402): ${text}`, { status: 402, benchMs: 10 * 60_000, benchScope: 'key' });
     if (res.status === 404) throw new AttemptError(`model "${model}" not found (404): ${text}`, { status: 404, benchMs: 30 * 60_000 });
@@ -477,7 +503,7 @@ async function checkProviders({ timeoutMs = 20000 } = {}) {
     } catch (e) {
       const status = classify(e);
       // Rate limited still means the key itself is valid.
-      return { ...c, ok: false, status, ms: Date.now() - started, error: String(e?.message || e).slice(0, 300) };
+      return { ...c, ok: false, status, ms: Date.now() - started, error: String(e?.message || e).slice(0, 600) };
     }
   }));
   const working = results.filter((r) => r.ok).length;
