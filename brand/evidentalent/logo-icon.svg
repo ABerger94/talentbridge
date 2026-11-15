@@ -5,9 +5,10 @@
   <rect width="512" height="512" rx="116" fill="url(#bg)"/>
   <!-- EVT monogram: three bars for the E, a V that runs into the T's top bar
        (together, a checkmark), and the T's stem set apart by a gap. -->
-  <g fill="none" stroke="#fff" stroke-width="34" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M84 186H206M84 261H190M84 336H206"/>
-    <path d="M206 186L282 336L338 160H432"/>
-    <path d="M388 214V336"/>
+  <g fill="none" stroke="#fff" stroke-width="30" stroke-linecap="round" stroke-linejoin="round">
+    <!-- One straight line across the top: E's top bar, both tips of the V, and the T's bar. -->
+    <path d="M80 176H184M80 256H184M80 336H184"/>
+    <path d="M184 176L262 336L326 176H430"/>
+    <path d="M384 230V336"/>
   </g>
 </svg>
