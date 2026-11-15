@@ -1,0 +1,91 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700&display=block" rel="stylesheet">
+<style>
+@font-face{font-family:Inter;src:url(../../server/assets/fonts/Inter-Regular.otf);font-weight:400}
+@font-face{font-family:Inter;src:url(../../server/assets/fonts/Inter-SemiBold.otf);font-weight:600}
+@font-face{font-family:Inter;src:url(../../server/assets/fonts/Inter-Bold.otf);font-weight:700 800}
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--ink:#15172A;--muted:#5B5E72;--purple:#5B2BE0;--soft:#F1EBFD;--line:#E6E0F5;--teal:#0B7A66;--teal-soft:#E3F6F1;--red:#D9485F}
+body{font-family:Inter,sans-serif;color:var(--ink)}
+.slide{width:1080px;height:1350px;position:relative;overflow:hidden;background:#FAF9F7;padding:80px 84px;display:flex;flex-direction:column}
+.slide.dark{background:linear-gradient(135deg,#1B1046,#2A1673 55%,#3A1C9C);color:#fff}
+.glow{position:absolute;inset:0;background:radial-gradient(ellipse 70% 45% at 100% 0%,rgba(139,92,246,.18),transparent 70%),radial-gradient(ellipse 60% 40% at 0% 100%,rgba(45,212,191,.12),transparent 70%);pointer-events:none}
+.brand{display:flex;align-items:center;gap:16px;font-family:"Space Grotesk";font-weight:700;font-size:34px;position:relative}
+.brand .logo{width:60px;height:60px;border-radius:16px;background:var(--purple);display:grid;place-items:center;box-shadow:0 8px 22px rgba(91,43,224,.3)}
+.brand .logo img{width:34px}
+.tag{margin-left:auto;font-family:Inter;font-size:20px;font-weight:800;letter-spacing:.14em;color:var(--purple);background:var(--soft);border-radius:999px;padding:10px 20px}
+.dark .tag{background:rgba(255,255,255,.12);color:#C9BCFA}
+h1{font-family:"Space Grotesk";font-weight:700;font-size:84px;line-height:1.02;letter-spacing:-.03em;margin-top:56px;position:relative}
+h1 em{font-style:normal;color:var(--purple)} .dark h1 em{background:linear-gradient(90deg,#B9A3FF,#5EEAD4);-webkit-background-clip:text;color:transparent}
+.sub{font-size:32px;line-height:1.38;color:var(--muted);margin-top:22px;position:relative}.dark .sub{color:#D8D0F7}
+.card{background:#fff;color:var(--ink);border:1.5px solid var(--line);border-radius:30px;padding:30px 34px;box-shadow:0 30px 70px rgba(39,22,90,.12);position:relative}
+.label{font-size:19px;font-weight:800;letter-spacing:.14em;color:#8A8DA0}
+.resume{margin-top:50px;background:#F3F2F7;border:2px dashed #C9C6D6;border-radius:26px;padding:30px 34px;position:relative}
+.resume p{font-family:Georgia,serif;font-size:36px;color:#55586B;margin-top:10px;line-height:1.3}
+.arrow{display:flex;justify-content:center;margin:26px 0;color:var(--purple);position:relative}
+.row{display:flex;justify-content:space-between;align-items:center;padding:16px 0;border-top:1.5px solid #F0EDF7;gap:18px}
+.row:first-of-type{border-top:0}
+.nm{font-size:32px;font-weight:700}
+.ev{display:inline-block;font-size:18px;font-weight:800;color:var(--teal);background:var(--teal-soft);border-radius:8px;padding:4px 10px;margin-top:6px}
+.lvl{display:flex;align-items:center;gap:12px;font-size:24px;font-weight:800;color:var(--purple);white-space:nowrap}
+.m{display:flex;gap:5px}.m i{width:24px;height:10px;border-radius:5px;background:#EEE9F8}.m i.on{background:var(--purple)}
+.story{margin-top:16px;background:#FAF8FF;border:1.5px solid var(--line);border-radius:18px;padding:18px 22px;font-size:25px;line-height:1.45;color:#3C3F55}
+.story b{display:block;font-size:17px;letter-spacing:.12em;color:#8A8DA0;margin-bottom:6px}
+.cta{margin-top:auto;display:flex;align-items:center;justify-content:space-between;position:relative;padding-top:30px}
+.btn{background:var(--purple);color:#fff;font-weight:800;font-size:30px;border-radius:20px;padding:24px 32px;box-shadow:0 16px 36px rgba(91,43,224,.32)}
+.dark .btn{background:#fff;color:#2A1673}
+.url{text-align:right;font-size:22px;color:var(--muted);line-height:1.4}.url b{display:block;font-size:26px;color:var(--ink)}
+.dark .url{color:#C9BCFA}.dark .url b{color:#fff}
+.hash{font-family:"Space Grotesk";font-size:44px;font-weight:700;color:#5EEAD4;margin-top:30px;position:relative}
+.prof{margin-top:46px;padding:0;overflow:hidden}
+.prof .ban{height:120px;background:linear-gradient(120deg,#1B1046,#5B2BE0)}
+.prof .av{position:absolute;left:34px;top:60px;width:126px;height:126px;border-radius:50%;border:7px solid #fff;background:linear-gradient(135deg,#C4B5FD,#5EEAD4);display:grid;place-items:center;font-size:46px;font-weight:800;color:#2A1673}
+.prof .body{padding:80px 34px 28px}
+.prof .n{font-size:40px;font-weight:800}.prof .h{font-size:24px;color:var(--muted)}
+.share{display:flex;gap:12px;margin-top:18px}.share span{font-size:22px;font-weight:700;border:1.5px solid var(--line);border-radius:12px;padding:10px 18px}
+.chips{display:flex;flex-wrap:wrap;gap:14px;margin-top:40px;position:relative}
+.chip{font-size:26px;font-weight:700;background:rgba(255,255,255,.1);border:1.5px solid rgba(255,255,255,.22);border-radius:999px;padding:14px 24px}
+.sample{position:absolute;right:30px;top:24px;font-size:17px;font-weight:700;color:#8A8DA0;background:#F3F1F8;border-radius:999px;padding:6px 14px}
+</style></head><body>
+
+<!-- 1. Before / after -->
+<div class="slide" id="before-after"><div class="glow"></div>
+  <div class="brand"><div class="logo"><img src="../../brand/talentbridge-mark-white.png"></div>TalentBridge<span class="tag">BEFORE / AFTER</span></div>
+  <h1>Your résumé says what you were <em>responsible for.</em></h1>
+  <div class="resume"><span class="label">ON THE RÉSUMÉ</span><p>“Responsible for quality checks and team training.”</p></div>
+  <div class="arrow"><svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v16M5 13l7 7 7-7"/></svg></div>
+  <div class="card"><span class="sample">Sample profile</span><span class="label" style="color:var(--purple)">ON TALENTBRIDGE</span>
+    <div class="row" style="margin-top:10px"><div><div class="nm">Root-cause analysis</div><span class="ev">Demonstrated</span></div><span class="lvl"><span class="m"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i></span>4 · Improves</span></div>
+    <div class="story"><b>PROOF STORY</b>“Traced repeat defects to one supplier step, rebuilt the check, and cut rework by a third.”</div>
+  </div>
+  <div class="cta"><div class="btn">Show what you can do →</div><div class="url"><b>Free for job seekers</b>talentbridge-jobboard.vercel.app</div></div>
+</div>
+
+<!-- 2. #ShowWhatYouCanDo -->
+<div class="slide dark" id="show-what-you-can-do"><div class="glow"></div>
+  <div class="brand"><div class="logo"><img src="../../brand/talentbridge-mark-white.png"></div>TalentBridge<span class="tag">THE CHALLENGE</span></div>
+  <h1>Build your Capability Graph. <em>Share it.</em></h1>
+  <p class="sub">Every skill rated 1–5 on a published scale, backed by stories from your real work. Then one tap to post it.</p>
+  <div class="card prof"><div class="ban"></div><div class="av">JR</div><span class="sample" style="top:136px">Sample profile</span>
+    <div class="body"><div class="n">Jordan Rivera</div><div class="h">Operations & quality lead</div>
+      <div class="row" style="margin-top:14px"><div class="nm" style="font-size:28px">Process design</div><span class="lvl"><span class="m"><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i></span>3 · Builds</span></div>
+      <div class="row"><div class="nm" style="font-size:28px">Team training</div><span class="lvl"><span class="m"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i></span>4 · Improves</span></div>
+      <div class="share"><span>Share on LinkedIn</span><span>X</span><span>Facebook</span></div>
+    </div></div>
+  <div class="hash">#ShowWhatYouCanDo</div>
+  <div class="cta"><div class="btn">Build yours free →</div><div class="url"><b>talentbridge-jobboard.vercel.app</b>No auto-rejections. Ever.</div></div>
+</div>
+
+<!-- 3. Hospitality -->
+<div class="slide" id="hospitality"><div class="glow"></div>
+  <div class="brand"><div class="logo"><img src="../../brand/talentbridge-mark-white.png"></div>TalentBridge<span class="tag">HOSPITALITY</span></div>
+  <h1>Your résumé says “Server.” <em>Your shifts say a lot more.</em></h1>
+  <div class="card" style="margin-top:50px"><span class="sample">Sample profile</span><span class="label" style="color:var(--purple)">CAPABILITY GRAPH</span>
+    <div class="row" style="margin-top:10px"><div><div class="nm">Guest recovery</div><span class="ev">Demonstrated</span></div><span class="lvl"><span class="m"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i></span>4 · Improves</span></div>
+    <div class="row"><div><div class="nm">High-volume section management</div><span class="ev">Demonstrated</span></div><span class="lvl"><span class="m"><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i></span>3 · Builds</span></div>
+    <div class="row"><div><div class="nm">Training new staff</div><span class="ev" style="color:#6B4FD0;background:var(--soft)">Described</span></div><span class="lvl"><span class="m"><i class="on"></i><i class="on"></i><i></i><i></i><i></i></span>2 · Maintains</span></div>
+    <div class="story"><b>A TOUGH SHIFT YOU TURNED AROUND</b>“Two servers called out on a sold-out Saturday. I split the floor, ran expo and kept every table updated. No comps, best night of the month.”</div>
+  </div>
+  <div class="cta"><div class="btn">Show what you can do →</div><div class="url"><b>Restaurant &amp; hotel jobs near you</b>talentbridge-jobboard.vercel.app</div></div>
+</div>
+</body></html>

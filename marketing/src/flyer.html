@@ -1,0 +1,60 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700&display=block" rel="stylesheet">
+<style>
+@page{size:Letter;margin:0}
+@font-face{font-family:Inter;src:url(../../server/assets/fonts/Inter-Regular.otf);font-weight:400}
+@font-face{font-family:Inter;src:url(../../server/assets/fonts/Inter-SemiBold.otf);font-weight:600}
+@font-face{font-family:Inter;src:url(../../server/assets/fonts/Inter-Bold.otf);font-weight:700 800}
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--ink:#15172A;--muted:#5B5E72;--purple:#5B2BE0;--soft:#F1EBFD;--line:#E6E0F5;--teal:#0B7A66}
+html,body{width:8.5in;height:11in}
+body{font-family:Inter,sans-serif;color:var(--ink);background:#fff}
+.top{background:linear-gradient(135deg,#1B1046,#2A1673 55%,#3A1C9C);color:#fff;padding:.55in .6in .5in}
+.brand{display:flex;align-items:center;gap:12px;font-family:"Space Grotesk";font-weight:700;font-size:22pt}
+.brand .logo{width:42px;height:42px;border-radius:12px;background:var(--purple);display:grid;place-items:center;box-shadow:inset 0 0 0 1px rgba(255,255,255,.25)}
+.brand .logo img{width:24px}
+.brand small{margin-left:auto;font-family:Inter;font-size:10pt;font-weight:700;letter-spacing:.14em;color:#C9BCFA}
+h1{font-family:"Space Grotesk";font-size:38pt;line-height:1.03;letter-spacing:-.02em;margin-top:.3in}
+h1 em{font-style:normal;background:linear-gradient(90deg,#B9A3FF,#5EEAD4);-webkit-background-clip:text;color:transparent}
+.top p{font-size:13.5pt;line-height:1.45;color:#D8D0F7;margin-top:.14in;max-width:6.4in}
+.main{padding:.4in .6in 0;display:grid;grid-template-columns:1fr 2.3in;gap:.4in}
+h2{font-family:"Space Grotesk";font-size:15pt;margin-bottom:.1in}
+ol{list-style:none;counter-reset:s}
+ol li{counter-increment:s;display:flex;gap:12px;margin-bottom:.13in;font-size:11.5pt;line-height:1.4}
+ol li::before{content:counter(s);flex:none;width:26px;height:26px;border-radius:50%;background:var(--purple);color:#fff;font-weight:800;display:grid;place-items:center;font-size:11pt}
+ol li b{display:block;font-size:12pt}
+.qr{border:1.5px solid var(--line);border-radius:16px;padding:.18in;text-align:center}
+.qr img{width:1.9in;height:1.9in}
+.qr b{display:block;font-size:12pt;margin-top:.08in}.qr span{font-size:9.5pt;color:var(--muted)}
+.facts{margin:.25in .6in 0;display:grid;grid-template-columns:repeat(3,1fr);gap:.15in}
+.fact{background:var(--soft);border-radius:14px;padding:.15in .16in}
+.fact b{display:block;font-family:"Space Grotesk";font-size:15pt;color:#4320B0}.fact span{font-size:10pt;color:#3C3F55;line-height:1.35}
+.for{margin:.25in .6in 0;font-size:10.5pt;line-height:1.5;color:#3C3F55}
+.for b{color:var(--ink)}
+.foot{position:absolute;left:.6in;right:.6in;bottom:.4in;display:flex;justify-content:space-between;font-size:9.5pt;color:var(--muted);border-top:1px solid var(--line);padding-top:.12in}
+</style></head><body>
+<div class="top">
+  <div class="brand"><div class="logo"><img src="../../brand/talentbridge-mark-white.png"></div>TalentBridge<small>FREE FOR JOB SEEKERS</small></div>
+  <h1>Turn your experience into <em>proof.</em></h1>
+  <p>Résumés list what you were responsible for. TalentBridge shows employers what you can actually do: every skill rated on a published 1–5 scale and backed by stories from your real work.</p>
+</div>
+<div class="main">
+  <div>
+    <h2>How it works</h2>
+    <ol>
+      <li><span><b>Add your experience</b>Upload a résumé or type it in. Any field: healthcare, hospitality, trades, tech, office, teaching.</span></li>
+      <li><span><b>Get your Capability Graph</b>Each skill rated from 1 (Executes) to 5 (Leads), with what sets you apart.</span></li>
+      <li><span><b>Back it up with stories</b>Short questions written for your field. Real examples raise your rating.</span></li>
+      <li><span><b>Get seen</b>A profile page to share, matches with local roles, and no auto-rejections.</span></li>
+    </ol>
+  </div>
+  <div class="qr"><img src="qr-flyer.svg" alt="QR code"><b>Scan to start</b><span>talentbridge-jobboard.vercel.app</span></div>
+</div>
+<div class="facts">
+  <div class="fact"><b>1–5</b><span>A published rating scale, the same for everyone</span></div>
+  <div class="fact"><b>Thousands</b><span>of live roles, including Maryland, DC and Virginia</span></div>
+  <div class="fact"><b>0</b><span>auto-rejections: TalentBridge never filters you out</span></div>
+</div>
+<p class="for"><b>Great for:</b> career changers, people whose résumés undersell them, hospitality and service workers, recent graduates, and anyone coming back to work.</p>
+<div class="foot"><span>TalentBridge · AI that advocates for people</span><span>Questions? Ask the person who gave you this flyer.</span></div>
+</body></html>
