@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="EvidenTalent">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6A3BF0"/><stop offset="1" stop-color="#3A1C9C"/></linearGradient>
+  </defs>
+  
+  <!-- EVT monogram: three bars for the E, a V that runs into the T's top bar
+       (together, a checkmark), and the T's stem set apart by a gap. -->
+  <g fill="none" stroke="#2A1673" stroke-width="34" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M84 186H206M84 261H190M84 336H206"/>
+    <path d="M206 186L282 336L338 160H432"/>
+    <path d="M388 214V336"/>
+  </g>
+</svg>
