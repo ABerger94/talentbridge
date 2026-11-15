@@ -59,6 +59,8 @@ function overview() {
   return {
     generated_at: new Date().toISOString(),
     users: { by_role: roles, new_7d: count('SELECT COUNT(*) AS n FROM users WHERE created_date >= ?', since7), new_30d: count('SELECT COUNT(*) AS n FROM users WHERE created_date >= ?', since30) },
+    // Where the last 30 days of signups came from (campaign links, "how did you hear").
+    signup_sources: require('./acquisition').sourcesSummary(30),
     employers,
     seekers: {
       profiles: count("SELECT COUNT(*) AS n FROM records WHERE entity = 'SeekerProfile'"),

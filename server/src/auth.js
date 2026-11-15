@@ -327,7 +327,7 @@ function registerAuthRoutes(app) {
     if (req.user.role === role) return res.json({ success: true, user: req.user });
     // The account type is chosen once, during onboarding.
     if (req.user.role !== 'user') return res.status(403).json({ error: 'Your account type is already set' });
-    const data = userData(getUserById(req.user.id));
+    const data = require('./acquisition').withAcquisition(userData(getUserById(req.user.id)), req.body || {});
     if (role === 'employer') data.employer_status = 'pending';
     db.prepare('UPDATE users SET role = ?, data = ? WHERE id = ?').run(role, JSON.stringify(data), req.user.id);
     res.json({ success: true, user: publicUser(getUserById(req.user.id)) });

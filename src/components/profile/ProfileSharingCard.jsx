@@ -26,6 +26,27 @@ const SECTIONS = [
 
 // On the seeker dashboard: photo, profile page preview, who viewed it,
 // what employers see, and the public share link.
+// One-tap sharing for the public link. Each network's link is tagged
+// (utm_source=linkedin...) so the owner can see which shares bring signups.
+const SHARE_TEXT = "I mapped what I can actually do on TalentBridge: every skill rated 1–5, backed by real stories. #ShowWhatYouCanDo";
+const tagged = (url, source) => `${url}${url.includes("?") ? "&" : "?"}utm_source=${source}&utm_medium=profile_share&utm_campaign=showwhatyoucando`;
+function ShareButtons({ url }) {
+  const open = (href) => window.open(href, "_blank", "noopener,noreferrer,width=640,height=640");
+  const links = [
+    ["LinkedIn", () => open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(tagged(url, "linkedin"))}`)],
+    ["X", () => open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(SHARE_TEXT)}&url=${encodeURIComponent(tagged(url, "x"))}`)],
+    ["Facebook", () => open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(tagged(url, "facebook"))}`)],
+  ];
+  return (
+    <div className="flex flex-wrap items-center gap-2 pt-1">
+      <span className="text-xs text-muted-foreground">Share it:</span>
+      {links.map(([name, go]) => (
+        <Button key={name} type="button" size="sm" variant="outline" className="h-8" onClick={go} aria-label={`Share your profile on ${name}`}>{name}</Button>
+      ))}
+    </div>
+  );
+}
+
 export default function ProfileSharingCard() {
   const queryClient = useQueryClient();
   const fileRef = useRef(null);
@@ -174,6 +195,7 @@ export default function ProfileSharingCard() {
             </div>
           </div>
         )}
+        {s.public_enabled && s.public_url && <ShareButtons url={s.public_url} />}
       </div>
     </Card>
   );
