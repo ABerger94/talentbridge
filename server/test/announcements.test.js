@@ -10,7 +10,7 @@ const path = require('path');
 process.env.TB_DATA_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'tb-test-'));
 process.env.TB_JWT_SECRET = 'n'.repeat(48);
 process.env.BREVO_API_KEY = 'test';
-process.env.TB_MAIL_FROM = 'TalentBridge <team@example.test>';
+process.env.TB_MAIL_FROM = 'EvidenTalent <team@example.test>';
 process.env.CRON_SECRET = 'cron-secret';
 delete process.env.TURSO_DATABASE_URL;
 

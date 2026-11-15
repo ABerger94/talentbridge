@@ -81,7 +81,7 @@ export default function JobFilters({ filters, onFilterChange, onClear }) {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All sources</SelectItem>
-            <SelectItem value="direct">Posted on TalentBridge</SelectItem>
+            <SelectItem value="direct">Posted on EvidenTalent</SelectItem>
             <SelectItem value="imported">From company job boards</SelectItem>
           </SelectContent>
         </Select>

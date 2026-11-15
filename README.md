@@ -1,8 +1,8 @@
-# TalentBridge — Hiring that sees your whole capability, not just your keywords
+# EvidenTalent — Hiring that sees your whole capability, not just your keywords
 
-**Live:** https://talentbridge-jobboard.vercel.app/
+**Live:** https://evidentalent.vercel.app/
 
-TalentBridge inverts applicant tracking system (ATS) logic. Instead of filtering
+EvidenTalent inverts applicant tracking system (ATS) logic. Instead of filtering
 candidates out with keyword matching, rigid cutoffs, and silent auto-rejections, it
 builds a **Capability Graph** around each candidate — real work (GitHub, portfolio,
 projects), adjacent skills, adaptability — and matches both directions.

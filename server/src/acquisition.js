@@ -1,7 +1,7 @@
 'use strict';
 // Where new accounts come from, so the owner can see which outreach works:
 // the campaign link someone arrived through (utm_* tags, kept in the browser
-// for 30 days) and, if they answer it, "How did you hear about TalentBridge?"
+// for 30 days) and, if they answer it, "How did you hear about EvidenTalent?"
 // at onboarding. Saved once on the account (users.data.acquisition).
 const { db } = require('./db');
 

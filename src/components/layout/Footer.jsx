@@ -1,7 +1,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { Heart } from "lucide-react";
-import TalentBridgeLogo from "@/components/TalentBridgeLogo";
+import BrandLogo from "@/components/BrandLogo";
 
 export default function Footer() {
   return (
@@ -11,9 +11,9 @@ export default function Footer() {
           <div className="md:col-span-1">
             <div className="flex items-center gap-2.5 mb-4">
               <div className="w-9 h-9 bg-primary rounded-xl flex items-center justify-center">
-                <TalentBridgeLogo size={20} />
+                <BrandLogo size={20} />
               </div>
-              <span className="text-xl font-bold">TalentBridge</span>
+              <span className="text-xl font-bold">EvidenTalent</span>
             </div>
             <p className="text-sm opacity-60 leading-relaxed">
               AI that advocates for people. We match on capability, potential, and character — not keywords and arbitrary filters.
@@ -44,7 +44,7 @@ export default function Footer() {
         </div>
         <div className="border-t border-background/10 mt-12 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-5">
-            <p className="text-sm opacity-40">© 2026 TalentBridge. All rights reserved.</p>
+            <p className="text-sm opacity-40">© 2026 EvidenTalent, formerly TalentBridge. All rights reserved.</p>
             <div className="flex gap-4 text-sm">
               <Link to="/privacy" className="opacity-60 hover:opacity-100 transition-opacity">Privacy</Link>
               <Link to="/terms" className="opacity-60 hover:opacity-100 transition-opacity">Terms</Link>

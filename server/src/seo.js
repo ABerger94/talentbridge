@@ -68,7 +68,7 @@ function jobPostingLd(job, company, url) {
     '@type': 'JobPosting',
     title: job.title,
     description: descriptionHtml(job),
-    identifier: { '@type': 'PropertyValue', name: 'TalentBridge', value: job.id },
+    identifier: { '@type': 'PropertyValue', name: 'EvidenTalent', value: job.id },
     datePosted: String(job.created_date || '').slice(0, 10),
     validThrough: new Date(Date.parse(job.created_date || Date.now()) + 90 * 24 * 60 * 60 * 1000).toISOString(),
     hiringOrganization: {
@@ -110,7 +110,7 @@ function headFor({ title, description, url, image, ld }) {
     `<meta name="description" content="${esc(description)}" />`,
     `<link rel="canonical" href="${esc(url)}" />`,
     `<meta property="og:type" content="website" />`,
-    `<meta property="og:site_name" content="TalentBridge" />`,
+    `<meta property="og:site_name" content="EvidenTalent" />`,
     `<meta property="og:title" content="${esc(title)}" />`,
     `<meta property="og:description" content="${esc(description)}" />`,
     `<meta property="og:url" content="${esc(url)}" />`,
@@ -148,7 +148,7 @@ async function jobPage(req, res, next) {
     // Imported listings live on the employer's own site: never ask search
     // engines to index our copy (duplicate content, and source terms).
     if (job.imported) {
-      const head = headFor({ title: `${job.title}${job.company ? ` at ${job.company}` : ''} · TalentBridge`, description: oneLine(job.description, 155) || job.title, url, image, ld: null })
+      const head = headFor({ title: `${job.title}${job.company ? ` at ${job.company}` : ''} · EvidenTalent`, description: oneLine(job.description, 155) || job.title, url, image, ld: null })
         + '\n    <meta name="robots" content="noindex, follow" />';
       res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=600');
       return res.type('html').send(render(html, head));
@@ -156,8 +156,8 @@ async function jobPage(req, res, next) {
     const company = require('./employers').publicCompany(job.created_by_id);
     const companyName = company?.name || job.company;
     const where = [job.work_type === 'remote' ? 'Remote' : job.location].filter(Boolean).join('');
-    const title = `${job.title}${companyName ? ` at ${companyName}` : ''}${where ? ` (${where})` : ''} · TalentBridge`;
-    const description = oneLine(job.description, 155) || `${job.title}${companyName ? ` at ${companyName}` : ''}. Apply on TalentBridge.`;
+    const title = `${job.title}${companyName ? ` at ${companyName}` : ''}${where ? ` (${where})` : ''} · EvidenTalent`;
+    const description = oneLine(job.description, 155) || `${job.title}${companyName ? ` at ${companyName}` : ''}. Apply on EvidenTalent.`;
     const head = headFor({
       title,
       description,
@@ -176,7 +176,7 @@ async function jobPage(req, res, next) {
 
 function sitemap(req, res) {
   const pages = ['/', '/jobs', '/privacy', '/terms'].map((p) => ({ loc: appUrl(p) }));
-  // Roles posted on TalentBridge only (imported listings aren't indexed).
+  // Roles posted on EvidenTalent only (imported listings aren't indexed).
   require('./jobindex').rebuildIfEmpty();
   const { db } = require('./db');
   for (const row of db.prepare("SELECT job_id, posted FROM job_index WHERE status = 'active' AND imported = 0 ORDER BY posted DESC LIMIT 5000").all()) {
@@ -205,8 +205,8 @@ async function profilePage(req, res, next) {
     }
     const view = presentProfile(p, 'public');
     const url = appUrl(`/p/${encodeURIComponent(req.params.slug)}`);
-    const title = `${view.full_name}${view.headline ? ` · ${view.headline}` : ''} | TalentBridge`;
-    const description = oneLine(view.capability_graph?.capability_headline || view.bio || `${view.full_name}’s Capability Graph on TalentBridge.`, 155);
+    const title = `${view.full_name}${view.headline ? ` · ${view.headline}` : ''} | EvidenTalent`;
+    const description = oneLine(view.capability_graph?.capability_headline || view.bio || `${view.full_name}’s Capability Graph on EvidenTalent.`, 155);
     // A 1200x630 card (photo, name, headline, strengths), the shape link
     // previews expect; its size is stated so it shows on the first share.
     const { cardData, cardVersion } = require('./sharecard');
@@ -216,7 +216,7 @@ async function profilePage(req, res, next) {
       + `\n    <meta property="og:image:width" content="1200" />`
       + `\n    <meta property="og:image:height" content="630" />`
       + `\n    <meta property="og:image:type" content="image/png" />`
-      + `\n    <meta property="og:image:alt" content="${esc(`${view.full_name}’s TalentBridge profile`)}" />`
+      + `\n    <meta property="og:image:alt" content="${esc(`${view.full_name}’s EvidenTalent profile`)}" />`
       + '\n    <meta name="robots" content="noindex, nofollow" />';
     res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=120');
     res.type('html').send(render(html, head));

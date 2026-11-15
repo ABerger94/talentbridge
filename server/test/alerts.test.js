@@ -11,7 +11,7 @@ process.env.TB_JWT_SECRET = 'l'.repeat(48);
 process.env.GEMINI_API_KEY = 'test';
 process.env.TB_GEMINI_MODELS = 'test-model';
 process.env.BREVO_API_KEY = 'test';
-process.env.TB_MAIL_FROM = 'TalentBridge <team@example.test>';
+process.env.TB_MAIL_FROM = 'EvidenTalent <team@example.test>';
 process.env.CRON_SECRET = 'cron-secret';
 delete process.env.TURSO_DATABASE_URL;
 

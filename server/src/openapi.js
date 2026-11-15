@@ -17,7 +17,7 @@ const ANNOUNCEMENT_BODY = body({
   audience: str('Who gets it', { enum: ['all', 'job_seeker', 'employer'] }),
   verified_only: { type: 'boolean', description: 'Only verified email addresses (default true)' },
   button_label: str('Optional button text, e.g. "Read the updated terms"'),
-  button_url: str('Button link: https://… or a TalentBridge page like /terms'),
+  button_url: str('Button link: https://… or a EvidenTalent page like /terms'),
 }, ['subject', 'body', 'audience']);
 
 // [method, path, scope, summary, description, extras]
@@ -30,7 +30,7 @@ const OPERATIONS = [
     { parameters: [query('status', 'Which employers (default pending)', { type: 'string', enum: ['pending', 'approved', 'rejected', 'all'] })] }],
   ['post', '/api/admin/employers/{id}/decision', 'employers', 'Approve or reject an employer', 'Approving makes the employer’s held roles go live and emails them. Rejecting emails them too. Recorded in the audit log.',
     { parameters: [idParam('id', 'Employer user id')], requestBody: body({ decision: str('approve or reject', { enum: ['approve', 'reject'] }), note: str('Optional note to the employer (max 1000 characters)') }, ['decision']) }],
-  ['get', '/api/admin/jobs', 'read', 'List jobs', 'Jobs posted on TalentBridge by default, newest first, with application counts.',
+  ['get', '/api/admin/jobs', 'read', 'List jobs', 'Jobs posted on EvidenTalent by default, newest first, with application counts.',
     { parameters: [
       query('origin', 'posted (default), imported or all', { type: 'string', enum: ['posted', 'imported', 'all'] }),
       query('status', 'Filter by status', { type: 'string', enum: ['active', 'closed', 'pending_review'] }),
@@ -117,10 +117,10 @@ function spec() {
   return {
     openapi: '3.1.0',
     info: {
-      title: 'TalentBridge Admin API',
+      title: 'EvidenTalent Admin API',
       version: '1.0.0',
       description: [
-        'Manage TalentBridge as an admin from an AI agent or script.',
+        'Manage EvidenTalent as an admin from an AI agent or script.',
         '',
         'Authentication: send an admin API key as `Authorization: Bearer tb_admin_...`. Create keys in Admin → API keys; each is shown once.',
         'Permissions: each operation lists the permission it needs (x-required-scope). Anything not listed here is refused.',

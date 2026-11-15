@@ -1,5 +1,5 @@
 'use strict';
-// Real job listings from outside TalentBridge, refreshed daily:
+// Real job listings from outside EvidenTalent, refreshed daily:
 //   greenhouse / lever / ashby  a company's own public job board (free, no key)
 //   remotive                    remote jobs (credit + link back required)
 //   usajobs                     federal jobs (USAJOBS_API_KEY + USAJOBS_EMAIL)

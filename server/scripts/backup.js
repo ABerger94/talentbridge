@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 'use strict';
-// Copies the whole TalentBridge database (every table, uploaded files
+// Copies the whole EvidenTalent database (every table, uploaded files
 // included) into a standalone SQLite file you keep somewhere safe.
 //
 //   TURSO_DATABASE_URL=libsql://... TURSO_AUTH_TOKEN=... node server/scripts/backup.js [out.sqlite]

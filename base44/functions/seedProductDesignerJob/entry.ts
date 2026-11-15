@@ -15,7 +15,7 @@ Deno.serve(async (req) => {
 
     const job = await base44.asServiceRole.entities.Job.create({
       title: "Product Designer",
-      company: "TalentBridge",
+      company: "EvidenTalent",
       company_logo_url: "",
       location: "San Francisco, CA",
       work_type: "hybrid",

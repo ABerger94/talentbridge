@@ -161,7 +161,7 @@ function filterClause({ location = '', work_type, employment_type, experience_le
   return { where, args };
 }
 
-// Job board search. Roles posted on TalentBridge come first, then imported
+// Job board search. Roles posted on EvidenTalent come first, then imported
 // ones, newest first within each.
 function search({ q = '', page = 1, per = 20, ...filters } = {}) {
   const { where, args } = filterClause(filters);
@@ -197,7 +197,7 @@ function profileTokens(profile) {
 function suggestFor(profile, { limit = 25, since = null, excludeIds = [], filters = {} } = {}) {
   const { strong, weak } = profileTokens(profile);
   if (!strong.size && !weak.size) return [];
-  // Narrow in the database first: the seeker's filters, then TalentBridge-
+  // Narrow in the database first: the seeker's filters, then EvidenTalent-
   // posted roles plus imported ones that mention at least one of the
   // profile's key words. Keeps this cheap with thousands of listings.
   const { where, args } = filterClause(filters);
@@ -215,7 +215,7 @@ function suggestFor(profile, { limit = 25, since = null, excludeIds = [], filter
     let score = 0;
     for (const w of strong) { if (titleWords.has(w)) score += 4; else if (words.has(w)) score += 2; }
     for (const w of weak) { if (titleWords.has(w)) score += 2; else if (words.has(w)) score += 1; }
-    if (!r.imported) score += 3; // roles posted on TalentBridge get a nudge
+    if (!r.imported) score += 3; // roles posted on EvidenTalent get a nudge
     if (score > 0) scored.push({ r, score });
   }
   scored.sort((a, b) => b.score - a.score || String(b.r.posted).localeCompare(String(a.r.posted)));

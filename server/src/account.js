@@ -162,7 +162,7 @@ function registerAccountRoutes(app) {
     try {
       const data = exportData(req.user);
       res.setHeader('Content-Type', 'application/json; charset=utf-8');
-      res.setHeader('Content-Disposition', `attachment; filename="talentbridge-data-${new Date().toISOString().slice(0, 10)}.json"`);
+      res.setHeader('Content-Disposition', `attachment; filename="evidentalent-data-${new Date().toISOString().slice(0, 10)}.json"`);
       res.setHeader('Cache-Control', 'no-store');
       res.send(JSON.stringify(data, null, 2));
     } catch (e) {

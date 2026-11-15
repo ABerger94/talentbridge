@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="1000" height="1000" role="img" aria-label="EvidenTalent">
+  <defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6A3BF0"/><stop offset="1" stop-color="#3A1C9C"/></linearGradient></defs>
+  <!-- Full-bleed square for profile pictures: X crops it to a circle, so there are no rounded corners to clip. -->
+  <rect width="512" height="512" fill="url(#bg)"/>
+  <g transform="translate(256 256) scale(0.92) translate(-256 -256)">
+  <g fill="none" stroke="#fff" stroke-width="30" stroke-linecap="round" stroke-linejoin="round" transform="translate(32 0)">
+    <!-- "Evi": the E's top bar curves down into a rounded V, whose right side rises to the
+         top line. Then an i: a stem with a dot on the top line. -->
+    <path d="M80 256H184M80 336H216"/>
+    <path d="M80 176H162Q196 176 209.6 207.1L262.4 328Q272 350 277.9 326.7L316 176"/>
+    <path d="M366 236V336"/>
+    <circle cx="366" cy="176" r="18" fill="#fff" stroke="none"/>
+  </g>
+  </g>
+</svg>

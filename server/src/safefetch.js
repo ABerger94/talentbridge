@@ -60,7 +60,7 @@ async function fetchPageText(rawUrl, maxChars = 5000) {
       const res = await fetch(url, {
         redirect: 'manual',
         signal: AbortSignal.timeout(TIMEOUT_MS),
-        headers: { 'User-Agent': 'TalentBridgeBot/1.0 (+profile link preview)', Accept: 'text/html,text/plain;q=0.9,*/*;q=0.1' },
+        headers: { 'User-Agent': 'EvidenTalentBot/1.0 (+profile link preview)', Accept: 'text/html,text/plain;q=0.9,*/*;q=0.1' },
       });
       if (res.status >= 300 && res.status < 400 && res.headers.get('location')) {
         url = new URL(res.headers.get('location'), url);

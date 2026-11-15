@@ -6,7 +6,7 @@ import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/lib/AuthContext';
-import TalentBridgeLogo from '@/components/TalentBridgeLogo';
+import BrandLogo from '@/components/BrandLogo';
 import GoogleButton from '@/components/auth/GoogleButton';
 
 const getSafeNextPath = (next) => {
@@ -118,9 +118,9 @@ export default function Signup() {
       <Card className="w-full max-w-md p-6 sm:p-8">
         <Link to="/" className="flex items-center gap-2.5 mb-8">
           <div className="w-9 h-9 bg-primary rounded-xl flex items-center justify-center text-primary-foreground">
-            <TalentBridgeLogo size={28} />
+            <BrandLogo size={28} />
           </div>
-          <span className="text-xl font-bold tracking-tight">TalentBridge</span>
+          <span className="text-xl font-bold tracking-tight">EvidenTalent</span>
         </Link>
 
         {isVerificationStep ? (
@@ -188,7 +188,7 @@ export default function Signup() {
             <div className="mb-6">
               <h1 className="text-2xl font-bold">Create account</h1>
               <p className="text-sm text-muted-foreground mt-2">
-                Create a TalentBridge account with your email and password.
+                Create a EvidenTalent account with your email and password.
               </p>
             </div>
 

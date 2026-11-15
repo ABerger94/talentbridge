@@ -1,6 +1,6 @@
-# TalentBridge Admin API
+# EvidenTalent Admin API
 
-Use this API to manage TalentBridge from an AI agent or a script, with the same powers as an admin. Each key only gets the permissions you give it.
+Use this API to manage EvidenTalent from an AI agent or a script, with the same powers as an admin. Each key only gets the permissions you give it.
 
 **The full, machine-readable description** (every action, its inputs, and the permission it needs) is at:
 
@@ -74,7 +74,7 @@ curl -H "Authorization: Bearer $TB_ADMIN_KEY" "https://<your-site>/api/admin/aud
 
 ## Announcements (emailing users)
 
-Service announcements go to everyone, or only job seekers or only employers. Use them for policy changes, new features and outages, **not marketing**: the Privacy Policy says TalentBridge doesn't send marketing email. Each email starts with "Hi [first name]," and ends with a service-announcement footer. Write the message as plain text. Leave a blank line between paragraphs, and links become clickable.
+Service announcements go to everyone, or only job seekers or only employers. Use them for policy changes, new features and outages, **not marketing**: the Privacy Policy says EvidenTalent doesn't send marketing email. Each email starts with "Hi [first name]," and ends with a service-announcement footer. Write the message as plain text. Leave a blank line between paragraphs, and links become clickable.
 
 There are two safe ways to give an agent this job:
 

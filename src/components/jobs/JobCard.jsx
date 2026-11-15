@@ -90,7 +90,7 @@ export default function JobCard({ job, matchScore, index = 0 }) {
                    {job.source_label && !/^(greenhouse|lever|ashby|workday|smartrecruiters|company site)$/i.test(job.source_label) ? `via ${job.source_label}` : "Apply on company site"}
                  </span>
                ) : (
-                 <span className="sm:ml-1 rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">Posted on TalentBridge</span>
+                 <span className="sm:ml-1 rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">Posted on EvidenTalent</span>
                )}
               </div>
             </div>

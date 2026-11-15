@@ -7,7 +7,7 @@ import { useQuery } from "@tanstack/react-query";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
 import { redirectToLogin, logoutLocally } from "@/lib/auth-redirect";
-import TalentBridgeLogo from "@/components/TalentBridgeLogo";
+import BrandLogo from "@/components/BrandLogo";
 
 export default function Navbar() {
   const location = useLocation();
@@ -43,9 +43,9 @@ export default function Navbar() {
         <div className="flex items-center justify-between h-16">
           <Link to="/" className="flex items-center gap-2.5 group">
             <div className="w-9 h-9 bg-primary rounded-xl flex items-center justify-center group-hover:scale-105 transition-transform shadow-md shadow-primary/30 text-primary-foreground">
-              <TalentBridgeLogo size={20} />
+              <BrandLogo size={20} />
             </div>
-            <span className="text-xl font-bold tracking-tight">TalentBridge</span>
+            <span className="text-xl font-bold tracking-tight">EvidenTalent</span>
           </Link>
 
           <div className="hidden md:flex items-center gap-1">
@@ -108,9 +108,9 @@ export default function Navbar() {
             <SheetContent side="right" className="w-72">
               <div className="flex items-center gap-2.5 mb-8 pt-2">
                 <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-primary-foreground">
-                  <TalentBridgeLogo size={16} />
+                  <BrandLogo size={16} />
                 </div>
-                <span className="font-bold">TalentBridge</span>
+                <span className="font-bold">EvidenTalent</span>
               </div>
               <div className="flex flex-col gap-2">
                 {navLinks.map((link) => (

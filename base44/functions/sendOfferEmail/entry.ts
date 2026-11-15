@@ -25,7 +25,7 @@ Deno.serve(async (req) => {
     await base44.integrations.Core.SendEmail({
       to: application.applicant_email,
       subject: `Offer Extended: ${job.title} at ${job.company}`,
-      body: `Hi ${application.applicant_name},\n\nWe're pleased to extend an offer for the ${job.title} position at ${job.company}.\n\nOffer Details:\nPosition: ${offer_details.title || job.title}\nCompensation: ${salaryStr}\nStart Date: ${offer_details.start_date || 'To be discussed'}\nBenefits: ${benefitsStr}\n\nAdditional Notes:\n${offer_details.notes || 'None'}\n\nPlease respond through your TalentBridge dashboard to accept, decline, or discuss terms.\n\nLooking forward to your response!\n\nBest regards,\nThe ${job.company} Team`
+      body: `Hi ${application.applicant_name},\n\nWe're pleased to extend an offer for the ${job.title} position at ${job.company}.\n\nOffer Details:\nPosition: ${offer_details.title || job.title}\nCompensation: ${salaryStr}\nStart Date: ${offer_details.start_date || 'To be discussed'}\nBenefits: ${benefitsStr}\n\nAdditional Notes:\n${offer_details.notes || 'None'}\n\nPlease respond through your EvidenTalent dashboard to accept, decline, or discuss terms.\n\nLooking forward to your response!\n\nBest regards,\nThe ${job.company} Team`
     });
 
     await base44.entities.JobApplication.update(application_id, {

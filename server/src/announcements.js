@@ -54,7 +54,7 @@ CREATE INDEX IF NOT EXISTS announcement_recipients_status ON announcement_recipi
 const AUDIENCES = { all: 'Everyone', job_seeker: 'Job seekers', employer: 'Employers' };
 const BATCH = 25;
 const LIMIT_ERROR = /\b429\b|rate.?limit|too many|quota|daily limit|limit (reached|exceeded)|exceeded/i;
-const FOOTER = 'You’re receiving this service announcement because you have a TalentBridge account. We don’t send marketing email.';
+const FOOTER = 'You’re receiving this service announcement because you have a EvidenTalent account. We don’t send marketing email.';
 
 const fail = (status, message, extra) => Object.assign(new Error(message), { status, ...extra });
 const now = () => new Date().toISOString();
@@ -76,7 +76,7 @@ function clean(body = {}, existing = {}) {
   if (label || url) {
     if (!label || label.length > 40) throw fail(400, 'A button needs a short label (up to 40 characters) and a link.');
     if (url.startsWith('/')) url = require('./mailer').appUrl(url);
-    if (!/^https:\/\/[^\s"<>]+$/i.test(url)) throw fail(400, 'The button link must start with https:// or / (a page on TalentBridge).');
+    if (!/^https:\/\/[^\s"<>]+$/i.test(url)) throw fail(400, 'The button link must start with https:// or / (a page on EvidenTalent).');
   }
   return { subject, body: text, audience, verified_only: verified === false || verified === 0 || verified === '0' ? 0 : 1, button_label: label || null, button_url: label ? url : null };
 }

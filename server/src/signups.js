@@ -88,12 +88,12 @@ async function sendReminder(userId) {
   const target = row.role === 'user' ? appUrl('/onboarding') : appUrl(`/dashboard?tab=${progress.next.tab || 'profile'}`);
   const status = await notify('profile_reminder', {
     to: row.email,
-    subject: 'Finish your TalentBridge profile so employers can find you',
+    subject: 'Finish your EvidenTalent profile so employers can find you',
     ...layout({
       heading: 'You’re almost there',
       paragraphs: [
         `Hi ${firstName || 'there'},`,
-        'Thanks for joining TalentBridge! Your profile isn’t visible to employers yet. A few minutes finishes it:',
+        'Thanks for joining EvidenTalent! Your profile isn’t visible to employers yet. A few minutes finishes it:',
         remaining.map((s) => `• ${s}`).join('\n'),
         'Tip: uploading your resume fills in most of your profile automatically.',
       ],

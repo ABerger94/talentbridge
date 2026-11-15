@@ -20,6 +20,7 @@ const FONT_OPTS = { fontFiles: FONTS, loadSystemFonts: false, defaultFontFamily:
 // Exact text width in the bundled font (resvg lays the text out without
 // drawing it; about half a millisecond), for wrapping and placement.
 const widths = new Map();
+const BRAND = 'EvidenTalent';
 function widthOf(text, size, weight = 400) {
   const t = String(text || '');
   if (!t.trim()) return 0;
@@ -132,9 +133,14 @@ function svgFor(data, photoDataUri) {
   ${parts.join('\n  ')}
   <g transform="translate(70, 540)">
     <rect width="44" height="44" rx="11" fill="#5B2BE0"/>
-    <path d="M14 14 L30 30 M30 14 L14 30" stroke="#FFFFFF" stroke-width="3.2" stroke-linecap="round"/>
-    <text x="58" y="31" font-family="Inter" font-weight="700" font-size="25" fill="#FFFFFF">TalentBridge</text>
-    <text x="228" y="31" font-family="Inter" font-weight="400" font-size="20" fill="#B6ABDE">· Capability Graph</text>
+    <g transform="scale(${44 / 512}) translate(32 0)" fill="none" stroke="#FFFFFF" stroke-width="34" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M80 256H184M80 336H216"/>
+      <path d="M80 176H162Q196 176 209.6 207.1L262.4 328Q272 350 277.9 326.7L316 176"/>
+      <path d="M366 236V336"/>
+      <circle cx="366" cy="176" r="20" fill="#FFFFFF" stroke="none"/>
+    </g>
+    <text x="58" y="31" font-family="Inter" font-weight="700" font-size="25" fill="#FFFFFF">${BRAND}</text>
+    <text x="${58 + Math.ceil(widthOf(BRAND, 25, 700)) + 10}" y="31" font-family="Inter" font-weight="400" font-size="20" fill="#B6ABDE">· Capability Graph</text>
   </g>
 </svg>`;
 }

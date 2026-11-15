@@ -34,7 +34,7 @@ const SELECTS = [
   { key: "employment_type", label: "Job type", any: "Any job type", options: [["full_time", "Full-time"], ["part_time", "Part-time"], ["contract", "Contract"], ["internship", "Internship"], ["freelance", "Freelance"]] },
   { key: "min_salary", label: "Pay at least", any: "Any pay", options: [["40000", "$40k"], ["60000", "$60k"], ["80000", "$80k"], ["100000", "$100k"], ["125000", "$125k"], ["150000", "$150k"]] },
   { key: "posted_within", label: "Posted", any: "Any time", options: [["1", "Past 24 hours"], ["7", "Past week"], ["30", "Past month"]] },
-  { key: "origin", label: "Source", any: "All sources", options: [["direct", "Posted on TalentBridge"], ["imported", "Company job boards"]] },
+  { key: "origin", label: "Source", any: "All sources", options: [["direct", "Posted on EvidenTalent"], ["imported", "Company job boards"]] },
 ];
 
 export default function MatchFilters({ filters, onChange, pool }) {

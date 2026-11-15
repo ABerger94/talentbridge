@@ -281,7 +281,7 @@ function TwoReads() {
           <p className="mt-3.5 text-sm leading-relaxed text-muted-foreground">Seven years of hands-on QA work, rejected for missing three phrases.</p>
         </div>
         <div className="rounded-3xl border-[1.5px] border-[#CDBDF4] bg-[#FCFAFF] p-7 text-[#15172A]">
-          <div className="flex items-center gap-2 text-[13px] font-bold uppercase tracking-[0.06em] text-primary"><Check className="h-4 w-4" aria-hidden="true" />What TalentBridge sees</div>
+          <div className="flex items-center gap-2 text-[13px] font-bold uppercase tracking-[0.06em] text-primary"><Check className="h-4 w-4" aria-hidden="true" />What EvidenTalent sees</div>
           <ul className="mt-5 space-y-3 text-[15px] leading-snug">
             {[
               ["Root-cause investigation", 4, "Traced a recurring Listeria positive to a drain design flaw; the redesign ended two years of repeat findings"],

@@ -28,7 +28,7 @@ const SECTIONS = [
 // what employers see, and the public share link.
 // One-tap sharing for the public link. Each network's link is tagged
 // (utm_source=linkedin...) so the owner can see which shares bring signups.
-const SHARE_TEXT = "I mapped what I can actually do on TalentBridge: every skill rated 1–5, backed by real stories. #ShowWhatYouCanDo";
+const SHARE_TEXT = "I mapped what I can actually do on EvidenTalent: every skill rated 1–5, backed by real stories. #ShowWhatYouCanDo";
 // Each share also gets a short unique code (s=...): X and LinkedIn cache a
 // link's preview for days, so a fresh link always gets a fresh preview.
 const tagged = (url, source) => `${url}${url.includes("?") ? "&" : "?"}utm_source=${source}&utm_medium=profile_share&utm_campaign=showwhatyoucando&s=${Date.now().toString(36)}`;
@@ -152,7 +152,7 @@ export default function ProfileSharingCard() {
 
       <div className="space-y-2">
         <p className="text-sm font-semibold">What employers see</p>
-        <p className="text-xs text-muted-foreground -mt-1">Your Capability Graph, headline and skills always show. Your email, phone and résumé never do. Employers reach you through TalentBridge messages.</p>
+        <p className="text-xs text-muted-foreground -mt-1">Your Capability Graph, headline and skills always show. Your email, phone and résumé never do. Employers reach you through EvidenTalent messages.</p>
         <div className="grid sm:grid-cols-2 gap-2">
           {SECTIONS.map(([id, label, hint]) => (
             <div key={id} className="flex items-start justify-between gap-3 rounded-md border p-2.5">

@@ -73,7 +73,7 @@ function buildGraphPrompt(profile) {
     `Education: ${clip(p.education, 600)}`,
     `Career goals: ${clip(p.career_goals, 600)}`,
   ].join('\n');
-  return `You are TalentBridge's Capability Graph engine. Assess what this candidate is exceptionally good at doing, not just what their resume says they have done. An employer will use this to tell this candidate apart from other experienced people in the same field. Judge only job-relevant evidence: a person's name, gender, age, ethnicity, nationality, religion, disability or family situation must never affect a rating.
+  return `You are EvidenTalent's Capability Graph engine. Assess what this candidate is exceptionally good at doing, not just what their resume says they have done. An employer will use this to tell this candidate apart from other experienced people in the same field. Judge only job-relevant evidence: a person's name, gender, age, ethnicity, nationality, religion, disability or family situation must never affect a rating.
 
 Current date: ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
 

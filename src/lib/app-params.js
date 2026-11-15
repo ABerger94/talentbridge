@@ -2,7 +2,7 @@ const isNode = typeof window === 'undefined';
 const windowObj = isNode ? { localStorage: new Map() } : window;
 const storage = windowObj.localStorage;
 export const DEFAULT_BASE44_APP_BASE_URL = 'https://talent-bridge-jobboard.base44.app';
-export const DEFAULT_PUBLIC_APP_URL = 'https://talentbridge-jobboard.vercel.app';
+export const DEFAULT_PUBLIC_APP_URL = 'https://evidentalent.vercel.app';
 export const DEFAULT_BASE44_APP_ID = '6a14eb244688b8581308cd4e';
 
 const toSnakeCase = (str) => {
