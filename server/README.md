@@ -49,15 +49,19 @@ Gemini, create each key in a separate Google Cloud project).
 | Claude (paid) | `ANTHROPIC_API_KEY` | `TB_ANTHROPIC_MODEL` (`claude-opus-5-5`), effort `TB_ANTHROPIC_EFFORT` (`low`) |
 
 - **Order:** `TB_LLM_ORDER` (default
-  `gemini,groq,cerebras,mistral,openrouter,custom,anthropic`). Providers you
+  `groq,cerebras,openrouter,mistral,gemini,custom,anthropic`). Providers you
   leave out keep their default order after the ones you list.
-- **Skipping bad options:** a 429 skips that key+model for 1 minute, a
+- **Skipping bad options:** a 429 skips that key+model for 1 minute (Gemini:
+  as long as Google's "retry in" says, up to 12 hours), a busy (503) Gemini
+  model for 30 seconds, a
   rejected key or out-of-credits for 10 minutes, a missing model for 30
   minutes (per server instance).
 - **Time limits:** `TB_LLM_ATTEMPT_TIMEOUT_MS` (20000) per attempt,
   `TB_LLM_TOTAL_BUDGET_MS` (50000) per request — under Vercel's 60 s cap.
 - **Check:** `GET /api/health` shows which providers are active, their key
-  counts and models (never the keys).
+  counts and models (never the keys). **Admin → System → AI keys → Test AI
+  keys** (or `POST /api/admin/ai/health`) sends one tiny request through
+  every key and model and shows which actually work.
 - Free model catalogs change often; if a provider keeps reporting
   "model not found", set its `TB_*_MODELS` to a current model ID.
 

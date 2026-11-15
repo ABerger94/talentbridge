@@ -83,7 +83,9 @@ function compatEnabled(p) {
   return !!p.url && keysFrom(p.keyEnv).length > 0 && compatModels(p).length > 0;
 }
 
-const DEFAULT_ORDER = ['gemini', 'groq', 'cerebras', 'mistral', 'openrouter', 'custom', 'anthropic'];
+// Gemini comes after the other free providers: its free tier allows only about
+// 20 requests a day per project on the default model, and it is often busy.
+const DEFAULT_ORDER = ['groq', 'cerebras', 'openrouter', 'mistral', 'gemini', 'custom', 'anthropic'];
 function providerOrder() {
   const custom = splitList(process.env.TB_LLM_ORDER).map((x) => x.toLowerCase()).filter((x) => DEFAULT_ORDER.includes(x));
   // Anything left out of TB_LLM_ORDER keeps its default relative position at the end.
@@ -215,6 +217,16 @@ function geminiQuota(raw) {
   }
 }
 
+function retryDelayMs(raw) {
+  try {
+    const d = (JSON.parse(raw)?.error?.details || []).find((x) => x.retryDelay)?.retryDelay;
+    const secs = parseFloat(String(d || ''));
+    return Number.isFinite(secs) ? secs * 1000 : 0;
+  } catch {
+    return 0;
+  }
+}
+
 // OpenAI-compatible providers report what's left in x-ratelimit-* headers;
 // they tell a per-minute limit apart from a monthly one.
 function rateHeaders(res) {
@@ -244,7 +256,10 @@ async function callGemini(key, model, { prompt, response_json_schema, temperatur
   if (!res.ok) {
     const raw = await res.text();
     const text = raw.slice(0, 200).replace(/\s+/g, ' ');
-    if (res.status === 429) throw new AttemptError(`rate limited/quota (429): ${geminiQuota(raw) || text}`, { status: 429, benchMs: 60_000 });
+    // A spent daily quota comes with "retry in ~13h"; skip the key that long
+    // (at most 12 hours) instead of retrying it every minute.
+    if (res.status === 429) throw new AttemptError(`rate limited/quota (429): ${geminiQuota(raw) || text}`, { status: 429, benchMs: Math.min(Math.max(retryDelayMs(raw), 60_000), 12 * 3600_000) });
+    if (res.status === 503) throw new AttemptError(`overloaded (503): ${text}`, { status: 503, benchMs: 30_000 });
     if (res.status === 401 || res.status === 403) throw new AttemptError(`key rejected (${res.status}): ${text}`, { status: res.status, benchMs: 10 * 60_000, benchScope: 'key' });
     if (res.status === 404) throw new AttemptError(`model "${model}" not found (404)`, { status: 404, benchMs: 30 * 60_000 });
     // 400 is usually the request/schema itself; still try the next model/provider.
