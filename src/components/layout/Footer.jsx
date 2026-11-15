@@ -14,7 +14,7 @@ export default function Footer() {
               <div className="w-9 h-9 bg-primary rounded-xl flex items-center justify-center">
                 <BrandLogo size={20} />
               </div>
-              <Wordmark className="text-xl font-bold" talentClass="opacity-60" />
+              <Wordmark className="text-xl font-bold" talentClass="" />
             </div>
             <p className="text-sm opacity-60 leading-relaxed">
               AI that advocates for people. We match on capability, potential, and character — not keywords and arbitrary filters.
