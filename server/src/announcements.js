@@ -54,7 +54,7 @@ CREATE INDEX IF NOT EXISTS announcement_recipients_status ON announcement_recipi
 const AUDIENCES = { all: 'Everyone', job_seeker: 'Job seekers', employer: 'Employers' };
 const BATCH = 25;
 const LIMIT_ERROR = /\b429\b|rate.?limit|too many|quota|daily limit|limit (reached|exceeded)|exceeded/i;
-const FOOTER = 'You’re receiving this service announcement because you have a EvidenTalent account. We don’t send marketing email.';
+const FOOTER = 'You’re receiving this service announcement because you have an EvidenTalent account. We don’t send marketing email.';
 
 const fail = (status, message, extra) => Object.assign(new Error(message), { status, ...extra });
 const now = () => new Date().toISOString();
