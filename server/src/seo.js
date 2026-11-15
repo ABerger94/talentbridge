@@ -211,7 +211,7 @@ async function profilePage(req, res, next) {
     // previews expect; its size is stated so it shows on the first share.
     const { cardData, cardVersion } = require('./sharecard');
     const version = cardVersion(cardData({ ...view, photo_file: p.photo_file }));
-    const image = appUrl(`/api/public/profiles/${encodeURIComponent(req.params.slug)}/card.png?v=${version}`);
+    const image = appUrl(`/p/${encodeURIComponent(req.params.slug)}/card.png?v=${version}`);
     const head = headFor({ title, description, url, image, ld: null }).replace('content="website"', 'content="profile"')
       + `\n    <meta property="og:image:width" content="1200" />`
       + `\n    <meta property="og:image:height" content="630" />`

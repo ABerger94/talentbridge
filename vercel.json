@@ -25,6 +25,14 @@
     },
     {
       "destination": "/api",
+      "source": "/p/:slug/card.png"
+    },
+    {
+      "destination": "/api",
+      "source": "/p/:slug/photo"
+    },
+    {
+      "destination": "/api",
       "source": "/p/:slug"
     },
     {
