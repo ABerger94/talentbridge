@@ -1,0 +1,74 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&display=block" rel="stylesheet">
+<style>
+@font-face{font-family:Inter;src:url(../../../server/assets/fonts/Inter-Regular.otf);font-weight:400}
+@font-face{font-family:Inter;src:url(../../../server/assets/fonts/Inter-SemiBold.otf);font-weight:600}
+@font-face{font-family:Inter;src:url(../../../server/assets/fonts/Inter-Bold.otf);font-weight:700 800}
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--ink:#15172A;--muted:#5B5E72;--purple:#5B2BE0;--mint:#5EEAD4;--teal:#0B7A66;--line:#E6E0F5;--soft:#F1EBFD}
+body{font-family:Inter,sans-serif;color:var(--ink);background:#ddd;padding:40px;display:flex;flex-direction:column;gap:40px;align-items:flex-start}
+.word{font-family:"Space Grotesk";font-weight:700;letter-spacing:-.035em;line-height:1;white-space:nowrap}
+.word .t{background:linear-gradient(120deg,#5B2BE0,#12A68C);-webkit-background-clip:text;color:transparent}
+.dark .word{color:#fff}.dark .word .t{background:linear-gradient(120deg,#B9A3FF,#5EEAD4);-webkit-background-clip:text;color:transparent}
+.lock{display:inline-flex;align-items:center;gap:26px;padding:60px 72px;background:#FAF9F7}
+.lock.dark{background:linear-gradient(135deg,#140B38,#2A1673 60%,#3A1C9C)}
+.lock img{width:120px;height:120px}
+.lock .word{font-size:104px}
+.stack{display:inline-flex;flex-direction:column;align-items:center;gap:30px;padding:80px 90px;background:#FAF9F7}
+.stack img{width:220px}.stack .word{font-size:84px}
+.stack small{font-size:26px;font-weight:600;letter-spacing:.16em;color:var(--muted)}
+/* hero */
+.hero{width:1600px;height:900px;background:#FAF9F7;position:relative;overflow:hidden;display:flex;flex-direction:column}
+.hero::before{content:"";position:absolute;inset:0;background:radial-gradient(ellipse 55% 60% at 100% 0%,rgba(139,92,246,.16),transparent 70%),radial-gradient(ellipse 45% 50% at 0% 100%,rgba(45,212,191,.13),transparent 70%)}
+.nav{position:relative;display:flex;align-items:center;gap:36px;padding:30px 72px;font-size:19px;font-weight:600;color:var(--muted)}
+.nav .brand{display:flex;align-items:center;gap:12px;margin-right:auto}
+.nav .brand img{width:44px}.nav .brand .word{font-size:30px;color:var(--ink)}
+.nav .cta{background:var(--purple);color:#fff;border-radius:12px;padding:12px 20px}
+.body{position:relative;flex:1;display:grid;grid-template-columns:1.08fr .92fr;gap:60px;padding:30px 72px 60px;align-items:center}
+.eyebrow{display:inline-block;font-size:16px;font-weight:800;letter-spacing:.14em;color:var(--purple);background:var(--soft);border-radius:999px;padding:9px 18px}
+h1{font-family:"Space Grotesk";font-weight:700;font-size:104px;line-height:.98;letter-spacing:-.04em;margin-top:26px}
+h1 em{font-style:normal;background:linear-gradient(120deg,#5B2BE0,#12A68C);-webkit-background-clip:text;color:transparent}
+.sub{font-size:27px;line-height:1.42;color:var(--muted);margin-top:26px;max-width:680px}
+.btns{display:flex;gap:16px;margin-top:38px;align-items:center}
+.b1{background:var(--purple);color:#fff;font-weight:800;font-size:22px;border-radius:16px;padding:20px 28px;box-shadow:0 16px 36px rgba(91,43,224,.3)}
+.b2{font-weight:700;font-size:20px;color:var(--ink);border:2px solid var(--line);background:#fff;border-radius:16px;padding:18px 24px}
+.trust{margin-top:26px;font-size:17px;color:var(--muted);display:flex;gap:22px}
+.trust b{color:var(--teal)}
+.card{background:#fff;border:1.5px solid var(--line);border-radius:28px;padding:28px 30px;box-shadow:0 40px 90px rgba(39,22,90,.14)}
+.ch{display:flex;justify-content:space-between;align-items:center;font-size:14px;font-weight:800;letter-spacing:.14em;color:var(--purple)}
+.ch span{font-size:13px;letter-spacing:0;font-weight:700;color:#8A8DA0;background:#F3F1F8;border-radius:999px;padding:5px 12px}
+.who{display:flex;gap:14px;align-items:center;margin:16px 0 8px}
+.av{width:54px;height:54px;border-radius:50%;background:linear-gradient(135deg,#C4B5FD,#5EEAD4);display:grid;place-items:center;font-weight:800;color:#2A1673;font-size:19px}
+.who b{font-size:22px;display:block}.who span{color:var(--muted);font-size:16px}
+.row{display:flex;justify-content:space-between;align-items:center;padding:13px 0;border-top:1.5px solid #F0EDF7}
+.nm{font-size:19px;font-weight:700}
+.ev{font-size:12px;font-weight:800;color:var(--teal);background:#E3F6F1;border-radius:6px;padding:3px 8px;margin-left:8px;vertical-align:2px}
+.lv{display:flex;gap:9px;align-items:center;font-size:15px;font-weight:800;color:var(--purple);white-space:nowrap}
+.m{display:flex;gap:4px}.m i{width:18px;height:8px;border-radius:4px;background:#EEE9F8}.m i.on{background:var(--purple)}
+.story{margin-top:12px;background:#FAF8FF;border:1.5px solid var(--line);border-radius:16px;padding:14px 16px;font-size:16.5px;line-height:1.45;color:#3C3F55}
+.story b{display:block;font-size:12px;letter-spacing:.12em;color:#8A8DA0;margin-bottom:4px}
+</style></head><body>
+<div class="lock" id="lockup-light"><img src="../logo-icon.svg"><span class="word">Eviden<span class="t">T</span>alent</span></div>
+<div class="lock dark" id="lockup-dark"><img src="../logo-icon.svg"><span class="word">Eviden<span class="t">T</span>alent</span></div>
+<div class="stack" id="stacked"><img src="../logo-icon.svg"><span class="word">Eviden<span class="t">T</span>alent</span><small>MAKE YOUR TALENT EVIDENT</small></div>
+<div class="hero" id="hero">
+  <div class="nav"><div class="brand"><img src="../logo-icon.svg"><span class="word">Eviden<span class="t">T</span>alent</span></div><span>Explore Roles</span><span>For Employers</span><span>How we rate</span><span class="cta">Get started free</span></div>
+  <div class="body">
+    <div>
+      <span class="eyebrow">FORMERLY TALENTBRIDGE</span>
+      <h1>Make your talent <em>evident.</em></h1>
+      <p class="sub">Résumés list what you were responsible for. EvidenTalent shows what you can do: every skill rated 1–5 and backed by proof from your real work.</p>
+      <div class="btns"><span class="b1">Build your Capability Graph →</span><span class="b2">See how we rate</span></div>
+      <div class="trust"><span><b>✓</b> Free for job seekers</span><span><b>✓</b> No keyword filters</span><span><b>✓</b> No auto-rejections</span></div>
+    </div>
+    <div class="card">
+      <div class="ch">THE EVIDENCE <span>Sample profile</span></div>
+      <div class="who"><div class="av">MT</div><div><b>Maya Torres</b><span>Lead server · 4 years</span></div></div>
+      <div class="row"><span class="nm">Guest recovery<span class="ev">Demonstrated</span></span><span class="lv"><span class="m"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i></span>4 · Improves</span></div>
+      <div class="row"><span class="nm">High-volume service<span class="ev">Demonstrated</span></span><span class="lv"><span class="m"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i></span>4 · Improves</span></div>
+      <div class="row"><span class="nm">Training new staff<span class="ev">Demonstrated</span></span><span class="lv"><span class="m"><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i></span>3 · Builds</span></div>
+      <div class="story"><b>PROOF</b>“Two servers called out on a sold-out Saturday. I split the floor, ran expo and kept every table updated. No comps, best night of the month.”</div>
+    </div>
+  </div>
+</div>
+</body></html>
