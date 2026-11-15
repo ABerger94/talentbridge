@@ -40,7 +40,7 @@ Gemini, create each key in a separate Google Cloud project).
 
 | Provider | Keys | Models (default) |
 |---|---|---|
-| Gemini | `GEMINI_API_KEYS` / `GEMINI_API_KEY` | `TB_GEMINI_MODELS` (`gemini-3.8-flash`) |
+| Gemini | `GEMINI_API_KEYS` / `GEMINI_API_KEY` | `TB_GEMINI_MODELS` (`gemini-3.8-flash,gemini-3.5-flash-lite`) |
 | Groq | `GROQ_API_KEYS` / `GROQ_API_KEY` | `TB_GROQ_MODELS` (`openai/gpt-oss-120b,openai/gpt-oss-20b`) |
 | Cerebras | `CEREBRAS_API_KEYS` / `CEREBRAS_API_KEY` | `TB_CEREBRAS_MODELS` (`gpt-oss-120b`) |
 | Mistral | `MISTRAL_API_KEYS` / `MISTRAL_API_KEY` | `TB_MISTRAL_MODELS` (`mistral-small-latest`) |

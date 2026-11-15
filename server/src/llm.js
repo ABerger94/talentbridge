@@ -23,7 +23,11 @@ const { authRequired } = require('./auth');
 
 const Anthropic = require('@anthropic-ai/sdk');
 
-const GEMINI_MODELS = splitList(process.env.TB_GEMINI_MODELS || process.env.TB_GEMINI_MODEL || 'gemini-3.8-flash');
+// 3.8 Flash first for quality while its small free quota lasts (about 20
+// requests a day per project), then 3.5 Flash-Lite, whose free quota is far
+// larger. Each model's quota is separate, so the second still works when the
+// first runs out.
+const GEMINI_MODELS = splitList(process.env.TB_GEMINI_MODELS || process.env.TB_GEMINI_MODEL || 'gemini-3.8-flash,gemini-3.5-flash-lite');
 const ANTHROPIC_MODEL = process.env.TB_ANTHROPIC_MODEL || 'claude-opus-5-5';
 // Effort for Claude: structured extraction/scoring doesn't need deep
 // reasoning, and Vercel caps a request at 60s. Override with TB_ANTHROPIC_EFFORT.
