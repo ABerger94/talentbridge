@@ -7,8 +7,8 @@
        (together, a checkmark), and the T's stem set apart by a gap. -->
   <g fill="none" stroke="#fff" stroke-width="30" stroke-linecap="round" stroke-linejoin="round">
     <!-- One straight line across the top: E's top bar, both tips of the V, and the T's bar. -->
-    <path d="M66 176H170M66 256H170M66 336H170" stroke="#5EEAD4"/>
-    <path d="M208 176L286 336L350 176H446"/>
-    <path d="M404 230V336"/>
+    <path d="M80 176H184M80 256H184M80 336H184"/>
+    <path d="M184 176L262 336L326 176H430"/>
+    <path d="M384 230V336"/>
   </g>
 </svg>
