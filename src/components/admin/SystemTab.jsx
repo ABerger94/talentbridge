@@ -39,6 +39,8 @@ function Check({ ok, label, detail }) {
 const KEY_STATUS = {
   ok: { label: "Working", tone: "text-emerald-700" },
   rate_limited: { label: "Valid, but rate limited or out of free quota right now", tone: "text-amber-700" },
+  no_quota: { label: "No quota: this account or plan allows 0 requests. Fix it in the provider's console", tone: "text-red-700" },
+  overloaded: { label: "Provider overloaded right now (temporary; the key is fine)", tone: "text-amber-700" },
   key_rejected: { label: "Key rejected: wrong, revoked or expired", tone: "text-red-700" },
   no_credits: { label: "Out of credits", tone: "text-red-700" },
   model_missing: { label: "Model not found: retired or misspelled", tone: "text-red-700" },
@@ -65,6 +67,7 @@ function AiKeyHealth({ result, running, onRun }) {
           <p className="text-sm">
             <span className="font-medium">{result.working} of {result.total} working</span>
             {result.rate_limited ? <span className="text-amber-700"> · {result.rate_limited} rate limited</span> : null}
+            {result.results.some((r) => r.status === "overloaded") ? <span className="text-amber-700"> · {result.results.filter((r) => r.status === "overloaded").length} overloaded</span> : null}
             {result.broken ? <span className="text-red-700"> · {result.broken} broken</span> : null}
             <span className="text-muted-foreground"> · {ago(result.checked_at)}</span>
           </p>

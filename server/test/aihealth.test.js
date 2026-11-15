@@ -24,6 +24,8 @@ const fake = http.createServer((req, res) => {
     if (model === 'gone-model') return send(404, { error: 'model not found' });
     if (key === 'bad-key-1234') return send(401, { error: 'invalid api key' });
     if (key === 'busy-key-5678') return send(429, { error: 'rate limit' });
+    if (key === 'zero-key-9999') { res.setHeader('x-ratelimit-limit-req-minute', '0'); return send(429, { error: 'rate limit' }); }
+    if (key === 'hot-key-0000') return send(503, { error: 'high demand' });
     send(200, { choices: [{ message: { content: '{"ok": true}' }, finish_reason: 'stop' }] });
   });
 });
@@ -64,6 +66,20 @@ test('tests every key and model and labels each failure, without exposing keys',
   });
   assert.equal(data.results[0].key_hint, '…abcd');
   assert.ok(!JSON.stringify(data).includes('good-key'), 'full keys never leave the server');
+});
+
+test('a limit of 0 is reported as no quota, and a 503 as overloaded', async () => {
+  const before = process.env.TB_CUSTOM_LLM_API_KEYS;
+  process.env.TB_CUSTOM_LLM_API_KEYS = 'zero-key-9999,hot-key-0000';
+  process.env.TB_CUSTOM_LLM_MODELS = 'live-model';
+  try {
+    const out = await require('../src/llm.js').checkProviders();
+    assert.deepEqual(out.results.map((r) => r.status), ['no_quota', 'overloaded']);
+    assert.equal(out.broken, 1);
+  } finally {
+    process.env.TB_CUSTOM_LLM_API_KEYS = before;
+    process.env.TB_CUSTOM_LLM_MODELS = 'live-model,gone-model';
+  }
 });
 
 test('only admins can run it, and the last result shows on the System tab', async () => {

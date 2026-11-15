@@ -460,7 +460,10 @@ async function invokeLLM({ prompt: rawPrompt, response_json_schema, temperature 
 const HEALTH_SCHEMA = { type: 'object', properties: { ok: { type: 'boolean' } }, required: ['ok'] };
 function classify(e) {
   const m = String(e?.message || e);
+  // A limit of 0 never resets: the account or plan allows no requests at all.
+  if ((e?.status === 429 || /429/.test(m)) && /\(limit 0\)|limit-req[a-z-]*=0\b/i.test(m)) return 'no_quota';
   if (e?.status === 429 || /429|quota/i.test(m)) return 'rate_limited';
+  if (e?.status === 503 || e?.status === 529 || /overloaded|high demand/i.test(m)) return 'overloaded';
   if (e?.status === 401 || e?.status === 403) return 'key_rejected';
   if (e?.status === 402) return 'no_credits';
   if (e?.status === 404) return 'model_missing';
@@ -512,7 +515,8 @@ async function checkProviders({ timeoutMs = 20000 } = {}) {
     total: results.length,
     working,
     rate_limited: results.filter((r) => r.status === 'rate_limited').length,
-    broken: results.filter((r) => !r.ok && r.status !== 'rate_limited').length,
+    // Rate limited and overloaded are temporary; the key itself is fine.
+    broken: results.filter((r) => !r.ok && !['rate_limited', 'overloaded'].includes(r.status)).length,
     results,
   };
 }
