@@ -240,7 +240,18 @@ export default function SeekerDashboard() {
       });
       setCapabilityGraph(normalizeGraph(graph?.data ?? graph));
       queryClient.invalidateQueries({ queryKey: ["seekerProfile"] });
-      toast.success("Capability Graph saved to your profile!");
+      // Right after a build is when people most want to show it off.
+      toast.success("Capability Graph saved to your profile!", {
+        description: "Proud of it? Share it from your profile page.",
+        duration: 10000,
+        action: {
+          label: "Share it",
+          onClick: () => {
+            setTab("profile");
+            setTimeout(() => document.getElementById("profile-page")?.scrollIntoView({ behavior: "smooth", block: "start" }), 150);
+          },
+        },
+      });
     } catch (err) {
       console.error("buildCapabilityGraph failed", err);
       toast.error(`Couldn't build your Capability Graph: ${err?.message || "please try again."}`);

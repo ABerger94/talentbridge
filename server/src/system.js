@@ -299,6 +299,7 @@ function registerSystemRoutes(app) {
     res.json({
       data: {
         ...overview(),
+        signup_sources: require('./acquisition').sourcesSummary(30),
         errors: monitor.recentErrors({ includeResolved: req.query.resolved === '1' }),
         audit: recentAudit(200),
         fairness: lastFairnessCheck(),

@@ -299,12 +299,14 @@ Express match_score as an integer from 0 to 100, reflecting job-relevant evidenc
     return assessment;
   },
 
-  async setUserRole(user, { role }) {
+  async setUserRole(user, body = {}) {
+    const { role } = body;
     if (!['employer', 'job_seeker'].includes(role)) throw fail(400, 'Invalid role');
     if (user.role === 'admin' || user.role === role) return { success: true };
     // The account type is chosen once, during onboarding.
     if (user.role !== 'user') throw fail(403, 'Your account type is already set');
-    const data = { ...(user.data || {}) };
+    // Where they came from (campaign link, "how did you hear about us").
+    const data = require('./acquisition').withAcquisition({ ...(user.data || {}) }, body);
     if (role === 'employer') data.employer_status = 'pending'; // reviewed before seeing candidates
     db.prepare('UPDATE users SET role = ?, data = ? WHERE id = ?').run(role, JSON.stringify(data), user.id);
     return { success: true };

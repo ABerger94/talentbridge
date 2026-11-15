@@ -9,11 +9,15 @@ import { motion } from "framer-motion";
 import TalentBridgeLogo from "@/components/TalentBridgeLogo";
 import CompanyProfileForm from "@/components/employer/CompanyProfileForm";
 import { toast } from "sonner";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { getAcquisition, HEARD_FROM } from "@/lib/acquisition";
 
 export default function Onboarding() {
   const [selected, setSelected] = useState(null);
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState("role"); // 'role' | 'company'
+  const [heardFrom, setHeardFrom] = useState("");
   const [saving, setSaving] = useState(false);
   const navigate = useNavigate();
   const { checkUserAuth, user, isAuthenticated, isLoadingAuth } = useAuth();
@@ -39,7 +43,7 @@ export default function Onboarding() {
     if (!selected) return;
     setLoading(true);
     try {
-      await base44.functions.invoke('setUserRole', { role: selected });
+      await base44.functions.invoke('setUserRole', { role: selected, heard_from: heardFrom || null, acquisition: getAcquisition() });
       await checkUserAuth(); // refresh user in context
       if (selected === "employer") {
         setStep("company");
@@ -148,6 +152,16 @@ export default function Onboarding() {
               <p className="text-sm text-muted-foreground leading-relaxed">{role.description}</p>
             </Card>
           ))}
+        </div>
+
+        <div className="max-w-sm mx-auto mb-6 space-y-1.5">
+          <Label htmlFor="heard-from" className="text-sm">How did you hear about TalentBridge? <span className="text-muted-foreground font-normal">(optional)</span></Label>
+          <Select value={heardFrom} onValueChange={setHeardFrom}>
+            <SelectTrigger id="heard-from"><SelectValue placeholder="Choose one" /></SelectTrigger>
+            <SelectContent>
+              {HEARD_FROM.map(([k, label]) => <SelectItem key={k} value={k}>{label}</SelectItem>)}
+            </SelectContent>
+          </Select>
         </div>
 
         <Button

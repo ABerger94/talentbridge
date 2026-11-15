@@ -40,6 +40,10 @@ const sections = [
         <p><strong>Employer content.</strong> Your company profile (name, website, size, location, description, LinkedIn
           page, and your job title), which we use to verify employers and show with your postings; job postings (including documents you upload to fill a posting), and the
           actions you take on candidates.</p>
+        <p><strong>How you found us.</strong> If you arrived through a link we shared (for example on LinkedIn or
+          Facebook), we note the campaign tag in that link and the site that linked you here, and at sign-up we ask
+          (optionally) how you heard about {LEGAL.siteName}. We save this with your account to see which outreach
+          works; it isn’t shared or used for advertising.</p>
         <p><strong>Emails we send.</strong> A record of each notification (type, recipient, and whether it was
           delivered), and your job alert settings if you turn alerts on.</p>
         <p><strong>Technical information.</strong> Our hosting provider records standard server logs (such as IP

@@ -118,6 +118,36 @@ function DepthResults({ depth }) {
   );
 }
 
+// Where the last 30 days of signups came from: what people answered at
+// onboarding, and the campaign link (utm_source) they arrived through.
+function SignupSources({ data }) {
+  if (!data) return null;
+  const List = ({ title, rows }) => (
+    <div className="min-w-0">
+      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">{title}</p>
+      {rows.length ? rows.slice(0, 8).map((r) => (
+        <div key={r.value} className="flex justify-between gap-3 text-sm py-0.5">
+          <span className="truncate">{r.value === "unknown" ? <span className="text-muted-foreground">Not given</span> : r.label}</span>
+          <span className="font-medium tabular-nums">{r.signups}</span>
+        </div>
+      )) : <p className="text-sm text-muted-foreground">None yet</p>}
+    </div>
+  );
+  return (
+    <Card className="p-5 space-y-3">
+      <div>
+        <h3 className="font-semibold">Where signups come from</h3>
+        <p className="text-xs text-muted-foreground">{data.signups} signup{data.signups === 1 ? "" : "s"} in the last {data.days} days. Tag your links with utm_source and utm_campaign to see them here.</p>
+      </div>
+      <div className="grid sm:grid-cols-3 gap-4">
+        <List title="They said" rows={data.heard_from} />
+        <List title="Link source" rows={data.source} />
+        <List title="Campaign" rows={data.campaign} />
+      </div>
+    </Card>
+  );
+}
+
 export default function SystemTab() {
   const queryClient = useQueryClient();
   const [showResolved, setShowResolved] = useState(false);
@@ -215,6 +245,8 @@ export default function SystemTab() {
           </div>
         )}
       </Card>
+
+      <SignupSources data={data.signup_sources} />
 
       <Card className="p-5 space-y-3">
         <div className="flex items-center justify-between gap-2 flex-wrap">

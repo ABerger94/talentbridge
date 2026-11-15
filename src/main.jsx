@@ -3,6 +3,10 @@ import ReactDOM from 'react-dom/client'
 import App from '@/App.jsx'
 import '@/index.css'
 import { reportClientError } from '@/api/base44Client'
+import { captureAcquisition } from '@/lib/acquisition'
+
+// Note which campaign link (if any) brought this visit, before routing.
+captureAcquisition()
 
 // Send uncaught browser errors to the server so admins see them on the
 // System tab. A few per page load at most, each message once.
