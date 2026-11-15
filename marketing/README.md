@@ -6,9 +6,9 @@ Everything here costs nothing but time. The plan: **win job seekers in Maryland,
 |---|---|
 | `posts-weeks-1-2.md` | Ready-to-post copy for LinkedIn, X and Facebook, two weeks |
 | `outreach.md` | Partner, employer and press emails, plus the workshop outline |
-| `assets/post-before-after.png` | Résumé line vs. TalentBridge (1080×1350) |
-| `assets/post-show-what-you-can-do.png` | The #ShowWhatYouCanDo challenge |
-| `assets/post-hospitality.png` | For servers, cooks and hotel staff |
+| `assets/post-career-changer.png` | A teacher’s Capability Graph and the jobs it leads to (1080×1350) |
+| `assets/post-show-what-you-can-do.png` | #ShowWhatYouCanDo: a real share card as it looks in the feed |
+| `assets/post-hospitality.png` | A server’s skills, itemized on a guest check |
 | `assets/flyer.pdf` | One-page flyer for partners; its QR code is tracked |
 | `../brand/` | Logo, X header, Capability Graph explainer, promo video |
 
@@ -82,7 +82,7 @@ Week 3 rule: put twice the time into the channel with the most signups per hour 
 
 - **Lead with value in groups.** Read each group’s rules first, and where links aren’t allowed, say “comment and I’ll send it.”
 - **Only real numbers.** Never invent statistics or testimonials. Quote a user only with their permission.
-- **Sample profiles stay labeled.** The images use made-up people (Jordan Rivera, the server story) and say “Sample profile”; keep it that way.
+- **Sample profiles stay labeled.** The images use made-up people (Elena A., Danielle Okoro, Maya T.) and say “Sample profile”; keep it that way.
 - **No mass DMs, scraped email lists or bought followers.**
 - **Announcements are for service updates only.** The Privacy Policy says TalentBridge doesn’t send marketing email. For a newsletter, make it opt-in and update the Privacy Policy first.
 - **“Free”:** the copy says it’s free for job seekers. Change it everywhere if that ever stops being true.
