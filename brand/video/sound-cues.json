@@ -1,6 +1,6 @@
 {
   "video": {
-    "file": "talentbridge-whats-new.mp4",
+    "file": "evidentalent-whats-new.mp4",
     "duration_s": 54.8,
     "fps": 30,
     "width": 1920,
@@ -18,7 +18,7 @@
       "scene": 2,
       "start": 4.8,
       "end": 9.6,
-      "on_screen_text": "TalentBridge / AI that advocates for people / 1–5 / Skill rubric / ✓ / Proof stories / ✓ / Profile pages / ✓ / Every field / WHAT’S NEW"
+      "on_screen_text": "EvidenTalent / AI that advocates for people / 1–5 / Skill rubric / ✓ / Proof stories / ✓ / Profile pages / ✓ / Every field / WHAT’S NEW"
     },
     {
       "scene": 3,
@@ -48,7 +48,7 @@
       "scene": 7,
       "start": 36,
       "end": 42,
-      "on_screen_text": "Your own / profile page. / ✓ / Your photo and Capability Graph / ✓ / Experience as a clean timeline / ✓ / Proof stories employers can read / ✓ / A public link to share anywhere / NP / Nia Park / Psychiatric Nurse Practitioner / Crisis risk assessment / 4 · IMPROVES / Collaborative care design / 3 · BUILDS / PMHNP / · Riverside Health · 2021–now / Psychiatric RN / · Mercy Hospital · 2015–2021 / 🔗 talentbridge-jobboard.vercel.app/p/nia-park / 👁 / 3 employers viewed your profile this week"
+      "on_screen_text": "Your own / profile page. / ✓ / Your photo and Capability Graph / ✓ / Experience as a clean timeline / ✓ / Proof stories employers can read / ✓ / A public link to share anywhere / NP / Nia Park / Psychiatric Nurse Practitioner / Crisis risk assessment / 4 · IMPROVES / Collaborative care design / 3 · BUILDS / PMHNP / · Riverside Health · 2021–now / Psychiatric RN / · Mercy Hospital · 2015–2021 / 🔗 evidentalent.vercel.app/p/nia-park / 👁 / 3 employers viewed your profile this week"
     },
     {
       "scene": 8,
@@ -60,7 +60,7 @@
       "scene": 9,
       "start": 46.8,
       "end": 54.8,
-      "on_screen_text": "TalentBridge / Get seen for what / you can do. / Build your free Capability Graph / talentbridge-jobboard.vercel.app"
+      "on_screen_text": "EvidenTalent / Get seen for what / you can do. / Build your free Capability Graph / evidentalent.vercel.app"
     }
   ],
   "sfx": {

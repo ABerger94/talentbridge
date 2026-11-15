@@ -23,7 +23,7 @@ Keep a simple list: name, organization, email, date sent, reply, next step.
 
 > Hi [Name],
 >
-> I’m [your name], a [Maryland]-based founder. I built TalentBridge, a free job site that helps people show employers what they can actually do, not just the keywords on their résumé.
+> I’m [your name], a [Maryland]-based founder. I built EvidenTalent, a free job site that helps people show employers what they can actually do, not just the keywords on their résumé.
 >
 > Here’s how it works:
 > - Each skill is rated 1–5 on a published scale.
@@ -46,10 +46,10 @@ Keep a simple list: name, organization, email, date sent, reply, next step.
 > Hi [Name], just bringing this back to the top of your inbox. I’m happy to work around your schedule or start small, even five people. Is there someone else on your team I should talk to?
 
 ### One line to adapt the first paragraph
-- **Hospitality and culinary:** “Servers, cooks and hotel staff have real skills, like guest recovery, running a section and food safety, that a résumé never shows. TalentBridge has questions written for hospitality and lists local restaurant and hotel jobs.”
+- **Hospitality and culinary:** “Servers, cooks and hotel staff have real skills, like guest recovery, running a section and food safety, that a résumé never shows. EvidenTalent has questions written for hospitality and lists local restaurant and hotel jobs.”
 - **Healthcare:** “Clinicians get questions written for healthcare, such as complex cases, catching risks early and improving care processes, with built-in reminders never to include patient details.”
-- **Veterans:** “Military experience rarely translates to keywords. TalentBridge rates what people did and led, so a civilian employer can see it.”
-- **Reentry or returning to work:** “For people with gaps or non-linear histories, TalentBridge focuses on what someone can do, shown through real examples, rather than job titles and dates.”
+- **Veterans:** “Military experience rarely translates to keywords. EvidenTalent rates what people did and led, so a civilian employer can see it.”
+- **Reentry or returning to work:** “For people with gaps or non-linear histories, EvidenTalent focuses on what someone can do, shown through real examples, rather than job titles and dates.”
 
 ---
 
@@ -61,7 +61,7 @@ Keep a simple list: name, organization, email, date sent, reply, next step.
 |---|---|
 | 0–5 | Welcome. “Résumés list duties; employers hire people who can show results.” |
 | 5–12 | Show the 1–5 scale and one before/after example. Explain that evidence sets the ceiling. |
-| 12–17 | Everyone signs up and adds their experience. Have them pick “A job center, school or program” when asked how they heard about TalentBridge. |
+| 12–17 | Everyone signs up and adds their experience. Have them pick “A job center, school or program” when asked how they heard about EvidenTalent. |
 | 17–32 | Story writing. Each person writes two stories from the prompts: what was happening, what you did, what changed. Walk the room and help. |
 | 32–38 | Everyone builds their Capability Graph and looks at what sets them apart. |
 | 38–43 | Turn on the public link, and practice saying one story out loud as an interview answer. |
@@ -79,7 +79,7 @@ For local restaurants, hotels, clinics and small businesses. For restaurants, a 
 
 > Hi [Name],
 >
-> I run TalentBridge, a free local job site. Instead of keyword-filtered résumés, candidates show their skills rated 1–5 and backed by real examples. For example, a server who can prove they handle a slammed Saturday, or a cook who’s caught allergy mix-ups.
+> I run EvidenTalent, a free local job site. Instead of keyword-filtered résumés, candidates show their skills rated 1–5 and backed by real examples. For example, a server who can prove they handle a slammed Saturday, or a cook who’s caught allergy mix-ups.
 >
 > Posting a role is free. You’ll see each applicant’s profile and stories, and nobody gets auto-rejected, so you decide.
 >
@@ -87,7 +87,7 @@ For local restaurants, hotels, clinics and small businesses. For restaurants, a 
 >
 > [Your name] · [your email] · [employer tracking link]
 
-Use this tracking link for employers: `https://talentbridge-jobboard.vercel.app/?utm_source=outreach&utm_medium=email&utm_campaign=employers`
+Use this tracking link for employers: `https://evidentalent.vercel.app/?utm_source=outreach&utm_medium=email&utm_campaign=employers`
 
 ---
 
@@ -99,7 +99,7 @@ Use this tracking link for employers: `https://talentbridge-jobboard.vercel.app/
 
 > Hi [Name],
 >
-> Most hiring software filters candidates out by keywords before a person ever looks. I’m a [Maryland] founder, and I built TalentBridge to do the opposite.
+> Most hiring software filters candidates out by keywords before a person ever looks. I’m a [Maryland] founder, and I built EvidenTalent to do the opposite.
 >
 > It rates each of a job seeker’s skills on a published 1–5 scale, based on real stories from their work. It caps ratings that rest only on job titles, and we run fairness checks to test that the same experience gets the same rating regardless of whose name is on it. It never auto-rejects anyone, and it’s free for job seekers.
 >
@@ -119,12 +119,12 @@ Use this tracking link for employers: `https://talentbridge-jobboard.vercel.app/
 **Product Hunt tagline (60 characters):** `Show employers what you can do, not just your keywords`
 
 **Product Hunt description:**
-> TalentBridge is a free job site that rates each of your skills 1–5 on a published scale, backed by real stories from your work. Questions are written for your field, from nursing to restaurants to software. You get a shareable profile page and matches with thousands of live roles, and nobody gets auto-rejected.
+> EvidenTalent is a free job site that rates each of your skills 1–5 on a published scale, backed by real stories from your work. Questions are written for your field, from nursing to restaurants to software. You get a shareable profile page and matches with thousands of live roles, and nobody gets auto-rejected.
 
-**Show HN title:** `Show HN: TalentBridge – hiring AI with a published rubric and evidence caps`
+**Show HN title:** `Show HN: EvidenTalent – hiring AI with a published rubric and evidence caps`
 
 **Show HN first comment:**
-> I built TalentBridge because keyword filters throw out people who could do the job.
+> I built EvidenTalent because keyword filters throw out people who could do the job.
 >
 > How the rating works:
 > - Each skill gets a depth level from 1 (Executes) to 5 (Leads).

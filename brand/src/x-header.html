@@ -1,0 +1,88 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&display=block" rel="stylesheet">
+<style>
+@font-face{font-family:Inter;src:url(../../server/assets/fonts/Inter-Regular.otf);font-weight:400}
+@font-face{font-family:Inter;src:url(../../server/assets/fonts/Inter-SemiBold.otf);font-weight:600}
+@font-face{font-family:Inter;src:url(../../server/assets/fonts/Inter-Bold.otf);font-weight:700 800}
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--purple:#5B2BE0;--ink:#15172A;--muted:#5B5E72;--line:#E6E0F5;--teal:#0B7A66;--teal-soft:#E3F6F1;--mint:#5EEAD4}
+body{width:1500px;height:500px;overflow:hidden;font-family:Inter,sans-serif;position:relative;color:#fff;
+  background:radial-gradient(ellipse 55% 90% at 82% 30%,rgba(139,92,246,.55),transparent 70%),
+             radial-gradient(ellipse 40% 70% at 0% 0%,rgba(94,234,212,.16),transparent 70%),
+             linear-gradient(120deg,#1B1046 0%,#2A1673 48%,#3A1C9C 100%)}
+.grid{position:absolute;inset:0;background-image:radial-gradient(rgba(255,255,255,.07) 1.2px,transparent 1.3px);background-size:26px 26px;
+  -webkit-mask-image:linear-gradient(90deg,transparent 0%,#000 35%,#000 65%,transparent 100%)}
+svg.net{position:absolute;left:0;top:0}
+.left{position:absolute;left:64px;top:46px;width:860px}
+.eyebrow{display:flex;align-items:center;gap:12px;font-family:"Space Grotesk",Inter;font-weight:700;font-size:24px;letter-spacing:-.01em}
+.eyebrow .logo{width:40px;height:40px;border-radius:11px;background:var(--purple);display:grid;place-items:center;box-shadow:0 6px 18px rgba(0,0,0,.25),inset 0 0 0 1px rgba(255,255,255,.18)}
+.eyebrow .logo img{width:28px}
+.eyebrow span.tag{font-family:Inter;font-weight:600;font-size:14px;letter-spacing:.14em;color:#C9BCFA;margin-left:6px;padding-left:14px;border-left:1px solid rgba(255,255,255,.25)}
+h1{font-family:"Space Grotesk",Inter;font-weight:700;font-size:58px;line-height:1.04;letter-spacing:-.03em;margin-top:20px;white-space:nowrap}
+.strike{color:#9C93C9;text-decoration:line-through;text-decoration-color:#FF6B81;text-decoration-thickness:6px}
+.cap{background:linear-gradient(90deg,#A78BFA,#5EEAD4);-webkit-background-clip:text;color:transparent}
+.sub{font-size:19px;line-height:1.4;color:#D8D0F7;margin-top:12px;white-space:nowrap}
+.chips{display:flex;gap:10px;margin-top:18px}
+.chip{display:flex;align-items:center;gap:8px;font-size:15px;font-weight:600;color:#fff;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18);border-radius:999px;padding:8px 14px 8px 10px;backdrop-filter:blur(4px)}
+.chip i{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;background:rgba(94,234,212,.18);color:var(--mint);font-style:normal;font-size:12px;font-weight:800}
+.cta{position:absolute;left:420px;top:398px;display:flex;align-items:center;gap:18px}
+.btn{background:#fff;color:#2A1673;font-weight:800;font-size:18px;border-radius:14px;padding:13px 20px;display:flex;align-items:center;gap:10px;box-shadow:0 12px 30px rgba(0,0,0,.28)}
+.url{font-size:16px;color:#C9BCFA;font-weight:600}
+.url b{display:block;color:#fff;font-size:17px}
+/* Product visual */
+.card{position:absolute;right:56px;top:34px;width:470px;background:#fff;color:var(--ink);border-radius:24px;padding:20px 22px 18px;box-shadow:0 30px 80px rgba(8,4,30,.5),0 0 0 1px rgba(255,255,255,.4)}
+.ch{display:flex;justify-content:space-between;align-items:center}
+.ch b{font-size:13px;letter-spacing:.14em;color:var(--purple)}
+.ch span{font-size:12px;font-weight:600;color:#8A8DA0;background:#F3F1F8;border-radius:999px;padding:4px 10px}
+.person{display:flex;align-items:center;gap:12px;margin:10px 0 6px}
+.av{width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,#C4B5FD,#5EEAD4);display:grid;place-items:center;font-weight:800;color:#2A1673;font-size:16px}
+.person .n{font-weight:700;font-size:17px}.person .h{font-size:13px;color:var(--muted)}
+.row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-top:1px solid #F0EDF7}
+.nm{font-size:15px;font-weight:600}
+.ev{display:inline-block;font-size:11px;font-weight:700;color:var(--teal);background:var(--teal-soft);border-radius:6px;padding:2px 7px;margin-left:8px;vertical-align:2px}
+.ev.d{color:#6B4FD0;background:#F1EBFD}
+.lvl{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:var(--purple);white-space:nowrap}
+.meter{display:flex;gap:3px}.meter i{width:15px;height:6px;border-radius:3px;background:#EEE9F8}.meter i.on{background:var(--purple)}
+.story{margin-top:8px;background:#FAF8FF;border:1px solid var(--line);border-radius:14px;padding:10px 12px;font-size:13.5px;line-height:1.45;color:#3C3F55}
+.story b{display:block;font-size:11px;letter-spacing:.12em;color:#8A8DA0;margin-bottom:3px}
+.invite{position:absolute;right:56px;top:390px;width:330px;background:#fff;color:var(--ink);border-radius:18px;padding:13px 15px;display:flex;gap:12px;align-items:center;box-shadow:0 22px 50px rgba(8,4,30,.45)}
+.invite .ic{width:38px;height:38px;border-radius:11px;background:#F1EBFD;display:grid;place-items:center;flex:none}
+.invite .t{font-size:14px;font-weight:700;line-height:1.3}.invite .c{font-size:12.5px;color:var(--muted)}
+.fit{margin-left:auto;font-size:12px;font-weight:800;color:var(--teal);background:var(--teal-soft);border-radius:8px;padding:5px 8px;white-space:nowrap}
+</style></head><body>
+<div class="grid"></div>
+<svg class="net" width="1500" height="500" viewBox="0 0 1500 500" fill="none">
+  <g stroke="rgba(167,139,250,.35)" stroke-width="1.5">
+    <path d="M820 40 L905 170 L880 300 L960 380"/><path d="M905 170 L975 120"/><path d="M800 250 L880 300"/>
+  </g>
+  <g fill="#A78BFA"><circle cx="820" cy="40" r="4"/><circle cx="905" cy="170" r="6"/><circle cx="880" cy="300" r="5"/><circle cx="800" cy="250" r="3.5"/></g>
+  <circle cx="905" cy="170" r="15" stroke="rgba(94,234,212,.5)" stroke-width="1.5"/>
+</svg>
+<div class="left">
+  <div class="eyebrow"><div class="logo"><img src="../evidentalent/logo-mark-white.svg" alt=""></div>EvidenTalent<span class="tag">MAKE YOUR TALENT EVIDENT</span></div>
+  <h1>Get hired for your <span class="strike">keywords</span><br><span class="cap">capabilities.</span></h1>
+  <p class="sub">Show employers how deep each skill really goes, and the proof behind it.</p>
+  <div class="chips">
+    <div class="chip"><i>1–5</i>Published skill rubric</div>
+    <div class="chip"><i>✓</i>Proof stories, not buzzwords</div>
+    <div class="chip"><i>✓</i>No auto-rejections</div>
+  </div>
+</div>
+<div class="cta">
+  <div class="btn">Build your free Capability Graph <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2A1673" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg></div>
+  <div class="url"><b>evidentalent.vercel.app</b>Thousands of live roles</div>
+</div>
+<div class="card">
+  <div class="ch"><b>CAPABILITY GRAPH</b><span>Sample profile</span></div>
+  <div class="person"><div class="av">JR</div><div><div class="n">Jordan Rivera</div><div class="h">Quality &amp; operations</div></div></div>
+  <div class="row"><span class="nm">Root-cause analysis<span class="ev">Demonstrated</span></span><span class="lvl"><span class="meter"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i></span>4 · Improves</span></div>
+  <div class="row"><span class="nm">Process design<span class="ev">Demonstrated</span></span><span class="lvl"><span class="meter"><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i></span>3 · Builds</span></div>
+  <div class="row"><span class="nm">Team training<span class="ev d">Described</span></span><span class="lvl"><span class="meter"><i class="on"></i><i class="on"></i><i></i><i></i><i></i></span>2 · Maintains</span></div>
+  <div class="story"><b>PROOF STORY</b>“Traced repeat defects to one supplier step, rebuilt the check, and cut rework by a third.”</div>
+</div>
+<div class="invite">
+  <div class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#5B2BE0" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
+  <div><div class="t">Invited to apply</div><div class="c">Quality Lead · Northwind</div></div>
+  <div class="fit">Strong fit</div>
+</div>
+</body></html>

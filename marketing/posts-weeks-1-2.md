@@ -11,13 +11,13 @@ Copy, paste, adjust to your voice. Links come from the tracking table in `README
 ## LinkedIn (Mon / Wed / Fri)
 
 ### Week 1, Monday: why I built it
-**Image:** `brand/talentbridge-capability-graph-explainer.png`
+**Image:** `brand/evidentalent/capability-graph-explainer.png`
 
 > Hiring software is very good at one thing: filtering people out.
 >
 > It scans for keywords, and if your résumé doesn’t use the right ones, no person ever sees it. I’ve watched great people get passed over that way: people who could run circles around the job description.
 >
-> So I built TalentBridge.
+> So I built EvidenTalent.
 >
 > Instead of matching keywords, it asks a better question: how deep does each of your skills actually go?
 >
@@ -43,7 +43,7 @@ Copy, paste, adjust to your voice. Links come from the tracking table in `README
 >
 > But eight years in a classroom means you’ve designed curriculum, used data every week to change what you do, coached new teachers, and kept 25 families informed and on your side.
 >
-> On TalentBridge, that experience becomes a Capability Graph: each skill rated 1–5, backed by a real story. Say your strongest skill is curriculum design, at level 4 · Improves, because you rebuilt your reading block and most of your class gained two reading levels by spring.
+> On EvidenTalent, that experience becomes a Capability Graph: each skill rated 1–5, backed by a real story. Say your strongest skill is curriculum design, at level 4 · Improves, because you rebuilt your reading block and most of your class gained two reading levels by spring.
 >
 > And the graph shows where those skills lead: instructional designer, training specialist, program manager. That’s the part a résumé can’t do.
 >
@@ -54,7 +54,7 @@ Copy, paste, adjust to your voice. Links come from the tracking table in `README
 
 > I’m starting something, and I’d like your help.
 >
-> #ShowWhatYouCanDo: build your Capability Graph on TalentBridge and share it.
+> #ShowWhatYouCanDo: build your Capability Graph on EvidenTalent and share it.
 >
 > 1. Add your experience (or upload your résumé)
 > 2. Get every skill rated 1–5, with what sets you apart
@@ -69,11 +69,11 @@ Copy, paste, adjust to your voice. Links come from the tracking table in `README
 > Either way: tag someone whose résumé doesn’t do them justice.
 
 ### Week 2, Monday: you can’t buzzword a 5
-**Image:** `brand/talentbridge-capability-graph-explainer.png`
+**Image:** `brand/evidentalent/capability-graph-explainer.png`
 
 > Can AI rate skills fairly? Here’s how we make it hard to game and easy to check.
 >
-> On TalentBridge, a skill’s rating depends on the evidence behind it:
+> On EvidenTalent, a skill’s rating depends on the evidence behind it:
 >
 > • Only implied by a job title → 2 at most
 > • Described as a responsibility → 3 at most
@@ -94,7 +94,7 @@ Copy, paste, adjust to your voice. Links come from the tracking table in `README
 >
 > Those are real skills. Most job sites have no way to show them.
 >
-> TalentBridge now asks questions written for hospitality, so your Capability Graph can show things like “Guest recovery: 4 · Improves,” backed by a real story. We’ve also added restaurant and hotel jobs across Maryland, DC and Virginia.
+> EvidenTalent now asks questions written for hospitality, so your Capability Graph can show things like “Guest recovery: 4 · Improves,” backed by a real story. We’ve also added restaurant and hotel jobs across Maryland, DC and Virginia.
 >
 > It’s free. Know someone in the industry? Send this their way. Link in the comments.
 
@@ -125,13 +125,13 @@ Copy, paste, adjust to your voice. Links come from the tracking table in `README
    > “8 years teaching 5th grade.”
    >
    > Keyword software: teacher.
-   > TalentBridge: curriculum design (4 · Improves), data-driven teaching, coaching new teachers, and a path to instructional design.
+   > EvidenTalent: curriculum design (4 · Improves), data-driven teaching, coaching new teachers, and a path to instructional design.
    >
    > Same person. Very different job search. [X launch link]
 3. **With the explainer image:**
    > You can’t buzzword your way to a 5.
    >
-   > On TalentBridge, evidence sets the ceiling:
+   > On EvidenTalent, evidence sets the ceiling:
    > Job title only → max 2
    > Described → max 3
    > A real example with results → up to 5
@@ -144,13 +144,13 @@ Copy, paste, adjust to your voice. Links come from the tracking table in `README
 5. **With `post-hospitality.png` and the X hospitality link:**
    > Servers: your résumé says “Server.” Your shifts say guest recovery, a full section on a slammed Saturday, an allergy caught before it hit the table.
    >
-   > TalentBridge now asks hospitality questions and lists restaurant and hotel jobs in MD, DC and VA.
+   > EvidenTalent now asks hospitality questions and lists restaurant and hotel jobs in MD, DC and VA.
    >
    > [X hospitality link]
 6. **No link; a conversation starter:**
    > What’s a skill you’re genuinely great at that never fits on a résumé? 👇
 7. **The scale:**
-   > Every TalentBridge rating uses the same published scale:
+   > Every EvidenTalent rating uses the same published scale:
    >
    > 1 Executes
    > 2 Maintains
@@ -166,7 +166,7 @@ Copy, paste, adjust to your voice. Links come from the tracking table in `README
    >
    > Show it with proof, not keywords: [X launch link]
 9. **What we shipped:**
-   > Shipped this week on TalentBridge: questions written for servers, cooks and hotel staff, plus restaurant and hotel jobs across Maryland, DC and Virginia.
+   > Shipped this week on EvidenTalent: questions written for servers, cooks and hotel staff, plus restaurant and hotel jobs across Maryland, DC and Virginia.
    >
    > Next up: free workshops with local job centers.
 10. **Partners:**
@@ -181,7 +181,7 @@ Copy, paste, adjust to your voice. Links come from the tracking table in `README
 ### Your page or profile (week 1)
 **Image:** `post-career-changer.png`
 
-> I built something I’m proud of. TalentBridge is a free job site that shows employers what you can actually do, not just the keywords on your résumé. Every skill gets rated 1–5 and backed up with real stories from your work, and it never auto-rejects anyone. If you or someone you know is job hunting, I’d love for you to try it and tell me what you think: [Facebook link]
+> I built something I’m proud of. EvidenTalent is a free job site that shows employers what you can actually do, not just the keywords on your résumé. Every skill gets rated 1–5 and backed up with real stories from your work, and it never auto-rejects anyone. If you or someone you know is job hunting, I’d love for you to try it and tell me what you think: [Facebook link]
 
 ### Group posts (one per group, spread over weeks 2–3)
 Read each group’s rules first. If links aren’t allowed, end with “Comment and I’ll send you the link.”
@@ -191,17 +191,17 @@ Read each group’s rules first. If links aren’t allowed, end with “Comment 
 >
 > “Responsible for training” becomes “Trained 6 new hires in a month; none quit in their first 90 days.” Employers remember stories, not duties.
 >
-> I built a free tool, TalentBridge, that walks you through this and rates each skill 1–5 based on your proof. It also lists thousands of local jobs. Happy to answer questions here: [Facebook groups link]
+> I built a free tool, EvidenTalent, that walks you through this and rates each skill 1–5 based on your proof. It also lists thousands of local jobs. Happy to answer questions here: [Facebook groups link]
 
 **Restaurant and hospitality groups:** use the hospitality link and `post-hospitality.png`.
 > For anyone in the industry looking for their next spot: most job sites treat “Server” or “Line Cook” like it says everything. It doesn’t.
 >
-> I built TalentBridge, which is free, to let you show what you’re actually good at: turning around a bad night for a guest, running a slammed section, catching allergies, training new people. It asks questions written for restaurants and hotels and turns your answers into a profile you can share. It also lists restaurant and hotel jobs around Maryland, DC and Virginia: [Facebook groups hospitality link]
+> I built EvidenTalent, which is free, to let you show what you’re actually good at: turning around a bad night for a guest, running a slammed section, catching allergies, training new people. It asks questions written for restaurants and hotels and turns your answers into a profile you can share. It also lists restaurant and hotel jobs around Maryland, DC and Virginia: [Facebook groups hospitality link]
 
 **Career changers, laid-off and returning-to-work groups:**
 > If you’re changing careers or coming back after time away, the hardest part is often explaining what you can do when your job titles don’t match what you’re applying for.
 >
-> TalentBridge (free) rates your skills 1–5 based on real examples, not titles, so a teacher’s “managing 30 people under pressure” or a manager’s “fixing a broken process” actually counts. If anyone wants a second pair of eyes on how to describe their experience, comment below and I’ll help: [Facebook groups link]
+> EvidenTalent (free) rates your skills 1–5 based on real examples, not titles, so a teacher’s “managing 30 people under pressure” or a manager’s “fixing a broken process” actually counts. If anyone wants a second pair of eyes on how to describe their experience, comment below and I’ll help: [Facebook groups link]
 
 **Alumni or neighborhood groups:**
-> Hi neighbors, I’m a local founder and I just launched TalentBridge, a free job site that rates what people can actually do instead of filtering résumés by keywords. I’m looking for 20 people to try it and give me honest feedback. Comment if you’re up for it and I’ll send the link. Thank you!
+> Hi neighbors, I’m a local founder and I just launched EvidenTalent, a free job site that rates what people can actually do instead of filtering résumés by keywords. I’m looking for 20 people to try it and give me honest feedback. Comment if you’re up for it and I’ll send the link. Thank you!

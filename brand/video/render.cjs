@@ -1,6 +1,6 @@
-// TalentBridge "What's new" promo video (1920x1080, 30 fps, silent).
+// EvidenTalent "What's new" promo video (1920x1080, 30 fps, silent).
 //   node brand/video/render.cjs preview 3.5,14,29   -> frame-*.png at those seconds
-//   node brand/video/render.cjs full                -> talentbridge-whats-new.mp4
+//   node brand/video/render.cjs full                -> evidentalent-whats-new.mp4
 // Every frame is drawn from video.html's render(t), so output is exact and
 // repeatable. Sound is added separately (see SCRIPT.md); sound-cues.json lists
 // each scene's timing and on-screen text and every sound-effect moment, read
@@ -20,7 +20,7 @@ const D = __dirname; const FPS = 30; const mode = process.argv[2] || 'preview';
   }));
   const c = await p.evaluate(() => window.cues());
   fs.writeFileSync(D + '/sound-cues.json', JSON.stringify({
-    video: { file: 'talentbridge-whats-new.mp4', duration_s: total, fps: FPS, width: 1920, height: 1080, audio: 'none' },
+    video: { file: 'evidentalent-whats-new.mp4', duration_s: total, fps: FPS, width: 1920, height: 1080, audio: 'none' },
     scenes,
     sfx: {
       scene_transition_s: c.scene_changes,
@@ -43,9 +43,9 @@ const D = __dirname; const FPS = 30; const mode = process.argv[2] || 'preview';
       if (i % 150 === 0) console.log(`frame ${i}/${frames}`);
     }
     ff.stdin.end(); await new Promise((r) => ff.on('close', r));
-    execFileSync('ffmpeg', ['-y', '-loglevel', 'error', '-i', D + '/video-only.mp4', '-an', '-c:v', 'copy', '-movflags', '+faststart', D + '/talentbridge-whats-new.mp4']);
+    execFileSync('ffmpeg', ['-y', '-loglevel', 'error', '-i', D + '/video-only.mp4', '-an', '-c:v', 'copy', '-movflags', '+faststart', D + '/evidentalent-whats-new.mp4']);
     fs.unlinkSync(D + '/video-only.mp4');
-    console.log('wrote talentbridge-whats-new.mp4');
+    console.log('wrote evidentalent-whats-new.mp4');
   }
   await b.close();
 })().catch((e) => { console.error(e); process.exit(1); });
