@@ -5,11 +5,11 @@
   
   <!-- EVT monogram: three bars for the E, a V that runs into the T's top bar
        (together, a checkmark), and the T's stem set apart by a gap. -->
-  <g fill="none" stroke="#2A1673" stroke-width="30" stroke-linecap="round" stroke-linejoin="round" transform="translate(22 0)">
-    <!-- The E's top bar curves down into a rounded V, which curves up into the T's bar.
-         The T is the smaller letter: a short bar, and a stem that stops well below it. -->
+  <g fill="none" stroke="#2A1673" stroke-width="30" stroke-linecap="round" stroke-linejoin="round" transform="translate(30 0)">
+    <!-- The E's top bar curves down into a rounded V. The V's right side rises steeply
+         and turns a tight corner into the T's short bar; the T's stem hangs under its end. -->
     <path d="M80 256H184M80 336H184"/>
-    <path d="M80 176H162Q196 176 208.7 207.5L257 327.7Q266 350 275 327.7L323.3 207.5Q336 176 370 176H388"/>
-    <path d="M374 250V336"/>
+    <path d="M80 176H162Q196 176 209.6 207.1L262.4 328Q272 350 277.9 326.7L311.6 193.4Q316 176 334 176H372"/>
+    <path d="M372 236V336"/>
   </g>
 </svg>
