@@ -19,8 +19,17 @@ let ghJobs = [
 ];
 const wdCalls = [];
 const realFetch = globalThis.fetch;
+const flaky = { mode: 'up' };
 globalThis.fetch = async (url, init) => {
   const u = String(url);
+  if (u.includes('boards-api.greenhouse.io/v1/boards/flaky/')) {
+    // A board that works, then goes down: a maintenance redirect, or a plain web page.
+    if (flaky.mode === 'maintenance') return new Response(null, { status: 303, headers: { location: 'https://community.workday.com/maintenance-page' } });
+    if (flaky.mode === 'html') return new Response('<!DOCTYPE html><html><title>Sign in</title></html>', { headers: { 'content-type': 'text/html' } });
+    if (flaky.mode === 'moved' && !u.includes('moved=1')) return new Response(null, { status: 301, headers: { location: `${u}${u.includes('?') ? '&' : '?'}moved=1` } });
+    if (/jobs\/\d+$/.test(u)) return new Response(JSON.stringify({ content: '&lt;p&gt;Serve guests.&lt;/p&gt;' }));
+    return new Response(JSON.stringify({ jobs: [{ id: 901, title: 'Server', absolute_url: 'https://boards.greenhouse.io/flaky/jobs/901', location: { name: 'Baltimore, MD' }, updated_at: '2026-11-10T00:00:00Z' }] }));
+  }
   if (u.includes('boards-api.greenhouse.io')) {
     const m = u.match(/jobs\/(\d+)$/);
     if (m) {
@@ -260,6 +269,23 @@ test('workable board keeps US roles; workable search pages and skips duplicates'
   assert.equal(r2.added, 0);
   for (const j of [...bj, ...mj]) store.remove('Job', j.id);
   for (const s2 of [board, md, va]) db.prepare('DELETE FROM job_sources WHERE id = ?').run(s2.id);
+});
+
+test('a board that’s down for maintenance keeps its jobs and says why', async () => {
+  const src = source('greenhouse', 'flaky', 'Flaky Grill', 100);
+  flaky.mode = 'up';
+  assert.equal((await syncSource(src)).active, 1);
+  flaky.mode = 'maintenance';
+  await assert.rejects(syncSource(src), (e) => e.status === 503 && /down for maintenance/.test(e.message) && !/Unexpected token/.test(e.message));
+  flaky.mode = 'html';
+  await assert.rejects(syncSource(src), /sent a web page instead of job data/);
+  assert.equal(store.filter('Job', { source_id: src.id }).filter((j) => j.status === 'active').length, 1, 'the listed job stays up');
+  flaky.mode = 'moved';
+  assert.equal((await syncSource(src)).active, 1, 'an ordinary redirect is followed');
+  flaky.mode = 'up';
+  assert.equal((await syncSource(src)).active, 1, 'and it recovers on the next run');
+  for (const j of store.filter('Job', { source_id: src.id })) store.remove('Job', j.id);
+  db.prepare('DELETE FROM job_sources WHERE id = ?').run(src.id);
 });
 
 test('hospitality searches: several keywords, only hospitality job titles', async () => {
