@@ -3,13 +3,11 @@
   <!-- Full-bleed square for profile pictures: X crops it to a circle, so there are no rounded corners to clip. -->
   <rect width="512" height="512" fill="url(#bg)"/>
   <g transform="translate(256 256) scale(0.92) translate(-256 -256)">
-  <g fill="none" stroke="#fff" stroke-width="30" stroke-linecap="round" stroke-linejoin="round" transform="translate(32 0)">
-    <!-- "Evi": the E's top bar curves down into a rounded V, whose right side rises to the
-         top line. Then an i: a stem with a dot on the top line. -->
+  <g fill="none" stroke="#fff" stroke-width="30" stroke-linecap="round" stroke-linejoin="round" transform="translate(58 -1)">
+    <!-- "EV": three bars for the E; the top bar curves down into a rounded V,
+         whose right side rises back up to the top line. -->
     <path d="M80 256H184M80 336H216"/>
     <path d="M80 176H162Q196 176 209.6 207.1L262.4 328Q272 350 277.9 326.7L316 176"/>
-    <path d="M366 236V336"/>
-    <circle cx="366" cy="176" r="18" fill="#fff" stroke="none"/>
   </g>
   </g>
 </svg>

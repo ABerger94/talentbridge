@@ -1,9 +1,7 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="97 157 320 194" width="320" height="194" role="img" aria-label="EvidenTalent">
-  <!-- The E-V-i mark in white, trimmed to its edges, for placing on the brand purple. -->
-  <g fill="none" stroke="#fff" stroke-width="30" stroke-linecap="round" stroke-linejoin="round" transform="translate(32 0)">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="108 145 296 222" width="296" height="222" role="img" aria-label="EvidenTalent">
+  <!-- The E-V mark in white, trimmed to its edges, for placing on the brand purple. -->
+  <g fill="none" stroke="#fff" stroke-width="30" stroke-linecap="round" stroke-linejoin="round" transform="translate(58 -1)">
     <path d="M80 256H184M80 336H216"/>
     <path d="M80 176H162Q196 176 209.6 207.1L262.4 328Q272 350 277.9 326.7L316 176"/>
-    <path d="M366 236V336"/>
-    <circle cx="366" cy="176" r="18" fill="#fff" stroke="none"/>
   </g>
 </svg>

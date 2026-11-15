@@ -133,11 +133,9 @@ function svgFor(data, photoDataUri) {
   ${parts.join('\n  ')}
   <g transform="translate(70, 540)">
     <rect width="44" height="44" rx="11" fill="#5B2BE0"/>
-    <g transform="scale(${44 / 512}) translate(32 0)" fill="none" stroke="#FFFFFF" stroke-width="34" stroke-linecap="round" stroke-linejoin="round">
+    <g transform="scale(${44 / 512}) translate(58 -1)" fill="none" stroke="#FFFFFF" stroke-width="34" stroke-linecap="round" stroke-linejoin="round">
       <path d="M80 256H184M80 336H216"/>
       <path d="M80 176H162Q196 176 209.6 207.1L262.4 328Q272 350 277.9 326.7L316 176"/>
-      <path d="M366 236V336"/>
-      <circle cx="366" cy="176" r="20" fill="#FFFFFF" stroke="none"/>
     </g>
     <text x="58" y="31" font-family="Inter" font-weight="700" font-size="25" fill="#FFFFFF">${BRAND}</text>
     <text x="${58 + Math.ceil(widthOf(BRAND, 25, 700)) + 10}" y="31" font-family="Inter" font-weight="400" font-size="20" fill="#B6ABDE">· Capability Graph</text>

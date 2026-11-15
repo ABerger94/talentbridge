@@ -1,4 +1,4 @@
-// The EvidenTalent mark (E, V, i) in white, for use on the brand purple.
+// The EvidenTalent mark (E and V) in white, for use on the brand purple.
 // Drawn inline so it stays sharp at any size; the full tile is /favicon.png.
 export default function BrandLogo({ size = 32 }) {
   return (
@@ -15,11 +15,9 @@ export default function BrandLogo({ size = 32 }) {
       strokeLinecap="round"
       strokeLinejoin="round"
     >
-      <g transform="translate(32 0)">
+      <g transform="translate(58 -1)">
         <path d="M80 256H184M80 336H216" />
         <path d="M80 176H162Q196 176 209.6 207.1L262.4 328Q272 350 277.9 326.7L316 176" />
-        <path d="M366 236V336" />
-        <circle cx="366" cy="176" r="19" fill="#fff" stroke="none" />
       </g>
     </svg>
   );
