@@ -1,9 +1,9 @@
 {
-  "name": "TalentBridge",
-  "short_name": "TalentBridge",
+  "name": "EvidenTalent",
+  "short_name": "EvidenTalent",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
-  "theme_color": "#0f172a",
-  "icons": []
+  "theme_color": "#5B2BE0",
+  "icons": [{ "src": "/favicon.png", "sizes": "512x512", "type": "image/png" }]
 }

@@ -11,15 +11,15 @@ const sections = [
     title: "Agreement to these terms",
     body: (
       <p>
-        These Terms of Service are an agreement between you and {LEGAL.operator}, who operates {LEGAL.siteName} (“we”,
-        “us”). By creating an account or using {LEGAL.siteName}, you agree to these terms and to our{" "}
+        These Terms of Service are an agreement between you and {LEGAL.operator}, who operates {LEGAL.siteName}, formerly
+        called {LEGAL.formerName} (“we”, “us”). By creating an account or using {LEGAL.siteName}, you agree to these terms and to our{" "}
         <Link to="/privacy">Privacy Policy</Link>. If you don’t agree, please don’t use the service.
       </p>
     ),
   },
   {
     id: "eligibility",
-    title: "Who can use TalentBridge",
+    title: "Who can use EvidenTalent",
     body: (
       <ul>
         <li>You must be at least {LEGAL.minimumAge} years old.</li>

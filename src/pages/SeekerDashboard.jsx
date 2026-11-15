@@ -281,7 +281,7 @@ export default function SeekerDashboard() {
       }));
 
       const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `You are TalentBridge's Bi-Directional Semantic Matcher. Match this candidate with roles using capability alignment, not keyword matching.
+        prompt: `You are EvidenTalent's Bi-Directional Semantic Matcher. Match this candidate with roles using capability alignment, not keyword matching.
 
 Current date: ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
 

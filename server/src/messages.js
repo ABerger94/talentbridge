@@ -144,7 +144,7 @@ async function emailRecipient(c, sender, message) {
       paragraphs: [
         `About: ${jobTitle}`,
         `“${snippet}”`,
-        'Reply on TalentBridge. Replying to this email won’t reach them.',
+        'Reply on EvidenTalent. Replying to this email won’t reach them.',
       ],
       button: { label: 'Open conversation', url: appUrl(`/messages?c=${encodeURIComponent(c.app.id)}`) },
     }),

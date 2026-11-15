@@ -51,7 +51,7 @@ Deno.serve(async (req) => {
     await base44.integrations.Core.SendEmail({
       to: seekerUser.email,
       subject: `You're invited to apply for ${job.title} at ${job.company}`,
-      body: `Hi ${seekerUser.full_name},\n\n${job.company} thinks you'd be a great fit for the ${job.title} role.\n\nCheck it out and apply here!\n\nBest,\nTalentBridge`
+      body: `Hi ${seekerUser.full_name},\n\n${job.company} thinks you'd be a great fit for the ${job.title} role.\n\nCheck it out and apply here!\n\nBest,\nEvidenTalent`
     });
 
     return Response.json({ success: true });

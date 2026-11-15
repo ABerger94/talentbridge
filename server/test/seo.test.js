@@ -14,7 +14,7 @@ const app = require('../src/index.js');
 const { store } = require('../src/entities.js');
 const { jobPostingLd, render, headFor } = require('../src/seo.js');
 
-const TEMPLATE = '<!doctype html><html><head><title>TalentBridge</title><meta name="description" content="generic" /><meta property="og:title" content="generic" /></head><body><div id="root"></div></body></html>';
+const TEMPLATE = '<!doctype html><html><head><title>EvidenTalent</title><meta name="description" content="generic" /><meta property="og:title" content="generic" /></head><body><div id="root"></div></body></html>';
 
 test('JobPosting data maps the role for Google job search', () => {
   const job = {

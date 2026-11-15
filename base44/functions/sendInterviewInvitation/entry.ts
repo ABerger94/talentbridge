@@ -36,7 +36,7 @@ Deno.serve(async (req) => {
     await base44.integrations.Core.SendEmail({
       to: applicantEmail,
       subject: `Interview Invitation: ${job.title} at ${job.company}`,
-      body: `Hi ${seekerProfile.headline || 'there'},\n\nWe're excited to invite you to interview for the ${job.title} position at ${job.company}.\n\nProposed Interview Time: ${formattedTime}\n\nPlease reply to confirm this time or propose an alternative. You can do this directly in your TalentBridge dashboard.\n\nLooking forward to hearing from you!\n\nBest regards,\nThe ${job.company} Team`
+      body: `Hi ${seekerProfile.headline || 'there'},\n\nWe're excited to invite you to interview for the ${job.title} position at ${job.company}.\n\nProposed Interview Time: ${formattedTime}\n\nPlease reply to confirm this time or propose an alternative. You can do this directly in your EvidenTalent dashboard.\n\nLooking forward to hearing from you!\n\nBest regards,\nThe ${job.company} Team`
     });
 
     await base44.asServiceRole.entities.JobApplication.update(application_id, {

@@ -1,7 +1,9 @@
 // Facts used by the Privacy Policy and Terms of Service pages.
 // Update here; both pages read from this file.
 export const LEGAL = {
-  siteName: "TalentBridge",
+  siteName: "EvidenTalent",
+  // The name the service used before November 2026 (shown once in each document).
+  formerName: "TalentBridge",
   // Who operates the site. Add your name if you'd like it shown, e.g.
   // "Jane Doe, an individual based in Maryland, USA".
   operator: "an individual based in Maryland, USA",
@@ -9,5 +11,5 @@ export const LEGAL = {
   governingState: "Maryland",
   minimumAge: 18,
   // Bump whenever either document changes materially.
-  effectiveDate: "November 14, 2026",
+  effectiveDate: "November 15, 2026",
 };

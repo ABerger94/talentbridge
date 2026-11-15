@@ -5,7 +5,7 @@
 //   brevo   BREVO_API_KEY             (a single verified sender address is enough)
 //   smtp    TB_SMTP_HOST, TB_SMTP_USER, TB_SMTP_PASS, optional TB_SMTP_PORT
 //           (e.g. Gmail: smtp.gmail.com + an App Password)
-// TB_MAIL_FROM sets the sender ("TalentBridge <hello@yourdomain.com>"); for
+// TB_MAIL_FROM sets the sender ("EvidenTalent <hello@yourdomain.com>"); for
 // SMTP it defaults to TB_SMTP_USER. TB_MAIL_REPLY_TO is optional.
 // Order can be changed with TB_MAIL_ORDER (default resend,brevo,smtp).
 
@@ -146,7 +146,7 @@ async function sendMail({ to, subject, text, html, headers, attachments }) {
 // --- Templates -------------------------------------------------------------
 
 function appUrl(path = '/') {
-  const base = (env('TB_APP_URL') || 'https://talentbridge-jobboard.vercel.app').replace(/\/$/, '');
+  const base = (env('TB_APP_URL') || 'https://evidentalent.vercel.app').replace(/\/$/, '');
   return `${base}${path}`;
 }
 
@@ -159,14 +159,14 @@ function esc(s) {
 // default "why you got this" line.
 const LINK = /\bhttps?:\/\/[^\s<>"']+[^\s<>"'.,;:!?)\]]/g;
 function layout({ heading, paragraphs, button, linkify = false, footer }) {
-  const text = [heading, '', ...paragraphs.flatMap((p) => [p, '']), button ? `${button.label}: ${button.url}` : '', '', '— TalentBridge']
+  const text = [heading, '', ...paragraphs.flatMap((p) => [p, '']), button ? `${button.label}: ${button.url}` : '', '', '— EvidenTalent']
     .join('\n')
     .replace(/\n{3,}/g, '\n\n')
     .trim();
   const html = `<!doctype html><html><body style="margin:0;background:#f6f5f2;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#1c1b22">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="padding:24px 12px"><tr><td align="center">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#ffffff;border-radius:12px;padding:28px">
-<tr><td style="font-size:18px;font-weight:700;color:#5b2bd9;padding-bottom:16px">TalentBridge</td></tr>
+<tr><td style="font-size:18px;font-weight:700;color:#5b2bd9;padding-bottom:16px">EvidenTalent</td></tr>
 <tr><td style="font-size:20px;font-weight:700;padding-bottom:12px">${esc(heading)}</td></tr>
 ${paragraphs.map((p) => {
     let body = esc(p);
@@ -175,7 +175,7 @@ ${paragraphs.map((p) => {
   }).join('')}
 ${button ? `<tr><td style="padding:8px 0 4px"><a href="${esc(button.url)}" style="display:inline-block;background:#5b2bd9;color:#ffffff;text-decoration:none;font-weight:600;padding:11px 20px;border-radius:8px">${esc(button.label)}</a></td></tr>` : ''}
 </table>
-<p style="font-size:12px;color:#8a8796;margin:16px 0 0">${esc(footer || 'You received this email because of activity on your TalentBridge account.')}</p>
+<p style="font-size:12px;color:#8a8796;margin:16px 0 0">${esc(footer || 'You received this email because of activity on your EvidenTalent account.')}</p>
 </td></tr></table></body></html>`;
   return { text, html };
 }
@@ -190,7 +190,7 @@ function codeEmail(code, purpose) {
       'It expires in 10 minutes. If you didn’t request this, you can ignore this email.',
     ],
   });
-  return { subject: `${code} is your TalentBridge ${isReset ? 'reset' : 'verification'} code`, ...body };
+  return { subject: `${code} is your EvidenTalent ${isReset ? 'reset' : 'verification'} code`, ...body };
 }
 
 module.exports = { sendMail, mailConfigured, mailStatus, layout, appUrl, codeEmail };

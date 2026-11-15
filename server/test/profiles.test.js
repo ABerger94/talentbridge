@@ -129,7 +129,7 @@ test('public link: off by default, a page with preview tags when on, and a new l
   // The shareable page itself: real preview tags, never indexed.
   const page = await fetch(`${base}/p/${slug}`);
   const html = await page.text();
-  assert.match(html, /<title>Dana Quality · Food safety QA lead \| TalentBridge<\/title>/);
+  assert.match(html, /<title>Dana Quality · Food safety QA lead \| EvidenTalent<\/title>/);
   assert.match(html, /og:description" content="Builds lab systems that prevent repeat problems\./);
   assert.match(html, /<meta name="robots" content="noindex, nofollow"/);
   // A new link; the old one stops working.

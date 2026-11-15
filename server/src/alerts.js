@@ -123,7 +123,7 @@ async function runJobAlerts({ now = Date.now(), budgetMs = RUN_BUDGET_MS } = {})
   if (!subs.length) return report;
 
   // Candidates per subscriber come from the job index: new active roles
-  // ranked by overlap with the profile (roles posted on TalentBridge always
+  // ranked by overlap with the profile (roles posted on EvidenTalent always
   // qualify), so the AI scores a dozen likely fits, not every listing.
   const { suggestFor } = require('./jobindex');
   const jobCache = new Map();

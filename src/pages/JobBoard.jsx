@@ -18,7 +18,7 @@ function useDebounced(value, ms = 300) {
   return v;
 }
 
-// Server-side search over every open role: posted on TalentBridge first, then
+// Server-side search over every open role: posted on EvidenTalent first, then
 // real listings imported from employers' own job boards.
 export default function JobBoard() {
   const [filters, setFilters] = useState({});
@@ -52,7 +52,7 @@ export default function JobBoard() {
         <h1 className="text-3xl font-bold mb-2">Explore Roles</h1>
         <p className="text-muted-foreground">
           {counts
-            ? `${(counts.direct + counts.imported).toLocaleString()} open roles: ${counts.direct.toLocaleString()} posted on TalentBridge, plus ${counts.imported.toLocaleString()} from employers’ own job boards.`
+            ? `${(counts.direct + counts.imported).toLocaleString()} open roles: ${counts.direct.toLocaleString()} posted on EvidenTalent, plus ${counts.imported.toLocaleString()} from employers’ own job boards.`
             : "Open roles, matched on capability and potential, not just keywords."}
         </p>
       </div>

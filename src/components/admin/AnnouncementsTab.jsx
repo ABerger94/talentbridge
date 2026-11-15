@@ -312,7 +312,7 @@ export default function AnnouncementsTab() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <p className="text-sm text-muted-foreground max-w-xl">
-          Email everyone, or just job seekers or employers, about changes to TalentBridge. Your agent can draft these too with an API key that has the “Draft announcements” permission.
+          Email everyone, or just job seekers or employers, about changes to EvidenTalent. Your agent can draft these too with an API key that has the “Draft announcements” permission.
         </p>
         {!editing && <Button className="gap-1.5" onClick={() => setEditing({})}><Megaphone className="w-4 h-4" /> New announcement</Button>}
       </div>

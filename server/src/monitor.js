@@ -70,7 +70,7 @@ async function alertAdmins(row) {
   const to = adminEmails();
   if (!to.length) return;
   const mail = layout({
-    heading: row.count > 1 ? 'An error is happening again' : 'New error on TalentBridge',
+    heading: row.count > 1 ? 'An error is happening again' : 'New error on EvidenTalent',
     paragraphs: [
       `${row.source === 'client' ? 'In a visitor’s browser' : 'On the server'}${row.path ? ` (${row.path})` : ''}:`,
       row.message,
@@ -78,7 +78,7 @@ async function alertAdmins(row) {
     ],
     button: { label: 'Open the System tab', url: appUrl('/admin?tab=system') },
   });
-  for (const addr of to) await sendMail({ to: addr, subject: `[TalentBridge] ${clip(row.message, 80)}`, ...mail });
+  for (const addr of to) await sendMail({ to: addr, subject: `[EvidenTalent] ${clip(row.message, 80)}`, ...mail });
 }
 
 function captureServerError(err, req) {

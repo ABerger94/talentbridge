@@ -202,7 +202,7 @@ export default function JobSourcesTab() {
           <div>
             <h3 className="font-semibold">Real job listings</h3>
             <p className="text-sm text-muted-foreground mt-1">
-              {totals.imported.toLocaleString()} live listings imported from {sources.filter((s) => s.active_count > 0).length} sources, plus {totals.direct} posted on TalentBridge.
+              {totals.imported.toLocaleString()} live listings imported from {sources.filter((s) => s.active_count > 0).length} sources, plus {totals.direct} posted on EvidenTalent.
               Sources refresh automatically every day (needs CRON_SECRET); listings that come down at the source are closed here too.
             </p>
           </div>

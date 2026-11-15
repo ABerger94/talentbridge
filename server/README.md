@@ -1,6 +1,6 @@
-# TalentBridge Server (self-hosted)
+# EvidenTalent Server (self-hosted)
 
-Replaces Base44 for TalentBridge: authentication, the entity database with
+Replaces Base44 for EvidenTalent: authentication, the entity database with
 row-level permissions, the backend functions, file uploads, and the AI (LLM)
 endpoints. The React frontend talks to it through the drop-in client in
 `src/api/base44Client.js` — no page or component changes were needed.
@@ -74,10 +74,10 @@ selected). Set **one** provider (more = automatic fallback, in
 | Brevo | `BREVO_API_KEY`, `TB_MAIL_FROM` = a sender address verified in Brevo | 300/day | No |
 | Resend | `RESEND_API_KEY`, `TB_MAIL_FROM` on your verified domain | 3,000/month | Yes |
 
-- `TB_MAIL_FROM`: sender, e.g. `TalentBridge <hello@yourdomain.com>`
+- `TB_MAIL_FROM`: sender, e.g. `EvidenTalent <hello@yourdomain.com>`
   (SMTP defaults to `TB_SMTP_USER`). `TB_MAIL_REPLY_TO` is optional.
 - `TB_APP_URL`: site address used in email buttons (default
-  `https://talentbridge-jobboard.vercel.app`).
+  `https://evidentalent.vercel.app`).
 - **Verification:** required only while a provider is configured (otherwise
   no one could sign up); force it with `TB_REQUIRE_EMAIL_VERIFICATION=true`
   or `false`. One code per address per minute; codes last 10 minutes.
@@ -272,7 +272,7 @@ conversations (to review reports) but can't send.
 
 ## Real job listings (imports)
 
-The job board also shows real roles imported from outside TalentBridge
+The job board also shows real roles imported from outside EvidenTalent
 (`server/src/imports.js`). Each one links out ("Apply on company site"),
 credits its source, stays out of Google's job data and the sitemap
 (`noindex`), and closes when it disappears from its source. In-app

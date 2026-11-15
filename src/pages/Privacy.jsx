@@ -12,7 +12,7 @@ const sections = [
     body: (
       <>
         <p>
-          {LEGAL.siteName} is a job platform that connects job seekers with employers and uses AI to describe how a
+          {LEGAL.siteName} (formerly {LEGAL.formerName}) is a job platform that connects job seekers with employers and uses AI to describe how a
           candidate’s capabilities fit a role. It is operated by {LEGAL.operator} (“we”, “us”). You can reach us about
           anything in this policy at {mail}.
         </p>

@@ -38,7 +38,7 @@ export default function PublicProfilePage() {
       <Card className="p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-primary/5 border-primary/20">
         <div>
           <p className="font-semibold">Show employers what you can actually do</p>
-          <p className="text-sm text-muted-foreground mt-0.5">Build your own Capability Graph on TalentBridge: your strengths, how deep they go, and the proof behind them.</p>
+          <p className="text-sm text-muted-foreground mt-0.5">Build your own Capability Graph on EvidenTalent: your strengths, how deep they go, and the proof behind them.</p>
         </div>
         <Button asChild className="gap-1.5 shrink-0"><Link to="/signup">Build yours <ArrowRight className="w-4 h-4" /></Link></Button>
       </Card>

@@ -268,12 +268,12 @@ function registerEmployerRoutes(app) {
     const companyName = data.company?.name || 'your company';
     await notify(decision === 'approve' ? 'employer_approved' : 'employer_rejected', {
       to: row.email,
-      subject: decision === 'approve' ? `You’re approved on TalentBridge: ${companyName}` : `About your TalentBridge employer account`,
+      subject: decision === 'approve' ? `You’re approved on EvidenTalent: ${companyName}` : `About your EvidenTalent employer account`,
       ...layout(decision === 'approve'
         ? {
           heading: 'Your employer account is approved 🎉',
           paragraphs: [
-            `${companyName} is verified on TalentBridge. You can now browse candidates, invite them to apply, and message applicants.`,
+            `${companyName} is verified on EvidenTalent. You can now browse candidates, invite them to apply, and message applicants.`,
             published ? `${published} role${published === 1 ? '' : 's'} you drafted ${published === 1 ? 'is' : 'are'} now live on the job board.` : 'Post your first role to start receiving applications.',
             note ? `Note from the reviewer: ${note}` : '',
           ].filter(Boolean),

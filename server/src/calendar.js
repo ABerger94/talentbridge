@@ -62,7 +62,7 @@ function interviewEvent(application, job) {
     description: [
       `Interview for ${job?.title || 'the role'} with ${company}${application.applicant_name ? ` (candidate: ${application.applicant_name})` : ''}.`,
       where ? `Where: ${where}` : '',
-      'Arranged on TalentBridge. Message each other from the application.',
+      'Arranged on EvidenTalent. Message each other from the application.',
     ].filter(Boolean).join('\n'),
   };
 }
@@ -71,7 +71,7 @@ function ics(event, { sequence = 0 } = {}) {
   const lines = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
-    'PRODID:-//TalentBridge//Interviews//EN',
+    'PRODID:-//EvidenTalent//Interviews//EN',
     'CALSCALE:GREGORIAN',
     'METHOD:PUBLISH',
     'BEGIN:VEVENT',

@@ -323,7 +323,7 @@ test('keyed sources wait for their keys and report it', async () => {
   assert.equal(db.prepare('SELECT last_status FROM job_sources WHERE id = ?').get(src.id).last_status, 'needs_key');
 });
 
-test('search: TalentBridge roles first, filters, state names, paging', async () => {
+test('search: EvidenTalent roles first, filters, state names, paging', async () => {
   addUser('emp', 'employer');
   store.create('Job', { title: 'QA Lead', company: 'Acme', location: 'Annapolis, MD', status: 'active', work_type: 'onsite' }, 'emp');
   const all = await call(null, 'GET', '/api/jobs/search');

@@ -31,9 +31,9 @@ export default function ExternalApplyCard({ job, open }) {
         <Info className="h-3.5 w-3.5 shrink-0 mt-0.5" aria-hidden="true" />
         <span>
           {via
-            ? `This listing comes from ${via.replace(/^Jobs by /, "")}. You’ll apply outside TalentBridge,`
+            ? `This listing comes from ${via.replace(/^Jobs by /, "")}. You’ll apply outside EvidenTalent,`
             : `This role is listed on ${job.company ? `${job.company}’s` : "the employer’s"} own job board. You’ll apply there,`}{" "}
-          and TalentBridge doesn’t see or store that application. Use Capability Fit below to see how your profile lines up first.
+          and EvidenTalent doesn’t see or store that application. Use Capability Fit below to see how your profile lines up first.
         </span>
       </p>
       {via && (

@@ -133,7 +133,7 @@ export default function Settings() {
 
       <Section icon={MonitorSmartphone} title="Signed-in devices">
         <p className="text-sm text-muted-foreground">
-          Lost a phone or used a shared computer? Sign out of TalentBridge everywhere except here.
+          Lost a phone or used a shared computer? Sign out of EvidenTalent everywhere except here.
         </p>
         <Button variant="outline" onClick={signOutOthers} disabled={busy === "others"} className="gap-2">
           {busy === "others" && <Loader2 className="w-4 h-4 animate-spin" />} Sign out other devices
@@ -169,7 +169,7 @@ export default function Settings() {
       <AlertDialog open={deleteOpen} onOpenChange={(o) => { if (busy !== "delete") setDeleteOpen(o); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete your TalentBridge account?</AlertDialogTitle>
+            <AlertDialogTitle>Delete your EvidenTalent account?</AlertDialogTitle>
             <AlertDialogDescription>
               This permanently deletes your account and personal data. {hasPassword ? "Enter your password to confirm." : "Type your email address to confirm."}
             </AlertDialogDescription>

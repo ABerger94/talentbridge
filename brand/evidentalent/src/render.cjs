@@ -11,5 +11,10 @@ const OUT = path.join(__dirname, '..');
   const i = await b.newPage({ viewport: { width: 512, height: 512 }, deviceScaleFactor: 2 });
   await i.goto('file://' + path.join(OUT, 'logo-icon.svg'));
   await i.screenshot({ path: path.join(OUT, 'logo-icon.png'), omitBackground: true });
+  // The site's default link-preview image (public/og-image.png, 1200x630).
+  const og = await b.newPage({ viewport: { width: 1200, height: 630 } });
+  await og.goto('file://' + path.join(__dirname, 'og.html'), { waitUntil: 'networkidle' });
+  await og.evaluate(() => document.fonts.ready);
+  await og.screenshot({ path: path.join(OUT, '..', '..', 'public', 'og-image.png') });
   await b.close();
 })().catch((e) => { console.error(e); process.exit(1); });

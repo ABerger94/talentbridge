@@ -1,6 +1,6 @@
 // Self-hosted client — drop-in replacement for the Base44 SDK client.
 // Exposes the exact surface the app already uses (auth, entities, functions,
-// integrations.Core) but talks to the TalentBridge server in /server.
+// integrations.Core) but talks to the EvidenTalent server in /server.
 // Set VITE_TB_API_URL when the API lives on a different origin than the page;
 // leave it unset for same-origin hosting (the server serves the built app).
 const API_BASE = (import.meta.env.VITE_TB_API_URL || '').replace(/\/$/, '');
@@ -132,7 +132,7 @@ const account = {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `talentbridge-data-${new Date().toISOString().slice(0, 10)}.json`;
+    a.download = `evidentalent-data-${new Date().toISOString().slice(0, 10)}.json`;
     document.body.appendChild(a);
     a.click();
     a.remove();

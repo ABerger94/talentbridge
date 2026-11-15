@@ -6,7 +6,7 @@ import { Building2, User, ArrowRight, Loader2 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
 import { motion } from "framer-motion";
-import TalentBridgeLogo from "@/components/TalentBridgeLogo";
+import BrandLogo from "@/components/BrandLogo";
 import CompanyProfileForm from "@/components/employer/CompanyProfileForm";
 import { toast } from "sonner";
 import { Label } from "@/components/ui/label";
@@ -78,9 +78,9 @@ export default function Onboarding() {
         <div className="w-full max-w-xl">
           <div className="flex items-center justify-center gap-2.5 mb-8">
             <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center shadow-lg shadow-primary/25">
-              <TalentBridgeLogo size={32} />
+              <BrandLogo size={32} />
             </div>
-            <span className="text-2xl font-bold tracking-tight">TalentBridge</span>
+            <span className="text-2xl font-bold tracking-tight">EvidenTalent</span>
           </div>
           <h1 className="text-3xl font-bold text-center mb-2">Tell us about your company</h1>
           <p className="text-muted-foreground text-center mb-8">
@@ -121,14 +121,14 @@ export default function Onboarding() {
         {/* Logo */}
         <div className="flex items-center justify-center gap-2.5 mb-10">
           <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center shadow-lg shadow-primary/25">
-            <TalentBridgeLogo size={32} />
+            <BrandLogo size={32} />
           </div>
-          <span className="text-2xl font-bold tracking-tight">TalentBridge</span>
+          <span className="text-2xl font-bold tracking-tight">EvidenTalent</span>
         </div>
 
-        <h1 className="text-3xl font-bold text-center mb-2">Welcome! How are you using TalentBridge?</h1>
+        <h1 className="text-3xl font-bold text-center mb-2">Welcome! How are you using EvidenTalent?</h1>
         <p className="text-muted-foreground text-center mb-8">
-          Pick the account type that matches how you'll use TalentBridge. It sets up your workspace and
+          Pick the account type that matches how you'll use EvidenTalent. It sets up your workspace and
           can't be changed after this step, so choose carefully.
         </p>
 
@@ -155,7 +155,7 @@ export default function Onboarding() {
         </div>
 
         <div className="max-w-sm mx-auto mb-6 space-y-1.5">
-          <Label htmlFor="heard-from" className="text-sm">How did you hear about TalentBridge? <span className="text-muted-foreground font-normal">(optional)</span></Label>
+          <Label htmlFor="heard-from" className="text-sm">How did you hear about EvidenTalent? <span className="text-muted-foreground font-normal">(optional)</span></Label>
           <Select value={heardFrom} onValueChange={setHeardFrom}>
             <SelectTrigger id="heard-from"><SelectValue placeholder="Choose one" /></SelectTrigger>
             <SelectContent>

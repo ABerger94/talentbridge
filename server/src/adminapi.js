@@ -91,7 +91,7 @@ function overview() {
   };
 }
 
-// Jobs posted on TalentBridge by default; origin=imported or all for others.
+// Jobs posted on EvidenTalent by default; origin=imported or all for others.
 function listJobs(q) {
   const { per, page: p, offset } = page(q);
   const where = ["entity = 'Job'"];

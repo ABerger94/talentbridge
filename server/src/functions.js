@@ -254,7 +254,7 @@ Required skills: ${clip((job.skills || []).join(', '), 600) || 'Not specified'}
 Culture values: ${clip((job.culture_values || []).join(', '), 300) || 'Not specified'}
 Qualifications / problems to solve: ${clip(job.qualifications, 400) || 'Not specified'}
 
-CANDIDATE PROFILE (identity removed). Capabilities may carry depth_level on TalentBridge's rubric (1 Executes, 2 Maintains an existing program, 3 Builds new systems, 4 Improves with data and root-cause work, 5 Leads and is trusted in crises), the evidence type behind it, and sets_apart for capabilities beyond the baseline for their experience. proof_stories are the candidate's own examples of their work:
+CANDIDATE PROFILE (identity removed). Capabilities may carry depth_level on EvidenTalent's rubric (1 Executes, 2 Maintains an existing program, 3 Builds new systems, 4 Improves with data and root-cause work, 5 Leads and is trusted in crises), the evidence type behind it, and sets_apart for capabilities beyond the baseline for their experience. proof_stories are the candidate's own examples of their work:
 ${fence('candidate profile', JSON.stringify(candidate), 8000)}
 
 COVER LETTER:

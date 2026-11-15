@@ -1,4 +1,4 @@
-// Remembers how someone first reached TalentBridge (a campaign link's utm_*
+// Remembers how someone first reached EvidenTalent (a campaign link's utm_*
 // tags, or the site that linked here) for 30 days, so it can be saved with
 // their account at onboarding. Only in this browser; nothing is sent until
 // they sign up.
@@ -39,7 +39,7 @@ export const getAcquisition = () => {
   return rest;
 };
 
-// Answers for "How did you hear about TalentBridge?" (keys match the server).
+// Answers for "How did you hear about EvidenTalent?" (keys match the server).
 export const HEARD_FROM = [
   ["friend", "A friend or coworker"],
   ["linkedin", "LinkedIn"],

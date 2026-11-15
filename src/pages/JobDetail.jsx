@@ -77,7 +77,7 @@ export default function JobDetail() {
   useEffect(() => {
     if (!job?.title) return undefined;
     const previous = document.title;
-    document.title = `${job.title}${job.company ? ` at ${job.company}` : ""} · TalentBridge`;
+    document.title = `${job.title}${job.company ? ` at ${job.company}` : ""} · EvidenTalent`;
     return () => { document.title = previous; };
   }, [job?.title, job?.company]);
 
@@ -159,7 +159,7 @@ export default function JobDetail() {
                 <p className="text-lg text-muted-foreground mt-0.5 flex items-center gap-2 flex-wrap">
                   {job.company}
                   {job.company_profile?.verified && (
-                    <Badge variant="outline" className="gap-1 text-xs bg-emerald-50 text-emerald-700 border-emerald-200" title="TalentBridge reviewed this employer">
+                    <Badge variant="outline" className="gap-1 text-xs bg-emerald-50 text-emerald-700 border-emerald-200" title="EvidenTalent reviewed this employer">
                       <BadgeCheck className="w-3.5 h-3.5" /> Verified employer
                     </Badge>
                   )}
@@ -336,7 +336,7 @@ export default function JobDetail() {
                 <Building2 className="w-3.5 h-3.5" /> About {job.company_profile.name}
               </h3>
               {job.company_profile.verified && (
-                <p className="text-xs text-emerald-700 flex items-center gap-1"><BadgeCheck className="w-3.5 h-3.5" /> Reviewed by TalentBridge</p>
+                <p className="text-xs text-emerald-700 flex items-center gap-1"><BadgeCheck className="w-3.5 h-3.5" /> Reviewed by EvidenTalent</p>
               )}
               {job.company_profile.about && <p className="text-sm text-foreground/80 leading-relaxed">{job.company_profile.about}</p>}
               <div className="text-xs text-muted-foreground space-y-0.5">

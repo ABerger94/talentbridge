@@ -11,4 +11,4 @@ Disallow: /onboarding
 Disallow: /auth-bridge
 Disallow: /logout-bridge
 
-Sitemap: https://talentbridge-jobboard.vercel.app/sitemap.xml
+Sitemap: https://evidentalent.vercel.app/sitemap.xml
