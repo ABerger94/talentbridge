@@ -29,7 +29,9 @@ const SECTIONS = [
 // One-tap sharing for the public link. Each network's link is tagged
 // (utm_source=linkedin...) so the owner can see which shares bring signups.
 const SHARE_TEXT = "I mapped what I can actually do on TalentBridge: every skill rated 1–5, backed by real stories. #ShowWhatYouCanDo";
-const tagged = (url, source) => `${url}${url.includes("?") ? "&" : "?"}utm_source=${source}&utm_medium=profile_share&utm_campaign=showwhatyoucando`;
+// Each share also gets a short unique code (s=...): X and LinkedIn cache a
+// link's preview for days, so a fresh link always gets a fresh preview.
+const tagged = (url, source) => `${url}${url.includes("?") ? "&" : "?"}utm_source=${source}&utm_medium=profile_share&utm_campaign=showwhatyoucando&s=${Date.now().toString(36)}`;
 function ShareButtons({ url }) {
   const open = (href) => window.open(href, "_blank", "noopener,noreferrer,width=640,height=640");
   const links = [
