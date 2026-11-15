@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getAcquisition, HEARD_FROM } from "@/lib/acquisition";
 
+import Wordmark from "@/components/Wordmark";
 export default function Onboarding() {
   const [selected, setSelected] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -80,7 +81,7 @@ export default function Onboarding() {
             <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center shadow-lg shadow-primary/25">
               <BrandLogo size={32} />
             </div>
-            <span className="text-2xl font-bold tracking-tight">EvidenTalent</span>
+            <Wordmark className="text-2xl font-bold tracking-tight" />
           </div>
           <h1 className="text-3xl font-bold text-center mb-2">Tell us about your company</h1>
           <p className="text-muted-foreground text-center mb-8">
@@ -123,7 +124,7 @@ export default function Onboarding() {
           <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center shadow-lg shadow-primary/25">
             <BrandLogo size={32} />
           </div>
-          <span className="text-2xl font-bold tracking-tight">EvidenTalent</span>
+          <Wordmark className="text-2xl font-bold tracking-tight" />
         </div>
 
         <h1 className="text-3xl font-bold text-center mb-2">Welcome! How are you using EvidenTalent?</h1>

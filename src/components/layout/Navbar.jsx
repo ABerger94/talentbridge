@@ -8,6 +8,7 @@ import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
 import { redirectToLogin, logoutLocally } from "@/lib/auth-redirect";
 import BrandLogo from "@/components/BrandLogo";
+import Wordmark from "@/components/Wordmark";
 
 export default function Navbar() {
   const location = useLocation();
@@ -45,7 +46,7 @@ export default function Navbar() {
             <div className="w-9 h-9 bg-primary rounded-xl flex items-center justify-center group-hover:scale-105 transition-transform shadow-md shadow-primary/30 text-primary-foreground">
               <BrandLogo size={20} />
             </div>
-            <span className="text-xl font-bold tracking-tight">Eviden<span className="text-muted-foreground">Talent</span></span>
+            <Wordmark className="text-xl font-bold tracking-tight" />
           </Link>
 
           <div className="hidden md:flex items-center gap-1">
@@ -110,7 +111,7 @@ export default function Navbar() {
                 <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-primary-foreground">
                   <BrandLogo size={16} />
                 </div>
-                <span className="font-bold">Eviden<span className="text-muted-foreground">Talent</span></span>
+                <Wordmark className="font-bold" />
               </div>
               <div className="flex flex-col gap-2">
                 {navLinks.map((link) => (
