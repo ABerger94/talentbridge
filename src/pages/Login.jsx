@@ -9,6 +9,7 @@ import { useAuth } from '@/lib/AuthContext';
 import BrandLogo from '@/components/BrandLogo';
 import GoogleButton from '@/components/auth/GoogleButton';
 
+import Wordmark from "@/components/Wordmark";
 const getSafeNextPath = (next) => {
   try {
     const url = new URL(next || '/', window.location.origin);
@@ -189,7 +190,7 @@ export default function Login() {
       <div className="w-9 h-9 bg-primary rounded-xl flex items-center justify-center text-primary-foreground">
         <BrandLogo size={28} />
       </div>
-      <span className="text-xl font-bold tracking-tight">EvidenTalent</span>
+      <Wordmark className="text-xl font-bold tracking-tight" />
     </Link>
   );
 

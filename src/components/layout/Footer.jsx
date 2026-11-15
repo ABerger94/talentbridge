@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Heart } from "lucide-react";
 import BrandLogo from "@/components/BrandLogo";
 
+import Wordmark from "@/components/Wordmark";
 export default function Footer() {
   return (
     <footer className="bg-foreground text-background py-16">
@@ -13,7 +14,7 @@ export default function Footer() {
               <div className="w-9 h-9 bg-primary rounded-xl flex items-center justify-center">
                 <BrandLogo size={20} />
               </div>
-              <span className="text-xl font-bold">EvidenTalent</span>
+              <Wordmark className="text-xl font-bold" talentClass="opacity-60" />
             </div>
             <p className="text-sm opacity-60 leading-relaxed">
               AI that advocates for people. We match on capability, potential, and character — not keywords and arbitrary filters.
