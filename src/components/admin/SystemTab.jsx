@@ -259,33 +259,6 @@ export default function SystemTab() {
 
   return (
     <div className="space-y-5">
-      <Card className="p-5 space-y-2.5">
-        <div className="flex items-center justify-between">
-          <h3 className="font-semibold">Health</h3>
-          <Button size="sm" variant="ghost" className="gap-1.5" onClick={() => refetch()} disabled={isFetching}>
-            <RefreshCw className={`w-3.5 h-3.5 ${isFetching ? "animate-spin" : ""}`} /> Refresh
-          </Button>
-        </div>
-        <Check ok={health.auth_secret === "ok"} label="Sign-in secret" detail={health.auth_secret} />
-        <Check ok={health.ai?.configured} label="AI providers" detail={(health.ai?.order || []).map((p) => p.provider).join(" → ") || "none configured"} />
-        <Check ok={health.mail?.configured} label="Email" detail={(health.mail?.providers || []).join(", ") || "not configured"} />
-        <Check ok label="Database" detail={health.database} />
-        <Check
-          ok={health.storage.backend === "s3" ? counts.files_in_database === 0 : true}
-          label="File storage"
-          detail={health.storage.backend === "s3"
-            ? `bucket ${health.storage.bucket}${counts.files_in_database ? ` · ${counts.files_in_database} older files still in the database` : ""}`
-            : `in the database (${counts.files} files, ${mb(counts.file_bytes)})`}
-        />
-        {health.storage.backend === "s3" && counts.files_in_database > 0 && (
-          <Button size="sm" variant="outline" onClick={() => migrate.mutate()} disabled={migrate.isPending} className="gap-1.5">
-            {migrate.isPending && <Loader2 className="w-3.5 h-3.5 animate-spin" />} Move next 20 files to the bucket
-          </Button>
-        )}
-      </Card>
-
-      <AiKeyHealth result={aiHealth.data || data.ai_health} running={aiHealth.isPending} onRun={() => aiHealth.mutate()} />
-
       <Card className="p-5 space-y-3">
         <h3 className="font-semibold">Last 7 days</h3>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
@@ -316,6 +289,33 @@ export default function SystemTab() {
           </div>
         )}
       </Card>
+
+      <Card className="p-5 space-y-2.5">
+        <div className="flex items-center justify-between">
+          <h3 className="font-semibold">Health</h3>
+          <Button size="sm" variant="ghost" className="gap-1.5" onClick={() => refetch()} disabled={isFetching}>
+            <RefreshCw className={`w-3.5 h-3.5 ${isFetching ? "animate-spin" : ""}`} /> Refresh
+          </Button>
+        </div>
+        <Check ok={health.auth_secret === "ok"} label="Sign-in secret" detail={health.auth_secret} />
+        <Check ok={health.ai?.configured} label="AI providers" detail={(health.ai?.order || []).map((p) => p.provider).join(" → ") || "none configured"} />
+        <Check ok={health.mail?.configured} label="Email" detail={(health.mail?.providers || []).join(", ") || "not configured"} />
+        <Check ok label="Database" detail={health.database} />
+        <Check
+          ok={health.storage.backend === "s3" ? counts.files_in_database === 0 : true}
+          label="File storage"
+          detail={health.storage.backend === "s3"
+            ? `bucket ${health.storage.bucket}${counts.files_in_database ? ` · ${counts.files_in_database} older files still in the database` : ""}`
+            : `in the database (${counts.files} files, ${mb(counts.file_bytes)})`}
+        />
+        {health.storage.backend === "s3" && counts.files_in_database > 0 && (
+          <Button size="sm" variant="outline" onClick={() => migrate.mutate()} disabled={migrate.isPending} className="gap-1.5">
+            {migrate.isPending && <Loader2 className="w-3.5 h-3.5 animate-spin" />} Move next 20 files to the bucket
+          </Button>
+        )}
+      </Card>
+
+      <AiKeyHealth result={aiHealth.data || data.ai_health} running={aiHealth.isPending} onRun={() => aiHealth.mutate()} />
 
       <SignupSources data={data.signup_sources} />
 
